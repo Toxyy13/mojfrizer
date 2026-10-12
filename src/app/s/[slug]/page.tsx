@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { formatServicePrice } from "@/lib/money";
-import { TIME_ZONE, WEEKDAYS_SR, minutesToHHMM, todayIso, isoWeekdayOf } from "@/lib/time";
+import { formatPrice, formatServicePrice } from "@/lib/money";
+import { TIME_ZONE, WEEKDAYS_SR, minutesToHHMM, todayIso, isoWeekdayOf, zonedParts } from "@/lib/time";
 import { serviceCategory, toBookingServices, toBookingWorkers, upcomingDays } from "@/lib/salonView";
 import { BookingForm } from "@/components/BookingForm";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/SiteHeader";
+import { StickyBookBar } from "@/components/StickyBookBar";
 import { getSessionUser } from "@/lib/auth";
 import { formatPhone } from "@/lib/phone";
 import { bookOnline, requestUrgent } from "./actions";
@@ -47,130 +50,182 @@ export default async function SalonPage({ params }: PageProps) {
     ? await db.user.findUnique({ where: { id: session.id }, select: { name: true, phone: true, favoriteSalonId: true } })
     : null;
 
-  const today = isoWeekdayOf(todayIso(TIME_ZONE));
+  const todayDate = todayIso(TIME_ZONE);
+  const today = isoWeekdayOf(todayDate);
   const categories = [...new Set(salon.services.map(serviceCategory))];
   const fullAddress = salon.address.includes(salon.city) ? salon.address : `${salon.address}, ${salon.city}`;
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
+  const mapEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(fullAddress)}&z=16&output=embed`;
+  const openNow = openStatus(salon.workingHours, salon.daysOff, todayDate, today);
+  const cheapest = salon.services.reduce<number | null>((min, s) => (min === null || s.price < min ? s.price : min), null);
 
   return (
-    <main>
-      <header className="border-b border-neutral-200 bg-cream">
-        <div className="mx-auto max-w-6xl px-6 py-24 md:py-32">
-          <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">Frizerski salon · {salon.city}</p>
-          <h1 className="mt-6 font-serif text-7xl leading-[0.9] md:text-9xl">{salon.name}</h1>
-          <a
-            href="#zakazivanje"
-            className="mt-12 inline-block bg-burgundy px-10 py-4 text-sm uppercase tracking-[0.2em] text-white transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-burgundy-dark"
-          >
-            Zakaži termin
-          </a>
-          <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-3">
-            <Link
-              href={`/poruke/${salon.slug}`}
-              className="text-sm text-neutral-600 underline underline-offset-4 hover:text-burgundy"
-            >
-              Pošaljite poruku salonu
+    <>
+      <SiteHeader />
+      <main className="pb-24 md:pb-0">
+        <section className="page pt-10 pb-10 sm:pt-16">
+          <div className="animate-rise">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="eyebrow">Frizerski salon · {salon.city}</span>
+              <span className={`badge ${openNow.open ? "bg-forest-soft text-forest" : "bg-sand text-muted"}`}>
+                <span aria-hidden className={`mr-1.5 size-1.5 rounded-full ${openNow.open ? "bg-forest" : "bg-muted"}`} />
+                {openNow.label}
+              </span>
+            </div>
+            <h1 className="mt-4 font-serif text-5xl leading-[0.95] tracking-tight sm:text-7xl md:text-8xl">{salon.name}</h1>
+            <p className="mt-4 text-lg text-muted">{salon.description ?? fullAddress}</p>
+          </div>
+
+          <div className="mt-8 flex flex-wrap items-center gap-2">
+            <a href="#zakazivanje" className="btn-primary px-8">
+              Zakaži termin
+            </a>
+            <Link href={`/poruke/${salon.slug}`} className="btn-secondary">
+              Pošalji poruku
             </Link>
+            {salon.phone && (
+              <a href={`tel:${salon.phone.replace(/\s/g, "")}`} className="btn-secondary">
+                Pozovi
+              </a>
+            )}
             {customer ? (
               <FavoriteButton salonId={salon.id} isFavorite={customer.favoriteSalonId === salon.id} returnTo={`/s/${salon.slug}`} />
             ) : (
-              <Link href={`/prijava?next=/s/${salon.slug}`} className="text-sm text-neutral-600 underline underline-offset-4 hover:text-burgundy">
-                Prijavite se da ga označite kao omiljeni salon
+              <Link href={`/prijava?next=/s/${salon.slug}`} className="btn-ghost">
+                ♡ Prijavite se da sačuvate salon
               </Link>
             )}
           </div>
-        </div>
-      </header>
+        </section>
 
-      <section className="mx-auto grid max-w-6xl gap-px border-x border-neutral-200 bg-neutral-200 md:grid-cols-3" aria-label="Informacije">
-        <article className="bg-white p-10 md:col-span-2">
-          <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500">Adresa</h2>
-          <p className="mt-4 font-serif text-4xl">{fullAddress}</p>
-          {salon.description && <p className="mt-2 text-neutral-600">{salon.description}</p>}
-          <div className="mt-6 flex flex-wrap gap-6 text-sm">
-            <a href={mapsUrl} target="_blank" rel="noreferrer" className="underline underline-offset-4 hover:text-burgundy">
-              Otvori mapu
-            </a>
-            {salon.phone && (
-              <a href={`tel:${salon.phone.replace(/\s/g, "")}`} className="underline underline-offset-4 hover:text-burgundy">
-                {salon.phone}
+        <section className="page grid gap-3 md:grid-cols-3" aria-label="Informacije">
+          <article className="card overflow-hidden md:col-span-2">
+            <iframe
+              title={`Mapa: ${fullAddress}`}
+              src={mapEmbedUrl}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              className="h-56 w-full border-0 grayscale-[0.3] sm:h-64"
+            />
+            <div className="flex flex-wrap items-end justify-between gap-4 p-5 sm:p-6">
+              <div>
+                <h2 className="eyebrow">Adresa</h2>
+                <p className="mt-2 font-serif text-2xl sm:text-3xl">{fullAddress}</p>
+                {salon.phone && (
+                  <a href={`tel:${salon.phone.replace(/\s/g, "")}`} className="link mt-1 inline-block text-sm text-muted">
+                    {salon.phone}
+                  </a>
+                )}
+              </div>
+              <a href={mapsUrl} target="_blank" rel="noreferrer" className="btn-secondary btn-sm">
+                Uputstva do salona ↗
               </a>
-            )}
-          </div>
-        </article>
-        <aside className="bg-white p-10">
-          <h2 className="text-xs uppercase tracking-[0.2em] text-neutral-500">Radno vreme</h2>
-          <dl className="mt-4 grid grid-cols-[1fr_auto] gap-y-2 text-sm">
-            {WEEK_ORDER.map((wd) => {
-              const ranges = salon.workingHours.filter((x) => x.dayOfWeek === wd);
-              const isToday = wd === today;
-              return (
-                <div key={wd} className={`contents ${isToday ? "font-semibold text-burgundy" : ""}`}>
-                  <dt>{WEEKDAYS_SR[wd]}</dt>
-                  <dd className="font-mono">{ranges.length > 0
-                      ? ranges.map((r) => `${minutesToHHMM(r.opensAt)}–${minutesToHHMM(r.closesAt)}`).join(", ")
-                      : "zatvoreno"}</dd>
-                </div>
-              );
-            })}
-          </dl>
-        </aside>
-      </section>
+            </div>
+          </article>
+          <aside className="card p-5 sm:p-6">
+            <h2 className="eyebrow">Radno vreme</h2>
+            <dl className="mt-4 grid grid-cols-[1fr_auto] text-sm">
+              {WEEK_ORDER.map((wd) => {
+                const ranges = salon.workingHours.filter((x) => x.dayOfWeek === wd);
+                const isToday = wd === today;
+                return (
+                  <div
+                    key={wd}
+                    className={`col-span-2 grid grid-cols-subgrid rounded-lg px-3 py-2 ${isToday ? "bg-burgundy-soft font-medium text-burgundy" : ""}`}
+                  >
+                    <dt>
+                      {WEEKDAYS_SR[wd]}
+                      {isToday && <span className="ml-2 text-xs font-normal">danas</span>}
+                    </dt>
+                    <dd className={`tabular-nums ${ranges.length === 0 ? "text-muted" : ""}`}>
+                      {ranges.length > 0
+                        ? ranges.map((r) => `${minutesToHHMM(r.opensAt)}–${minutesToHHMM(r.closesAt)}`).join(", ")
+                        : "zatvoreno"}
+                    </dd>
+                  </div>
+                );
+              })}
+            </dl>
+          </aside>
+        </section>
 
-      <section className="border-t border-neutral-200 py-24" aria-labelledby="cenovnik">
-        <div className="mx-auto grid max-w-6xl gap-12 px-6 md:grid-cols-3">
-          <h2 id="cenovnik" className="font-serif text-5xl">Cenovnik</h2>
-          <div className="md:col-span-2">
+        <section className="page mt-20 grid gap-8 md:grid-cols-[1fr_2fr]" aria-labelledby="cenovnik">
+          <div>
+            <p className="eyebrow">Usluge</p>
+            <h2 id="cenovnik" className="mt-3 font-serif text-4xl sm:text-5xl">
+              Cenovnik
+            </h2>
+            {cheapest !== null && <p className="mt-3 text-muted">Usluge već od {formatPrice(cheapest)}.</p>}
+          </div>
+          <div className="grid gap-8">
             {categories.map((category) => (
-              <div key={category} className="mb-10">
-                <h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500">{category}</h3>
-                <ul className="mt-2">
+              <div key={category}>
+                <h3 className="eyebrow">{category}</h3>
+                <ul className="mt-2 divide-y divide-line border-y border-line">
                   {salon.services
                     .filter((s) => serviceCategory(s) === category)
                     .map((s) => (
-                      <li key={s.id} className="flex items-baseline gap-4 border-b border-neutral-200 py-4">
-                        <span className="text-lg">{s.name}</span>
-                        <span className="text-xs text-neutral-400">{s.durationMinutes} min</span>
-                        <span className="ml-auto font-mono">{formatServicePrice(s)}</span>
+                      <li key={s.id} className="flex items-baseline gap-4 py-4">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-lg">{s.name}</p>
+                          <p className="text-sm text-muted">{s.durationMinutes} min</p>
+                        </div>
+                        <p className="max-w-[45%] text-right font-medium tabular-nums">{formatServicePrice(s)}</p>
                       </li>
                     ))}
                 </ul>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section id="zakazivanje" className="border-t border-neutral-200 bg-cream py-24" aria-labelledby="zakazi-naslov">
-        <div className="mx-auto grid max-w-6xl gap-12 px-6 md:grid-cols-3">
-          <div>
-            <h2 id="zakazi-naslov" className="font-serif text-5xl">Zakažite termin</h2>
-            <p className="mt-4 text-sm text-neutral-600">
-              Izaberite uslugu, dan i slobodno vreme. Ako vam je lakše, pozovite nas{salon.phone ? ` na ${salon.phone}` : ""} i
-              zakazaćemo umesto vas.
-            </p>
+        <section id="zakazivanje" className="page mt-20 scroll-mt-20" aria-labelledby="zakazi-naslov">
+          <div className="card grid gap-10 p-5 sm:p-8 md:grid-cols-[1fr_2fr] md:p-10">
+            <div>
+              <p className="eyebrow">Online zakazivanje</p>
+              <h2 id="zakazi-naslov" className="mt-3 font-serif text-4xl sm:text-5xl">
+                Zakažite termin
+              </h2>
+              <p className="mt-4 text-sm text-muted">
+                Izaberite uslugu, dan i slobodno vreme. Ako vam je lakše, pozovite nas
+                {salon.phone ? ` na ${salon.phone}` : ""} i zakazaćemo umesto vas.
+              </p>
+            </div>
+            <div className="min-w-0">
+              <BookingForm
+                slug={salon.slug}
+                mode="public"
+                services={toBookingServices(salon.services)}
+                workers={toBookingWorkers(salon.workers)}
+                days={upcomingDays(salon.workingHours, salon.daysOff, 14)}
+                submit={bookOnline.bind(null, salon.slug)}
+                initialClient={customer ? { name: customer.name, phone: customer.phone ? formatPhone(customer.phone) : "" } : undefined}
+                requestUrgent={requestUrgent.bind(null, salon.slug)}
+              />
+            </div>
           </div>
-          <div className="min-w-0 md:col-span-2">
-            <BookingForm
-              slug={salon.slug}
-              mode="public"
-              services={toBookingServices(salon.services)}
-              workers={toBookingWorkers(salon.workers)}
-              days={upcomingDays(salon.workingHours, salon.daysOff, 14)}
-              submit={bookOnline.bind(null, salon.slug)}
-              initialClient={customer ? { name: customer.name, phone: customer.phone ? formatPhone(customer.phone) : "" } : undefined}
-              requestUrgent={requestUrgent.bind(null, salon.slug)}
-            />
-          </div>
-        </div>
-      </section>
-
-      <footer className="mx-auto flex max-w-6xl justify-between px-6 py-10 text-xs text-neutral-500">
-        <span>© {salon.name}</span>
-        <Link href={customer ? "/nalog" : "/prijava"} className="hover:text-burgundy">
-          {customer ? "Moj nalog" : "Prijava"}
-        </Link>
-      </footer>
-    </main>
+        </section>
+      </main>
+      <SiteFooter />
+      <StickyBookBar targetId="zakazivanje" label="Zakaži termin" hint={openNow.label} />
+    </>
   );
+}
+
+/** "Otvoreno do 19:00" / "Zatvoreno · otvara u 09:00" for the badge under the salon name. */
+function openStatus(
+  hours: Array<{ dayOfWeek: number; opensAt: number; closesAt: number }>,
+  daysOff: Array<{ date: Date }>,
+  todayDate: string,
+  weekday: number,
+): { open: boolean; label: string } {
+  const now = zonedParts(new Date(), TIME_ZONE);
+  const minute = now.hour * 60 + now.minute;
+  const dayOff = daysOff.some((d) => d.date.toISOString().slice(0, 10) === todayDate);
+  const ranges = dayOff ? [] : hours.filter((h) => h.dayOfWeek === weekday);
+  const current = ranges.find((r) => r.opensAt <= minute && minute < r.closesAt);
+  if (current) return { open: true, label: `Otvoreno do ${minutesToHHMM(current.closesAt)}` };
+  const later = ranges.find((r) => r.opensAt > minute);
+  if (later) return { open: false, label: `Zatvoreno · otvara u ${minutesToHHMM(later.opensAt)}` };
+  return { open: false, label: "Danas zatvoreno" };
 }
