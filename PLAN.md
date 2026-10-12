@@ -30,6 +30,8 @@ Jedna aplikacija (Next.js + TypeScript + PostgreSQL + Prisma) za sve salone. Sva
 
 „Nastavi sa Google nalogom” (`/api/auth/google`, OAuth sa PKCE): dugme na prijavi i registraciji se pojavi čim su `GOOGLE_CLIENT_ID` i `GOOGLE_CLIENT_SECRET` podešeni. Novi Google nalog postaje mušterija; ako nalog sa istom (Google-potvrđenom) email adresom već postoji, povezuje se sa njim. Podešavanje: Google Cloud Console → APIs & Services → Credentials → OAuth client ID (Web application), u „Authorized redirect URIs” upisati `https://mojfrizer.com/api/auth/google/callback` (i `http://localhost:3000/api/auth/google/callback` za razvoj), a `APP_URL` mora biti javna adresa sajta.
 
+Moj termin: posle online zakazivanja mušterija dobija link `/termin/{token}` (na ekranu, a sa nalogom i mejlom potvrde). Preko njega otkazuje ili pomera termin (do `cancelCutoffHours` sati pre, podešava salon) i dodaje ga u kalendar telefona (`.ics`). Vlasnik dobija mejl za svako otkazivanje i pomeranje.
+
 Email podsetnik: `GET /api/cron/reminders` (zaštićen `CRON_SECRET`-om) šalje mušterijama sa nalogom mejl za termine u narednih 24h, jednom po terminu. Treba ga zvati svakih ~30 min (cron na hostingu), a slanje traži `RESEND_API_KEY` i `MAIL_FROM` (bez ključa se mejl samo ispiše u log). Gosti bez naloga nemaju email, pa nemaju ni podsetnik.
 
 Sledeće: zaboravljena lozinka, potvrda emaila, SMS/Viber podsetnici, chat.

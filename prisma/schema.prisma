@@ -75,6 +75,8 @@ model Salon {
   phone       String?
   // Calendar grid for booking slots, in minutes.
   slotStepMinutes Int  @default(15)
+  // Customers can cancel or move a booking online until this many hours before it starts.
+  cancelCutoffHours Int @default(2)
   isActive    Boolean  @default(true)
   ownerId     String
   owner       User     @relation("SalonOwner", fields: [ownerId], references: [id])
@@ -179,6 +181,8 @@ model Appointment {
   status    AppointmentStatus @default(BOOKED)
   // Set when the email reminder has been sent, so it goes out only once.
   reminderSentAt DateTime?
+  // Secret for the customer's "manage booking" link (cancel, move, add to calendar). Works for guests too.
+  manageToken String @unique @default(dbgenerated("replace((gen_random_uuid())::text, '-'::text, ''::text)"))
   // Price snapshot at booking time, in para. Revenue is summed from this.
   price     Int
   note      String?

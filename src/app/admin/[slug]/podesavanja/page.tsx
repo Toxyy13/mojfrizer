@@ -206,6 +206,16 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
               ))}
             </select>
           </label>
+          <label>
+            <span className={LABEL}>Mušterija otkazuje ili pomera najkasnije</span>
+            <select name="cancelCutoffHours" defaultValue={String(salon.cancelCutoffHours)} className={INPUT}>
+              {[0, 1, 2, 3, 6, 12, 24, 48].map((v) => (
+                <option key={v} value={v}>
+                  {v === 0 ? "do samog početka" : `${v} h pre termina`}
+                </option>
+              ))}
+            </select>
+          </label>
           <div className="md:col-span-2">
             <button className={BUTTON}>Sačuvaj podatke</button>
           </div>

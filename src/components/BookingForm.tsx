@@ -180,6 +180,14 @@ export function BookingForm({ slug, services, workers, days, mode, submit, initi
           {service?.name}, {days.find((d) => d.iso === dateIso)?.label ?? dateIso} u {minute !== null ? hhmm(minute) : ""}
         </p>
         <p className="mt-2 text-neutral-600">Frizer: {result.workerName}</p>
+        {mode === "public" && (
+          <p className="mt-6 text-sm text-neutral-600">
+            Sačuvajte ovaj link, preko njega otkazujete ili pomerate termin i dodajete ga u kalendar:{" "}
+            <a href={`/termin/${result.manageToken}`} className="break-all text-burgundy underline underline-offset-4">
+              Moj termin
+            </a>
+          </p>
+        )}
         <button type="button" onClick={reset} className="mt-8 text-sm underline underline-offset-4 hover:text-burgundy">
           {mode === "public" ? "Zakaži još jedan termin" : "Upiši sledeći termin"}
         </button>

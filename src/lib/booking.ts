@@ -89,7 +89,7 @@ export const bookingInputSchema = z.object({
 export type BookingInput = z.infer<typeof bookingInputSchema>;
 
 export type BookingResult =
-  | { ok: true; appointmentId: string; workerName: string }
+  | { ok: true; appointmentId: string; workerName: string; manageToken: string }
   | { ok: false; error: string };
 
 export interface BookingActor {
@@ -160,7 +160,12 @@ export async function createAppointment(
       if (created) {
         // Separate step so a pricing update never makes the slot look taken.
         await db.$transaction((tx) => applyComboPricing(tx, created.id));
-        return { ok: true, appointmentId: created.id, workerName: created.worker.displayName };
+        return {
+          ok: true,
+          appointmentId: created.id,
+          workerName: created.worker.displayName,
+          manageToken: created.manageToken,
+        };
       }
     } catch (error) {
       if (!isConflictError(error)) throw error;
