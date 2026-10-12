@@ -1,0 +1,183 @@
+// mojfrizer.com — one database for all salons.
+// Every salon-owned table carries salonId; queries must always filter by it.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN // salon owner / manager
+  WORKER // hairdresser working in a salon
+  CLIENT // customer
+}
+
+enum AppointmentStatus {
+  BOOKED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+// Who created the booking: the customer online, or the salon on the customer's behalf.
+enum BookingSource {
+  ONLINE
+  SALON
+}
+
+// Global user (not salon-scoped). One account can be a client of many salons.
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash   String
+  name           String
+  phone          String?
+  role           Role     @default(CLIENT)
+  // Salon the client lands on right after login.
+  favoriteSalonId String?
+  favoriteSalon   Salon?  @relation("FavoriteSalon", fields: [favoriteSalonId], references: [id], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+
+  ownedSalons         Salon[]         @relation("SalonOwner")
+  workerProfiles      WorkerProfile[]
+  clientAppointments  Appointment[]   @relation("ClientAppointments")
+  createdAppointments Appointment[]   @relation("CreatedAppointments")
+  chatMessages        ChatMessage[]
+
+  @@map("users")
+}
+
+model Salon {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique // mojfrizer.com/s/{slug}
+  description String?
+  city        String
+  address     String
+  phone       String?
+  // Calendar grid for booking slots, in minutes.
+  slotStepMinutes Int  @default(15)
+  isActive    Boolean  @default(true)
+  ownerId     String
+  owner       User     @relation("SalonOwner", fields: [ownerId], references: [id])
+  createdAt   DateTime @default(now())
+
+  workingHours WorkingHours[]
+  daysOff      SalonDayOff[]
+  workers      WorkerProfile[]
+  services     Service[]
+  appointments Appointment[]
+  chatMessages ChatMessage[]
+  favoritedBy  User[]          @relation("FavoriteSalon")
+
+  @@index([city])
+  @@map("salons")
+}
+
+// Weekly opening hours. Several rows per day allow a lunch break.
+model WorkingHours {
+  id        String @id @default(cuid())
+  salonId   String
+  salon     Salon  @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  dayOfWeek Int // 1 = Monday ... 7 = Sunday (ISO)
+  opensAt   Int // minutes from midnight, e.g. 540 = 09:00
+  closesAt  Int
+
+  @@index([salonId, dayOfWeek])
+  @@map("working_hours")
+}
+
+// Holidays, vacations and other closed days.
+model SalonDayOff {
+  id      String   @id @default(cuid())
+  salonId String
+  salon   Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  date    DateTime @db.Date
+  reason  String?
+
+  @@unique([salonId, date])
+  @@map("salon_days_off")
+}
+
+model WorkerProfile {
+  id           String   @id @default(cuid())
+  salonId      String
+  salon        Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  // Optional: a worker can exist without their own login.
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  displayName  String
+  specialities String[]
+  isActive     Boolean  @default(true)
+
+  appointments Appointment[]
+
+  @@unique([salonId, userId])
+  @@index([salonId])
+  @@map("worker_profiles")
+}
+
+model Service {
+  id              String  @id @default(cuid())
+  salonId         String
+  salon           Salon   @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  category        String?
+  price           Int // in para: 1500 RSD = 150000
+  durationMinutes Int
+  sortOrder       Int     @default(0)
+  isActive        Boolean @default(true)
+
+  appointments Appointment[]
+
+  @@index([salonId])
+  @@map("services")
+}
+
+model Appointment {
+  id        String            @id @default(cuid())
+  salonId   String
+  salon     Salon             @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  workerId  String
+  worker    WorkerProfile     @relation(fields: [workerId], references: [id])
+  serviceId String
+  service   Service           @relation(fields: [serviceId], references: [id])
+  // Null when the salon books for a customer without an account (phone / walk-in).
+  clientId  String?
+  client    User?             @relation("ClientAppointments", fields: [clientId], references: [id], onDelete: SetNull)
+  guestName  String?
+  guestPhone String?
+  source      BookingSource
+  createdById String
+  createdBy   User            @relation("CreatedAppointments", fields: [createdById], references: [id])
+  startTime DateTime          @db.Timestamptz(3)
+  endTime   DateTime          @db.Timestamptz(3)
+  status    AppointmentStatus @default(BOOKED)
+  // Price snapshot at booking time, in para. Revenue is summed from this.
+  price     Int
+  note      String?
+  createdAt DateTime          @default(now())
+
+  @@index([salonId, workerId, startTime])
+  @@index([salonId, startTime])
+  @@index([clientId])
+  @@map("appointments")
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  salonId   String
+  salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id])
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([salonId, createdAt])
+  @@map("chat_messages")
+}
