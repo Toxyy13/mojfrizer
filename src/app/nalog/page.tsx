@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { AppointmentStatus } from "@prisma/client";
+import { Avatar } from "@/components/Avatar";
+import { avatarUrl } from "@/lib/avatar";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getSessionUser } from "@/lib/auth";
@@ -84,8 +86,10 @@ export default async function AccountPage() {
   const user = await db.user.findUnique({
     where: { id: session.id },
     select: {
+      id: true,
       name: true,
       phone: true,
+      avatar: { select: { updatedAt: true } },
       email: true,
       favoriteSalon: { select: { id: true, name: true, slug: true, city: true, address: true } },
       clientAppointments: {
@@ -132,8 +136,24 @@ export default async function AccountPage() {
       <SiteHeader />
       <main className="mx-auto max-w-5xl px-6 py-24">
         <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">Moj nalog</p>
-        <h1 className="mt-6 font-serif text-6xl leading-none md:text-8xl">{user.name}</h1>
-        <p className="mt-4 text-sm text-neutral-500">{user.phone ? formatPhone(user.phone) : user.email}</p>
+        <div className="mt-6 flex items-center gap-6">
+          <Avatar name={user.name} src={avatarUrl(user.id, user.avatar)} size={72} />
+          <h1 className="font-serif text-5xl leading-none md:text-7xl">{user.name}</h1>
+        </div>
+        <p className="mt-4 text-sm text-neutral-500">
+          {[user.phone ? formatPhone(user.phone) : null, user.email].filter(Boolean).join(" · ")} ·{" "}
+          <Link href="/nalog/profil" className="underline underline-offset-4 hover:text-burgundy">
+            Uredi profil
+          </Link>
+        </p>
+        {!user.phone && (
+          <p className="mt-8 border-l-2 border-burgundy pl-4 text-burgundy" role="note">
+            Dodajte broj telefona i sliku, da vas salon može pozvati ako je potrebno.{" "}
+            <Link href="/nalog/profil" className="underline underline-offset-4">
+              Dopunite profil
+            </Link>
+          </p>
+        )}
 
         <section className="mt-20 grid gap-6 border border-neutral-200 p-8 md:grid-cols-[1fr_auto] md:items-center">
           <div>

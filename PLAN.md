@@ -32,9 +32,11 @@ Jedna aplikacija (Next.js + TypeScript + PostgreSQL + Prisma) za sve salone. Sva
 
 Moj termin: posle online zakazivanja mušterija dobija link `/termin/{token}` (na ekranu, a sa nalogom i mejlom potvrde). Preko njega otkazuje ili pomera termin (do `cancelCutoffHours` sati pre, podešava salon) i dodaje ga u kalendar telefona (`.ics`). Vlasnik dobija mejl za svako otkazivanje i pomeranje.
 
+Profil mušterije (`/nalog/profil`): ime, telefon (obavezan za profil, banner na `/nalog` dok ga nema) i profilna slika (u bazi, `user_avatars`, JPG/PNG/WebP do 1 MB, u browseru se smanji na 400×400). Salon vidi telefon i sliku mušterije u rasporedu i u porukama; sliku (`/api/avatar/{id}`) mogu da otvore samo vlasnik naloga i osoblje salona sa kojim je mušterija imala termin, hitan zahtev ili razgovor.
+
 Email podsetnik: `GET /api/cron/reminders` (zaštićen `CRON_SECRET`-om) šalje mušterijama sa nalogom mejl za termine u narednih 24h, jednom po terminu. Treba ga zvati svakih ~30 min (cron na hostingu), a slanje traži `RESEND_API_KEY` i `MAIL_FROM` (bez ključa se mejl samo ispiše u log). Gosti bez naloga nemaju email, pa nemaju ni podsetnik.
 
-Sledeće: zaboravljena lozinka, potvrda emaila, SMS/Viber podsetnici, chat.
+Sledeće: zaboravljena lozinka i potvrda email adrese (mejlom). Bez SMS-a: podsetnici i potvrde idu samo emailom.
 
 ## Pokretanje lokalno
 ```
