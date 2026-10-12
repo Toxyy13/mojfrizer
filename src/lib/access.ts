@@ -34,3 +34,10 @@ export async function hasSalonAccess(salonId: string): Promise<boolean> {
   });
   return count > 0;
 }
+
+/** Settings (prices, hours, staff) can be changed only by the salon owner. */
+export async function requireSalonOwner(slug: string): Promise<SalonAccess> {
+  const access = await requireSalonAccess(slug);
+  if (access.salon.ownerId !== access.user.id) redirect(`/admin/${slug}`);
+  return access;
+}
