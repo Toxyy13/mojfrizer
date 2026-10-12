@@ -43,6 +43,7 @@ interface BookingRow {
   endTime: Date;
   status: AppointmentStatus;
   price: number;
+  manageToken: string;
   salon: { name: string; slug: string };
   service: { name: string };
   worker: { displayName: string };
@@ -91,6 +92,11 @@ function BookingList({ title, bookings, empty, upcoming }: { title: string; book
             <div className="shrink-0 text-right">
               <span className={`badge ${STATUS_BADGE[b.status]}`}>{STATUS_LABEL[b.status]}</span>
               <p className="mt-1 text-sm tabular-nums text-muted">{formatPrice(b.price)}</p>
+              {b.status === "BOOKED" && (
+                <Link href={`/termin/${b.manageToken}`} className="link mt-1 inline-block text-xs text-muted">
+                  Otkaži / pomeri
+                </Link>
+              )}
             </div>
           </li>
         ))}
@@ -121,6 +127,7 @@ export default async function AccountPage() {
           endTime: true,
           status: true,
           price: true,
+          manageToken: true,
           salon: { select: { name: true, slug: true } },
           service: { select: { name: true } },
           worker: { select: { displayName: true } },

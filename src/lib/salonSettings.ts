@@ -85,6 +85,7 @@ export const salonInfoSchema = z.object({
   city: z.string().trim().min(2, "Upišite grad").max(60),
   phone: z.string().trim().max(30),
   slotStepMinutes: z.coerce.number().int().refine((v) => [5, 10, 15, 20, 30, 60].includes(v), "Neispravan korak"),
+  cancelCutoffHours: z.coerce.number().int().min(0).max(72),
 });
 
 export const dayOffSchema = z.object({
