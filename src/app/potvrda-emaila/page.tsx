@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SiteHeader } from "@/components/SiteHeader";
+import { AuthShell } from "@/components/AuthShell";
 import { db } from "@/lib/db";
 import { consumeToken } from "@/lib/emailTokens";
 
@@ -27,22 +27,15 @@ export default async function VerifyEmailPage({ searchParams }: PageProps) {
     }
   }
   return (
-    <>
-      <SiteHeader />
-      <main className="mx-auto max-w-md px-6 py-24">
-        <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">Nalog</p>
-        <h1 className="mt-6 font-serif text-6xl leading-none">{ok ? "Email potvrđen" : "Link ne važi"}</h1>
-        <p className="mt-6 text-neutral-600">
-          {ok
-            ? "Hvala! Od sada vam šaljemo podsetnike za termine na ovu adresu."
-            : "Link je istekao ili je već iskorišćen. Novi možete da zatražite u svom nalogu."}
-        </p>
-        <p className="mt-10 text-sm">
-          <Link href="/nalog" className="text-burgundy underline underline-offset-4">
-            Moj nalog
-          </Link>
-        </p>
-      </main>
-    </>
+    <AuthShell eyebrow="Nalog" title={ok ? "Email potvrđen" : "Link ne važi"}>
+      <p className={`rounded-xl px-4 py-3 text-sm ${ok ? "bg-forest-soft text-forest" : "bg-burgundy-soft text-burgundy"}`}>
+        {ok
+          ? "Hvala! Od sada vam šaljemo podsetnike za termine na ovu adresu."
+          : "Link je istekao ili je već iskorišćen. Novi možete da zatražite u svom nalogu."}
+      </p>
+      <Link href="/nalog" className="btn-primary mt-6 w-full">
+        Moj nalog
+      </Link>
+    </AuthShell>
   );
 }

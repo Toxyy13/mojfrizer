@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AvatarUploader } from "@/components/AvatarUploader";
-import { SiteHeader } from "@/components/SiteHeader";
+import { AuthShell } from "@/components/AuthShell";
 import { getSessionUser } from "@/lib/auth";
 import { avatarUrl } from "@/lib/avatar";
 import { db } from "@/lib/db";
@@ -22,22 +22,18 @@ export default async function ProfilePage() {
   if (!user) redirect("/prijava?next=/nalog/profil");
 
   return (
-    <>
-      <SiteHeader />
-      <main className="mx-auto max-w-md px-6 py-24">
-        <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">Moj nalog</p>
-        <h1 className="mt-6 font-serif text-6xl leading-none">Profil</h1>
-        <p className="mt-6 text-neutral-600">
-          Slika i telefon pomažu salonu da vas prepozna i pozove ako je potrebno.{" "}
-          <Link href="/nalog" className="underline underline-offset-4 hover:text-burgundy">
-            Nazad na nalog
-          </Link>
-        </p>
-        <div className="mt-12">
-          <AvatarUploader name={user.name} src={avatarUrl(user.id, user.avatar)} />
-        </div>
-        <ProfileForm name={user.name} phone={user.phone ? formatPhone(user.phone) : ""} />
-      </main>
-    </>
+    <AuthShell
+      eyebrow="Moj nalog"
+      title="Profil"
+      intro="Slika i telefon pomažu salonu da vas prepozna i pozove ako je potrebno."
+      footer={
+        <Link href="/nalog" className="link">
+          ← Nazad na nalog
+        </Link>
+      }
+    >
+      <AvatarUploader name={user.name} src={avatarUrl(user.id, user.avatar)} />
+      <ProfileForm name={user.name} phone={user.phone ? formatPhone(user.phone) : ""} />
+    </AuthShell>
   );
 }

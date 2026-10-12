@@ -9,11 +9,11 @@ export function GoogleButton({ next }: GoogleButtonProps) {
   if (!isGoogleConfigured()) return null;
   const href = next ? `/api/auth/google?next=${encodeURIComponent(next)}` : "/api/auth/google";
   return (
-    <div className="mt-12">
+    <div className="mb-6">
       {/* A full page navigation to the OAuth start route, not client-side routing. */}
       <a
         href={href}
-        className="flex items-center justify-center gap-3 border border-neutral-300 px-6 py-4 text-sm transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-neutral-500"
+        className="btn-secondary w-full"
       >
         <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
           <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z" />
@@ -23,7 +23,7 @@ export function GoogleButton({ next }: GoogleButtonProps) {
         </svg>
         Nastavi sa Google nalogom
       </a>
-      <p className="mt-8 text-center text-xs uppercase tracking-[0.2em] text-neutral-400">ili emailom</p>
+      <p className="mt-6 flex items-center gap-3 text-xs text-muted before:h-px before:flex-1 before:bg-line after:h-px after:flex-1 after:bg-line">ili emailom</p>
     </div>
   );
 }

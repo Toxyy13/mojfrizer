@@ -31,16 +31,18 @@ export default async function CustomerChatPage({ params }: PageProps) {
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto max-w-2xl px-6 py-16">
-        <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">Poruke</p>
-        <h1 className="mt-4 font-serif text-5xl leading-none">{salon.name}</h1>
-        <p className="mt-3 text-sm text-neutral-600">
-          Pitajte salon za termin ili cenu. Odgovor stiže ovde.{" "}
-          <Link href={`/s/${salon.slug}`} className="underline underline-offset-4 hover:text-burgundy">
-            Nazad na salon
+      <main className="page max-w-2xl py-8 sm:py-12">
+        <header className="flex items-center gap-4">
+          <Link href={`/s/${salon.slug}`} className="btn-ghost size-11 shrink-0 p-0 text-lg" aria-label="Nazad na salon">
+            ←
           </Link>
-        </p>
-        <div className="mt-10">
+          <div className="min-w-0">
+            <p className="eyebrow">Poruke</p>
+            <h1 className="truncate font-serif text-3xl leading-tight sm:text-4xl">{salon.name}</h1>
+          </div>
+        </header>
+        <p className="mt-3 text-sm text-muted">Pitajte salon za termin ili cenu. Odgovor stiže ovde.</p>
+        <div className="mt-6">
           <ChatThread
             messages={messages}
             viewerIsSalon={false}

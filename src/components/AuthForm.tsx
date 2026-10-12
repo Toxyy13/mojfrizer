@@ -49,7 +49,7 @@ export function AuthForm({ action, fields, submitLabel, pendingLabel, next, hidd
         </p>
       )}
       {state.notice && (
-        <p className="border-l-2 border-forest pl-4 text-forest" role="status">
+        <p className="rounded-xl bg-forest-soft px-4 py-3 text-sm text-forest" role="status">
           {state.notice}
         </p>
       )}

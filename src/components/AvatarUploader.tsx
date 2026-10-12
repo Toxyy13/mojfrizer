@@ -65,7 +65,7 @@ export function AvatarUploader({ name, src }: AvatarUploaderProps) {
   };
 
   return (
-    <div className="flex items-center gap-6">
+    <div className="flex items-center gap-5 rounded-2xl bg-cream p-4">
       <Avatar name={name} src={src} size={96} />
       <div className="grid gap-2 text-sm">
         <input
@@ -82,12 +82,12 @@ export function AvatarUploader({ name, src }: AvatarUploaderProps) {
         />
         <label
           htmlFor="photo"
-          className="cursor-pointer justify-self-start border border-neutral-300 px-4 py-2 transition-colors hover:border-burgundy hover:text-burgundy"
+          className="btn-secondary btn-sm cursor-pointer justify-self-start"
         >
           {busy ? "Čuvam…" : src ? "Promeni sliku" : "Dodaj sliku"}
         </label>
         {src && (
-          <button type="button" onClick={() => void remove()} disabled={busy} className="justify-self-start text-neutral-500 underline underline-offset-4 hover:text-burgundy">
+          <button type="button" onClick={() => void remove()} disabled={busy} className="link justify-self-start text-xs text-muted">
             Ukloni sliku
           </button>
         )}
