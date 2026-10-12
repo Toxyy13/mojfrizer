@@ -1,3 +1,4 @@
+import { appUrl } from "./appUrl";
 import { db } from "./db";
 import { sendMail } from "./mail";
 import { fullAddress } from "./salonAddress";
@@ -45,7 +46,7 @@ export async function sendDueReminders(now: Date = new Date()): Promise<Reminder
   });
 
   const summary: ReminderSummary = { sent: 0, failed: 0 };
-  const baseUrl = process.env.APP_URL ?? "https://mojfrizer.com";
+  const baseUrl = appUrl();
   for (const a of due) {
     if (!a.client?.email) continue;
     // Claim first so two overlapping runs can't both send.

@@ -1,3 +1,4 @@
+import { appUrl } from "./appUrl";
 import { db } from "./db";
 import { getAvailableSlots } from "./booking";
 import { sendMail } from "./mail";
@@ -45,7 +46,7 @@ export async function notifyWaitlist(salonId: string, dateIso: string): Promise<
       },
       orderBy: { createdAt: "asc" },
     });
-    const baseUrl = process.env.APP_URL ?? "https://mojfrizer.com";
+    const baseUrl = appUrl();
     for (const e of entries) {
       if (!e.client.email) continue;
       const slots = await getAvailableSlots({ salonId, serviceId: e.serviceId, dateIso, enforceLeadTime: true });
