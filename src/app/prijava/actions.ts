@@ -6,6 +6,8 @@ import { landingPathFor, safeNextPath } from "@/lib/landing";
 
 export interface FormState {
   error: string | null;
+  /** Neutral confirmation shown under the form (e.g. "mail sent"). */
+  notice?: string;
   /** Submitted non-secret values, so the form keeps them after an error. */
   values?: Record<string, string>;
 }
