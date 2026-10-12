@@ -4,7 +4,7 @@ import { logout } from "@/app/prijava/actions";
 import { unreadForSalon } from "@/lib/chat";
 import { Logo } from "./Logo";
 
-export type AdminTab = "raspored" | "poruke" | "musterije" | "izvestaji" | "podesavanja";
+export type AdminTab = "raspored" | "poruke" | "musterije" | "izvestaji" | "podesavanja" | "qr";
 
 interface AdminShellProps {
   salon: { id: string; name: string; slug: string; ownerId: string };
@@ -21,6 +21,7 @@ export async function AdminShell({ salon, user, active, children }: AdminShellPr
     { id: "poruke", label: "Poruke", href: `/admin/${salon.slug}/poruke`, badge: unread },
   ];
   tabs.push({ id: "musterije", label: "Mušterije", href: `/admin/${salon.slug}/musterije` });
+  tabs.push({ id: "qr", label: "QR kod", href: `/admin/${salon.slug}/qr` });
   if (salon.ownerId === user.id) {
     tabs.push({ id: "izvestaji", label: "Izveštaji", href: `/admin/${salon.slug}/izvestaji` });
     tabs.push({ id: "podesavanja", label: "Podešavanja", href: `/admin/${salon.slug}/podesavanja` });
@@ -28,7 +29,7 @@ export async function AdminShell({ salon, user, active, children }: AdminShellPr
 
   return (
     <div className="min-h-dvh">
-      <header className="sticky top-0 z-40 border-b border-line bg-white/90 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-line bg-white/90 backdrop-blur-md print:hidden">
         <div className="page flex h-16 items-center gap-4">
           <Logo href={`/admin/${salon.slug}`} className="text-[22px]" />
           <span aria-hidden className="h-6 w-px bg-line" />

@@ -19,6 +19,8 @@ export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  // "Book again" links preselect the service and hairdresser.
+  searchParams?: Promise<{ usluga?: string; frizer?: string }>;
 }
 
 async function loadSalon(slug: string) {
@@ -41,8 +43,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 7];
 
-export default async function SalonPage({ params }: PageProps) {
+export default async function SalonPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const preselect = (await searchParams) ?? {};
   const salon = await loadSalon(slug);
   if (!salon) notFound();
 
@@ -203,6 +206,8 @@ export default async function SalonPage({ params }: PageProps) {
                 initialClient={customer ? { name: customer.name, phone: customer.phone ? formatPhone(customer.phone) : "" } : undefined}
                 requestUrgent={requestUrgent.bind(null, salon.slug)}
                 joinWaitlist={joinSalonWaitlist.bind(null, salon.slug)}
+                initialServiceId={preselect.usluga}
+                initialWorkerId={preselect.frizer}
               />
             </div>
           </div>
