@@ -155,8 +155,9 @@ model Appointment {
   guestName  String?
   guestPhone String?
   source      BookingSource
-  createdById String
-  createdBy   User            @relation("CreatedAppointments", fields: [createdById], references: [id])
+  // Null for online bookings made by a guest without an account.
+  createdById String?
+  createdBy   User?           @relation("CreatedAppointments", fields: [createdById], references: [id], onDelete: SetNull)
   startTime DateTime          @db.Timestamptz(3)
   endTime   DateTime          @db.Timestamptz(3)
   status    AppointmentStatus @default(BOOKED)
