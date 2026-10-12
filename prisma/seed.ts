@@ -14,16 +14,10 @@ interface SeedService {
   durationMinutes: number;
 }
 
-// PLACEHOLDER price list, replace with the real one.
+// Durations are estimates, confirm with the salon.
 const SERVICES: SeedService[] = [
-  { name: "Žensko šišanje", category: "Šišanje", priceRsd: 1500, durationMinutes: 45 },
-  { name: "Muško šišanje", category: "Šišanje", priceRsd: 900, durationMinutes: 30 },
-  { name: "Dečije šišanje", category: "Šišanje", priceRsd: 700, durationMinutes: 30 },
-  { name: "Pranje i feniranje", category: "Feniranje", priceRsd: 1000, durationMinutes: 30 },
-  { name: "Farbanje (kratka kosa)", category: "Farbanje", priceRsd: 3000, durationMinutes: 90 },
-  { name: "Farbanje (duga kosa)", category: "Farbanje", priceRsd: 4500, durationMinutes: 120 },
-  { name: "Pramenovi", category: "Farbanje", priceRsd: 5000, durationMinutes: 120 },
-  { name: "Svečana frizura", category: "Frizure", priceRsd: 2500, durationMinutes: 60 },
+  { name: "Muško šišanje", category: "Šišanje", priceRsd: 600, durationMinutes: 30 },
+  { name: "Pranje kose", category: "Pranje", priceRsd: 150, durationMinutes: 15 },
 ];
 
 const rsdToPara = (rsd: number): number => rsd * 100;
@@ -62,16 +56,13 @@ async function main(): Promise<void> {
       name: "Kod Olgice",
       slug: "kod-olgice",
       description: "Frizerski salon Kod Olgice.", // PLACEHOLDER
-      city: "Beograd", // PLACEHOLDER
-      address: "Ulica i broj", // PLACEHOLDER
+      city: "Niš",
+      address: "Nikole Pašića 27, 18000 Niš",
       phone: "+381 60 000 0000", // PLACEHOLDER
       ownerId: owner.id,
-      // PLACEHOLDER hours: Mon-Fri 09-20, Sat 09-15, Sunday closed.
+      // Mon-Sat 09-19, Sunday closed.
       workingHours: {
-        create: [
-          ...[1, 2, 3, 4, 5].map((dayOfWeek) => ({ dayOfWeek, opensAt: hm(9), closesAt: hm(20) })),
-          { dayOfWeek: 6, opensAt: hm(9), closesAt: hm(15) },
-        ],
+        create: [1, 2, 3, 4, 5, 6].map((dayOfWeek) => ({ dayOfWeek, opensAt: hm(9), closesAt: hm(19) })),
       },
       services: {
         create: SERVICES.map((service, index) => ({
@@ -83,7 +74,7 @@ async function main(): Promise<void> {
         })),
       },
       workers: {
-        create: [{ displayName: "Olgica", userId: owner.id, specialities: ["Šišanje", "Farbanje"] }],
+        create: [{ displayName: "Olgica", userId: owner.id, specialities: ["Šišanje"] }],
       },
     },
     include: { services: { orderBy: { sortOrder: "asc" } }, workers: true },
@@ -104,9 +95,9 @@ async function main(): Promise<void> {
 
   const worker = salon.workers[0];
   const haircut = salon.services[0];
-  const color = salon.services[4];
+  const wash = salon.services[1];
   const haircutStart = belgradeTime(1, 10);
-  const colorStart = belgradeTime(1, 12);
+  const washStart = belgradeTime(1, 12);
 
   // One online booking by the client, one booked by the salon for a phone customer.
   await prisma.appointment.createMany({
@@ -125,14 +116,14 @@ async function main(): Promise<void> {
       {
         salonId: salon.id,
         workerId: worker.id,
-        serviceId: color.id,
-        guestName: "Gospođa Ljubica",
+        serviceId: wash.id,
+        guestName: "Gospodin Dragan",
         guestPhone: "+381 64 111 2222",
         source: BookingSource.SALON,
         createdById: owner.id,
-        startTime: colorStart,
-        endTime: addMinutes(colorStart, color.durationMinutes),
-        price: color.price,
+        startTime: washStart,
+        endTime: addMinutes(washStart, wash.durationMinutes),
+        price: wash.price,
         note: "Zvala telefonom.",
       },
     ],
