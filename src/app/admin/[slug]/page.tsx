@@ -80,6 +80,11 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
           <Link href={`/admin/${salon.slug}/poruke`} className="underline underline-offset-4 hover:text-burgundy">
             Poruke{unreadMessages > 0 ? ` (${unreadMessages})` : ""}
           </Link>
+          {salon.ownerId === user.id && (
+            <Link href={`/admin/${salon.slug}/podesavanja`} className="underline underline-offset-4 hover:text-burgundy">
+              Podešavanja
+            </Link>
+          )}
           <Link href={`/s/${salon.slug}`} className="underline underline-offset-4 hover:text-burgundy">
             Javna stranica
           </Link>
