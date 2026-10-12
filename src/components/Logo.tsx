@@ -9,7 +9,7 @@ interface LogoProps {
 export function Logo({ href = "/", className = "" }: LogoProps) {
   return (
     <Link href={href} className={`font-serif text-[26px] leading-none tracking-tight ${className}`} aria-label="mojfrizer, početna">
-      moj<span className="italic">frizer</span>
+      <span className="font-extrabold">moj</span><span className="font-light">frizer</span>
       <span className="text-burgundy">.</span>
     </Link>
   );
