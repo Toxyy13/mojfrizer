@@ -2,6 +2,7 @@ import { Prisma, type BookingSource } from "@prisma/client";
 import { z } from "zod";
 import { db } from "./db";
 import { TIME_ZONE, isValidDateIso, isoWeekdayOf, localToUtc } from "./time";
+import { applyComboPricing } from "./comboPricing";
 
 // Customers can't book online a slot that starts sooner than this.
 const ONLINE_LEAD_MINUTES = 30;
@@ -156,7 +157,11 @@ export async function createAppointment(
         },
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
       );
-      if (created) return { ok: true, appointmentId: created.id, workerName: created.worker.displayName };
+      if (created) {
+        // Separate step so a pricing update never makes the slot look taken.
+        await db.$transaction((tx) => applyComboPricing(tx, created.id));
+        return { ok: true, appointmentId: created.id, workerName: created.worker.displayName };
+      }
     } catch (error) {
       if (!isConflictError(error)) throw error;
       // Someone grabbed this worker at the same moment; try the next free worker.

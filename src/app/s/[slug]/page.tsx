@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { formatPrice } from "@/lib/money";
+import { formatServicePrice } from "@/lib/money";
 import { TIME_ZONE, WEEKDAYS_SR, minutesToHHMM, todayIso, isoWeekdayOf } from "@/lib/time";
 import { serviceCategory, toBookingServices, toBookingWorkers, upcomingDays } from "@/lib/salonView";
 import { BookingForm } from "@/components/BookingForm";
@@ -108,7 +108,7 @@ export default async function SalonPage({ params }: PageProps) {
                       <li key={s.id} className="flex items-baseline gap-4 border-b border-neutral-200 py-4">
                         <span className="text-lg">{s.name}</span>
                         <span className="text-xs text-neutral-400">{s.durationMinutes} min</span>
-                        <span className="ml-auto font-mono">{formatPrice(s.price)}</span>
+                        <span className="ml-auto font-mono">{formatServicePrice(s)}</span>
                       </li>
                     ))}
                 </ul>
