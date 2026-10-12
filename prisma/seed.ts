@@ -39,15 +39,36 @@ function belgradeTime(daysAhead: number, hours: number, minutes = 0): Date {
   return new Date(`${ymd}T${time}${offset}`);
 }
 
-async function main(): Promise<void> {
-  const passwordHash = await hash("promeni-me", 10);
+// On a hosted deployment (Vercel) the seed runs against the real database: the owner's password
+// must come from SEED_OWNER_PASSWORD (the repo is public) and demo data is left out unless SEED_DEMO=1.
+const isHosted = Boolean(process.env.VERCEL);
+const withDemoData = !isHosted || process.env.SEED_DEMO === "1";
 
-  // PLACEHOLDER owner account.
-  const owner = await prisma.user.upsert({
-    where: { email: "olgica@mojfrizer.com" },
-    update: {},
-    create: { email: "olgica@mojfrizer.com", passwordHash, name: "Olgica", role: Role.ADMIN, emailVerifiedAt: new Date() },
-  });
+function ownerPassword(): string {
+  const fromEnv = process.env.SEED_OWNER_PASSWORD;
+  if (fromEnv) {
+    if (fromEnv.length < 8) throw new Error("SEED_OWNER_PASSWORD must be at least 8 characters");
+    return fromEnv;
+  }
+  if (isHosted) throw new Error("Set SEED_OWNER_PASSWORD in the hosting environment variables");
+  return "promeni-me";
+}
+
+async function main(): Promise<void> {
+  const ownerEmail = process.env.SEED_OWNER_EMAIL || "olgica@mojfrizer.com";
+  const existingOwner = await prisma.user.findUnique({ where: { email: ownerEmail }, select: { id: true } });
+  // Only hash (and require) a password when the owner account is actually created.
+  const owner =
+    existingOwner ??
+    (await prisma.user.create({
+      data: {
+        email: ownerEmail,
+        passwordHash: await hash(ownerPassword(), 10),
+        name: "Olgica",
+        role: Role.ADMIN,
+        emailVerifiedAt: new Date(),
+      },
+    }));
 
   const existing = await prisma.salon.findUnique({ where: { slug: "kod-olgice" } });
   if (existing) {
@@ -85,7 +106,13 @@ async function main(): Promise<void> {
     include: { services: { orderBy: { sortOrder: "asc" } }, workers: true },
   });
 
+  if (!withDemoData) {
+    console.log(`Seeded ${salon.name}: ${salon.services.length} services, no demo data.`);
+    return;
+  }
+
   // Demo client who marked Kod Olgice as favorite.
+  const passwordHash = await hash("promeni-me", 10);
   const client = await prisma.user.upsert({
     where: { email: "milica@example.com" },
     update: {},

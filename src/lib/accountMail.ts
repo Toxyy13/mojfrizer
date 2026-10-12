@@ -1,8 +1,9 @@
+import { appUrl } from "./appUrl";
 import { db } from "./db";
 import { issueToken } from "./emailTokens";
 import { sendMail } from "./mail";
 
-const baseUrl = (): string => process.env.APP_URL ?? "https://mojfrizer.com";
+const baseUrl = (): string => appUrl();
 
 /** Mails the "confirm your email" link. Does nothing for verified accounts or without an email. */
 export async function sendVerificationMail(userId: string): Promise<boolean> {

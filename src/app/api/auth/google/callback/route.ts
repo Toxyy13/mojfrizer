@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { appUrl } from "@/lib/appUrl";
 import { startSession } from "@/lib/auth";
 import { fetchProfile, OAUTH_COOKIE, userForProfile, type OAuthAttempt } from "@/lib/google";
 import { landingPathFor, safeNextPath } from "@/lib/landing";
@@ -18,7 +19,7 @@ function readAttempt(request: NextRequest): OAuthAttempt | null {
 
 /** Google sends the browser back here with ?code=…&state=… */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const origin = process.env.APP_URL ?? request.nextUrl.origin;
+  const origin = appUrl(request.nextUrl.origin);
   const fail = (): NextResponse => {
     const response = NextResponse.redirect(new URL("/prijava?greska=google", origin));
     response.cookies.delete({ name: OAUTH_COOKIE, path: "/api/auth/google" });

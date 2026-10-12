@@ -1,6 +1,7 @@
 import QRCode from "qrcode";
 import { AdminShell } from "@/components/AdminShell";
 import { requireSalonAccess } from "@/lib/access";
+import { appUrl } from "@/lib/appUrl";
 import { fullAddress } from "@/lib/salonAddress";
 import { PrintButton } from "./PrintButton";
 
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function SalonQrPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const { salon, user } = await requireSalonAccess(slug);
-  const url = `${process.env.APP_URL ?? "https://mojfrizer.com"}/s/${salon.slug}`;
+  const url = `${appUrl()}/s/${salon.slug}`;
   const svg = await QRCode.toString(url, { type: "svg", margin: 0, errorCorrectionLevel: "M", color: { dark: "#1f1d1b", light: "#ffffff" } });
   const svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   const pngDataUrl = await QRCode.toDataURL(url, { width: 1200, margin: 2, errorCorrectionLevel: "M" });

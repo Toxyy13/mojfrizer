@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { decodeJwt } from "jose";
 import { Prisma, Role } from "@prisma/client";
+import { appUrl } from "./appUrl";
 import { db } from "./db";
 import type { SessionUser } from "./auth";
 
@@ -24,7 +25,7 @@ function credentials(): { clientId: string; clientSecret: string } {
 }
 
 export function redirectUri(fallbackOrigin: string): string {
-  return `${process.env.APP_URL ?? fallbackOrigin}/api/auth/google/callback`;
+  return `${appUrl(fallbackOrigin)}/api/auth/google/callback`;
 }
 
 const base64Url = (buffer: Buffer): string => buffer.toString("base64url");

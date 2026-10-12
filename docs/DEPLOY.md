@@ -1,0 +1,34 @@
+# Objava sajta (Vercel + Neon + Resend)
+
+Redosled: baza, hosting, mejl, pa podsetnici. Tajne vrednosti se upisuju samo u Vercel (Settings → Environment Variables), nikad u chat ni u repo.
+
+## 1. Baza (Neon, besplatno)
+Na vercel.com u projektu: Storage → Create → Neon Postgres. Vercel sam doda `DATABASE_URL` i `DATABASE_URL_UNPOOLED`.
+
+## 2. Hosting (Vercel)
+1. Add New → Project → izaberi repo `Toxyy13/mojfrizer` (Framework: Next.js; build komanda je `vercel-build` iz `package.json`).
+2. Environment Variables (Production):
+   - `AUTH_SECRET`: nasumičan niz od 32+ znakova
+   - `CRON_SECRET`: drugi nasumičan niz
+   - `SEED_OWNER_PASSWORD`: lozinka za Olgicin admin nalog (min. 8 znakova)
+   - `APP_URL`: adresa sajta, dok nema domena npr. `https://mojfrizer.vercel.app`; kasnije `https://mojfrizer.com`
+   - `ROOT_DOMAIN`: `mojfrizer.com` (tek kad domen postoji)
+   - kasnije: `RESEND_API_KEY`, `MAIL_FROM`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ANTHROPIC_API_KEY`
+3. Deploy. Produkcijski build sam primeni migracije (`prisma migrate deploy`) i ubaci salon Kod Olgice bez demo podataka. Preview buildovi ne diraju bazu.
+
+Prijava vlasnika: `olgica@mojfrizer.com` + `SEED_OWNER_PASSWORD` (email se menja preko `SEED_OWNER_EMAIL` pre prvog deploya).
+
+## 3. Mejl (Resend)
+Nalog na resend.com, domen mojfrizer.com se potvrđuje DNS zapisima. Do tada se mejlovi samo upisuju u log (registracija radi, ali potvrde i podsetnici ne stižu). `MAIL_FROM` npr. `mojfrizer <podsetnik@mojfrizer.com>`.
+
+## 4. Podsetnici svakih 30 min
+Vercel Hobby dozvoljava cron samo jednom dnevno, pa poziv radi GitHub Actions (`.github/workflows/reminders.yml`). U GitHub repou: Settings → Secrets and variables → Actions → dodaj `APP_URL` i `CRON_SECRET` (ista vrednost kao na Vercelu).
+
+## 5. Google prijava (opciono)
+Google Cloud Console → Credentials → OAuth client ID (Web). Redirect URI: `${APP_URL}/api/auth/google/callback`. `GOOGLE_CLIENT_ID` i `GOOGLE_CLIENT_SECRET` u Vercel; dugme se pojavi samo kad su upisani.
+
+## 6. Domen
+Kad se kupi mojfrizer.com: Vercel → Domains → dodaj `mojfrizer.com` i `*.mojfrizer.com` (poddomeni salona), pa postavi `APP_URL` i `ROOT_DOMAIN`.
+
+## Lokalna provera produkcijskog builda
+`VERCEL=1 VERCEL_ENV=production SEED_OWNER_PASSWORD=... bash scripts/vercel-build.sh`

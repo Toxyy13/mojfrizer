@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { appUrl } from "./appUrl";
 import { db } from "./db";
 import { getAvailableSlots } from "./booking";
 import { applyComboPricing } from "./comboPricing";
@@ -17,10 +18,6 @@ export const appointmentWhenFormat = new Intl.DateTimeFormat("sr-Latn-RS", {
   hour: "2-digit",
   minute: "2-digit",
 });
-
-export function appUrl(): string {
-  return process.env.APP_URL ?? "https://mojfrizer.com";
-}
 
 export function manageUrl(token: string): string {
   return `${appUrl()}/termin/${token}`;
