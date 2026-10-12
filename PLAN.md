@@ -34,7 +34,7 @@ Profil mušterije (`/nalog/profil`): ime, telefon (obavezan za profil, banner na
 
 Email podsetnik: `GET /api/cron/reminders` (zaštićen `CRON_SECRET`-om) šalje mušterijama sa nalogom mejl za termine u narednih 24h, jednom po terminu. Treba ga zvati svakih ~30 min (cron na hostingu), a slanje traži `RESEND_API_KEY` i `MAIL_FROM` (bez ključa se mejl samo ispiše u log). Gosti bez naloga nemaju email, pa nemaju ni podsetnik.
 
-Sledeće: zaboravljena lozinka, potvrda emaila, SMS/Viber podsetnici, chat.
+Sledeće: zaboravljena lozinka i potvrda email adrese (mejlom). Bez SMS-a: podsetnici i potvrde idu samo emailom.
 
 ## Pokretanje lokalno
 ```
