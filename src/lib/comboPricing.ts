@@ -13,7 +13,8 @@ function normalizePhone(phone: string | null): string | null {
 /**
  * Recomputes prices of one customer's appointments on one day in a salon.
  * A service with comboPrice is charged comboPrice when the same visit (same customer,
- * same day) also has another active service, and its normal price otherwise.
+ * same day) also has another active service, either in the same appointment or in
+ * another one, and its normal price otherwise. Appointment.price is the sum of its services.
  * Called after any booking or status change that can add or remove a service from a visit.
  */
 export async function applyComboPricing(tx: Prisma.TransactionClient, appointmentId: string): Promise<void> {
@@ -25,7 +26,9 @@ export async function applyComboPricing(tx: Prisma.TransactionClient, appointmen
       salonId: anchor.salonId,
       startTime: { gte: localToUtc(dayIso, 0, TIME_ZONE), lt: localToUtc(dayIso, 24 * 60, TIME_ZONE) },
     },
-    include: { service: { select: { price: true, comboPrice: true } } },
+    include: {
+      services: { include: { service: { select: { price: true, comboPrice: true } } } },
+    },
   });
 
   const anchorPhone = normalizePhone(anchor.guestPhone);
@@ -34,12 +37,26 @@ export async function applyComboPricing(tx: Prisma.TransactionClient, appointmen
       (anchor.clientId !== null && a.clientId === anchor.clientId) ||
       (anchorPhone !== null && normalizePhone(a.guestPhone) === anchorPhone),
   );
-  const active = visit.filter((a) => (ACTIVE_STATUSES as readonly string[]).includes(a.status));
+  const isActive = (status: string): boolean => (ACTIVE_STATUSES as readonly string[]).includes(status);
+  // Every service the customer has that day, in active appointments.
+  const activeItems = visit
+    .filter((a) => isActive(a.status))
+    .flatMap((a) => a.services.map((item) => ({ appointmentId: a.id, itemId: item.id, serviceId: item.serviceId })));
 
   for (const appt of visit) {
-    if (appt.service.comboPrice === null || appt.status === "COMPLETED") continue;
-    const hasOtherService = active.some((a) => a.id !== appt.id && a.serviceId !== appt.serviceId);
-    const price = hasOtherService ? appt.service.comboPrice : appt.service.price;
-    if (price !== appt.price) await tx.appointment.update({ where: { id: appt.id }, data: { price } });
+    if (appt.status === "COMPLETED") continue; // past revenue stays as charged
+    let total = 0;
+    for (const item of appt.services) {
+      let price = item.service.price;
+      if (item.service.comboPrice !== null) {
+        const hasOtherService = activeItems.some((o) => o.itemId !== item.id && o.serviceId !== item.serviceId);
+        if (hasOtherService) price = item.service.comboPrice;
+      }
+      if (price !== item.price) await tx.appointmentService.update({ where: { id: item.id }, data: { price } });
+      total += price;
+    }
+    if (appt.services.length > 0 && total !== appt.price) {
+      await tx.appointment.update({ where: { id: appt.id }, data: { price: total } });
+    }
   }
 }

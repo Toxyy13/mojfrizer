@@ -8,6 +8,7 @@ import { appointmentIdsForClient, displayPhone, isValidClientKey, listSalonClien
 import { formatRsd } from "@/lib/money";
 import { TIME_ZONE, formatLocalTime } from "@/lib/time";
 import { saveClientNote } from "../actions";
+import { servicesLabel } from "@/lib/visit";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ export default async function ClientPage({ params, searchParams }: PageProps) {
 
   const history = await db.appointment.findMany({
     where: { salonId: salon.id, id: { in: await appointmentIdsForClient(salon.id, key) } },
-    include: { service: { select: { name: true } }, worker: { select: { displayName: true } } },
+    include: { service: { select: { name: true } }, services: { select: { service: { select: { name: true } } }, orderBy: { sortOrder: "asc" as const } }, worker: { select: { displayName: true } } },
     orderBy: { startTime: "desc" },
   });
 
@@ -101,7 +102,7 @@ export default async function ClientPage({ params, searchParams }: PageProps) {
               <span className="tabular-nums">
                 {shortDate(a.startTime)} {formatLocalTime(a.startTime, TIME_ZONE)}
               </span>
-              <span>{a.service.name}</span>
+              <span>{servicesLabel(a)}</span>
               <span className="text-muted">{a.worker.displayName}</span>
               {a.note && <span className="text-xs italic text-muted">„{a.note}"</span>}
               <span className="ml-auto tabular-nums">{formatRsd(a.price)}</span>

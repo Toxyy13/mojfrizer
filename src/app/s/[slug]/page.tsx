@@ -32,6 +32,7 @@ async function loadSalon(slug: string) {
       daysOff: { where: { date: { gte: new Date(`${todayIso(TIME_ZONE)}T00:00:00Z`) } } },
       services: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
       workers: { where: { isActive: true }, orderBy: { displayName: "asc" } },
+      serviceCombos: { select: { serviceIds: true, durationMinutes: true } },
     },
   });
 }
@@ -242,7 +243,8 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
                 initialClient={customer ? { name: customer.name, phone: customer.phone ? formatPhone(customer.phone) : "" } : undefined}
                 requestUrgent={requestUrgent.bind(null, salon.slug)}
                 joinWaitlist={joinSalonWaitlist.bind(null, salon.slug)}
-                initialServiceId={preselect.usluga}
+                initialServiceIds={preselect.usluga?.split(",").filter(Boolean)}
+                combos={salon.serviceCombos}
                 initialWorkerId={preselect.frizer}
               />
             </div>

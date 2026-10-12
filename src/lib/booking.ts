@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "./db";
 import { TIME_ZONE, isValidDateIso, isoWeekdayOf, localToUtc } from "./time";
 import { applyComboPricing } from "./comboPricing";
+import { MAX_SERVICES_PER_VISIT, resolveVisit, visitItemPrices } from "./visit";
 
 // Customers can't book online a slot that starts sooner than this.
 const ONLINE_LEAD_MINUTES = 30;
@@ -13,20 +14,28 @@ export interface Slot {
   workerIds: string[]; // workers free at this time
 }
 
-interface SlotQuery {
+type SlotQuery = {
   salonId: string;
-  serviceId: string;
   dateIso: string;
   workerId?: string | null;
   enforceLeadTime: boolean;
+} & (
+  | { serviceIds: string[] } // a new visit: its length follows from the services and the salon's combos
+  | { durationMinutes: number } // moving an existing appointment: keep its length
+);
+
+async function slotDuration(query: SlotQuery): Promise<number | null> {
+  if ("durationMinutes" in query) return query.durationMinutes > 0 ? query.durationMinutes : null;
+  const visit = await resolveVisit(query.salonId, query.serviceIds);
+  return visit?.durationMinutes ?? null;
 }
 
-/** Free start times for a service on a day: opening hours minus days off minus busy workers. */
+/** Free start times for a visit on a day: opening hours minus days off minus busy workers. */
 export async function getAvailableSlots(query: SlotQuery): Promise<Slot[]> {
   if (!isValidDateIso(query.dateIso)) return [];
-  const [salon, service, hours, dayOff] = await Promise.all([
+  const [salon, durationMinutes, hours, dayOff] = await Promise.all([
     db.salon.findFirst({ where: { id: query.salonId, isActive: true } }),
-    db.service.findFirst({ where: { id: query.serviceId, salonId: query.salonId, isActive: true } }),
+    slotDuration(query),
     db.workingHours.findMany({
       where: { salonId: query.salonId, dayOfWeek: isoWeekdayOf(query.dateIso) },
       orderBy: { opensAt: "asc" },
@@ -35,7 +44,7 @@ export async function getAvailableSlots(query: SlotQuery): Promise<Slot[]> {
       where: { salonId_date: { salonId: query.salonId, date: new Date(`${query.dateIso}T00:00:00Z`) } },
     }),
   ]);
-  if (!salon || !service || hours.length === 0 || dayOff) return [];
+  if (!salon || durationMinutes === null || hours.length === 0 || dayOff) return [];
 
   const workers = await db.workerProfile.findMany({
     where: { salonId: salon.id, isActive: true, ...(query.workerId ? { id: query.workerId } : {}) },
@@ -61,12 +70,12 @@ export async function getAvailableSlots(query: SlotQuery): Promise<Slot[]> {
 
   const earliest = Date.now() + (query.enforceLeadTime ? ONLINE_LEAD_MINUTES * 60_000 : 0);
   const slots: Slot[] = [];
-  // Several ranges per day are possible (e.g. a lunch break); a service must fit inside one range.
+  // Several ranges per day are possible (e.g. a lunch break); a visit must fit inside one range.
   for (const range of hours) {
-    for (let m = range.opensAt; m + service.durationMinutes <= range.closesAt; m += salon.slotStepMinutes) {
+    for (let m = range.opensAt; m + durationMinutes <= range.closesAt; m += salon.slotStepMinutes) {
       const start = localToUtc(query.dateIso, m, TIME_ZONE);
       if (start.getTime() < earliest) continue;
-      const end = new Date(start.getTime() + service.durationMinutes * 60_000);
+      const end = new Date(start.getTime() + durationMinutes * 60_000);
       const free = workers
         .filter((w) => !busy.some((b) => b.workerId === w.id && b.startTime < end && b.endTime > start))
         .map((w) => w.id);
@@ -77,7 +86,10 @@ export async function getAvailableSlots(query: SlotQuery): Promise<Slot[]> {
 }
 
 export const bookingInputSchema = z.object({
-  serviceId: z.string().min(1),
+  serviceIds: z
+    .array(z.string().min(1))
+    .min(1, "Izaberite bar jednu uslugu")
+    .max(MAX_SERVICES_PER_VISIT, `Najviše ${MAX_SERVICES_PER_VISIT} usluga u jednom terminu`),
   workerId: z.string().optional().nullable(),
   dateIso: z.string().refine(isValidDateIso, "Neispravan datum"),
   minute: z.coerce.number().int().min(0).max(24 * 60),
@@ -110,12 +122,13 @@ export async function createAppointment(
   input: BookingInput,
   actor: BookingActor,
 ): Promise<BookingResult> {
-  const service = await db.service.findFirst({ where: { id: input.serviceId, salonId, isActive: true } });
-  if (!service) return { ok: false, error: "Usluga nije pronađena." };
+  const visit = await resolveVisit(salonId, input.serviceIds);
+  if (!visit) return { ok: false, error: "Usluga nije pronađena." };
+  const itemPrices = visitItemPrices(visit.services);
 
   const slots = await getAvailableSlots({
     salonId,
-    serviceId: service.id,
+    durationMinutes: visit.durationMinutes,
     dateIso: input.dateIso,
     workerId: input.workerId || null,
     enforceLeadTime: actor.source === "ONLINE",
@@ -124,7 +137,7 @@ export async function createAppointment(
   if (!slot) return { ok: false, error: "Termin više nije slobodan. Izaberite drugi." };
 
   const startTime = localToUtc(input.dateIso, input.minute, TIME_ZONE);
-  const endTime = new Date(startTime.getTime() + service.durationMinutes * 60_000);
+  const endTime = new Date(startTime.getTime() + visit.durationMinutes * 60_000);
 
   for (const workerId of slot.workerIds) {
     try {
@@ -144,14 +157,17 @@ export async function createAppointment(
             data: {
               salonId,
               workerId,
-              serviceId: service.id,
+              serviceId: visit.services[0].id,
+              services: {
+                create: visit.services.map((s, i) => ({ serviceId: s.id, price: itemPrices[i], sortOrder: i })),
+              },
               clientId: actor.clientId,
               guestName: input.clientName,
               guestPhone: input.clientPhone,
               source: actor.source,
               createdById: actor.createdById,
               note: input.note || null,
-              price: service.price,
+              price: itemPrices.reduce((sum, p) => sum + p, 0),
               startTime,
               endTime,
             },

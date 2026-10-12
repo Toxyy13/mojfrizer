@@ -14,6 +14,7 @@ import { formatPrice } from "@/lib/money";
 import { formatPhone } from "@/lib/phone";
 import { fullAddress } from "@/lib/salonAddress";
 import { canReview } from "@/lib/reviews";
+import { servicesLabel } from "@/lib/visit";
 import { logout } from "../prijava/actions";
 import { resendVerification } from "./actions";
 
@@ -49,7 +50,12 @@ interface BookingRow {
   review: { id: string } | null;
   salon: { name: string; slug: string };
   service: { id: string; name: string };
+  services: { service: { id: string; name: string } }[];
   worker: { id: string; displayName: string };
+}
+
+function bookedServiceIds(b: BookingRow): string[] {
+  return b.services.length > 0 ? b.services.map((i) => i.service.id) : [b.service.id];
 }
 
 const dayFormat = new Intl.DateTimeFormat("sr-Latn-RS", { timeZone: TIME_ZONE, day: "numeric" });
@@ -86,7 +92,7 @@ function BookingList({ title, bookings, empty, upcoming }: { title: string; book
                 <span aria-hidden>{whenFormat.format(b.startTime)}</span>
               </p>
               <p className="mt-0.5 truncate text-sm text-muted">
-                {b.service.name} · {b.worker.displayName} ·{" "}
+                {servicesLabel(b)} · {b.worker.displayName} ·{" "}
                 <Link href={`/s/${b.salon.slug}`} className="link">
                   {b.salon.name}
                 </Link>
@@ -107,7 +113,7 @@ function BookingList({ title, bookings, empty, upcoming }: { title: string; book
               )}
               {b.status !== "BOOKED" && (
                 <Link
-                  href={`/s/${b.salon.slug}?usluga=${b.service.id}&frizer=${b.worker.id}#zakazivanje`}
+                  href={`/s/${b.salon.slug}?usluga=${bookedServiceIds(b).join(",")}&frizer=${b.worker.id}#zakazivanje`}
                   className="link mt-1 inline-block text-xs text-muted"
                 >
                   Zakaži ponovo
@@ -148,6 +154,7 @@ export default async function AccountPage() {
           review: { select: { id: true } },
           salon: { select: { name: true, slug: true } },
           service: { select: { id: true, name: true } },
+          services: { select: { service: { select: { id: true, name: true } } }, orderBy: { sortOrder: "asc" } },
           worker: { select: { id: true, displayName: true } },
         },
       },

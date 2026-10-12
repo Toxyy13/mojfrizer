@@ -3,9 +3,10 @@ import { z } from "zod";
 import { db } from "./db";
 import { applyComboPricing } from "./comboPricing";
 import { TIME_ZONE, isValidDateIso, localToUtc, todayIso } from "./time";
+import { MAX_SERVICES_PER_VISIT, resolveVisit, visitItemPrices } from "./visit";
 
 export const urgentRequestSchema = z.object({
-  serviceId: z.string().min(1),
+  serviceIds: z.array(z.string().min(1)).min(1, "Izaberite uslugu").max(MAX_SERVICES_PER_VISIT),
   dateIso: z.string().refine(isValidDateIso, "Neispravan datum"),
   clientName: z.string().trim().min(2, "Unesite ime i prezime").max(80),
   clientPhone: z
@@ -25,12 +26,13 @@ export async function createUrgentRequest(
   clientId: string | null,
 ): Promise<ActionResult> {
   if (input.dateIso < todayIso(TIME_ZONE)) return { ok: false, error: "Izabrani dan je prošao." };
-  const service = await db.service.findFirst({ where: { id: input.serviceId, salonId, isActive: true } });
-  if (!service) return { ok: false, error: "Usluga nije pronađena." };
+  const visit = await resolveVisit(salonId, input.serviceIds);
+  if (!visit) return { ok: false, error: "Usluga nije pronađena." };
   await db.urgentRequest.create({
     data: {
       salonId,
-      serviceId: service.id,
+      serviceId: visit.services[0].id,
+      serviceIds: visit.services.map((s) => s.id),
       clientId,
       guestName: input.clientName,
       guestPhone: input.clientPhone,
@@ -71,7 +73,6 @@ export async function swapForUrgentRequest(
       if (!request) return { ok: false, error: "Zahtev nije pronađen ili je već rešen." };
       const booked = await tx.appointment.findFirst({
         where: { id: input.appointmentId, salonId, status: "BOOKED" },
-        include: { service: true },
       });
       if (!booked) return { ok: false, error: "Izabrani termin nije pronađen." };
 
@@ -79,9 +80,16 @@ export async function swapForUrgentRequest(
       if (movedStart.getTime() === booked.startTime.getTime()) {
         return { ok: false, error: "Novo vreme mora biti drugačije od starog." };
       }
-      const movedEnd = new Date(movedStart.getTime() + booked.service.durationMinutes * 60_000);
+      // The moved customer keeps their booking's length; the urgent visit gets its own.
+      const movedEnd = new Date(movedStart.getTime() + (booked.endTime.getTime() - booked.startTime.getTime()));
+      const requested = request.serviceIds.length > 0 ? request.serviceIds : [request.serviceId];
+      const visit = (await resolveVisit(salonId, requested, tx)) ?? {
+        services: [request.service],
+        durationMinutes: request.service.durationMinutes,
+      };
+      const itemPrices = visitItemPrices(visit.services);
       const urgentStart = booked.startTime;
-      const urgentEnd = new Date(urgentStart.getTime() + request.service.durationMinutes * 60_000);
+      const urgentEnd = new Date(urgentStart.getTime() + visit.durationMinutes * 60_000);
 
       // Move the booked customer first, so their old slot is free for the urgent one.
       await tx.appointment.update({ where: { id: booked.id }, data: { startTime: movedStart, endTime: movedEnd } });
@@ -89,7 +97,10 @@ export async function swapForUrgentRequest(
         data: {
           salonId,
           workerId: booked.workerId,
-          serviceId: request.serviceId,
+          serviceId: visit.services[0].id,
+          services: {
+            create: visit.services.map((s, i) => ({ serviceId: s.id, price: itemPrices[i], sortOrder: i })),
+          },
           clientId: request.clientId,
           guestName: request.guestName,
           guestPhone: request.guestPhone,
@@ -97,7 +108,7 @@ export async function swapForUrgentRequest(
           createdById: ownerId,
           startTime: urgentStart,
           endTime: urgentEnd,
-          price: request.service.price,
+          price: itemPrices.reduce((sum, p) => sum + p, 0),
           note: `Hitno: ${request.reason}`,
         },
       });

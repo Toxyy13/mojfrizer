@@ -3,6 +3,7 @@ import { db } from "./db";
 import { sendMail } from "./mail";
 import { fullAddress } from "./salonAddress";
 import { TIME_ZONE } from "./time";
+import { servicesLabel } from "./visit";
 
 // Remind about appointments starting within this window. The lower bound skips visits booked
 // at the last minute, which don't need a reminder.
@@ -40,6 +41,7 @@ export async function sendDueReminders(now: Date = new Date()): Promise<Reminder
       client: { select: { name: true, email: true } },
       salon: { select: { name: true, slug: true, address: true, city: true, phone: true } },
       service: { select: { name: true } },
+      services: { select: { service: { select: { name: true } } }, orderBy: { sortOrder: "asc" as const } },
       worker: { select: { displayName: true } },
     },
     take: 200,
@@ -64,7 +66,7 @@ export async function sendDueReminders(now: Date = new Date()): Promise<Reminder
           "",
           `podsećamo vas na termin u salonu ${a.salon.name}:`,
           `${whenFormat.format(a.startTime)}`,
-          `Usluga: ${a.service.name} (${a.worker.displayName})`,
+          `Usluga: ${servicesLabel(a)} (${a.worker.displayName})`,
           `Adresa: ${fullAddress(a.salon)}`,
           a.salon.phone ? `Ako ne možete da dođete, javite se salonu: ${a.salon.phone}` : "",
           "",

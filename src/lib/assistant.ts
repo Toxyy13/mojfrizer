@@ -40,7 +40,7 @@ Pravila:
 - Piši običan tekst bez markdown naslova i tabela. Linkove na salone piši kao /s/naziv-salona.`;
 
 const PLATFORM_FACTS = `Kako radi platforma:
-- Termin se zakazuje na stranici salona: izabere se usluga, dan i slobodno vreme, pa se upiše ime i telefon (ili se prijavi nalogom).
+- Termin se zakazuje na stranici salona: izabere se jedna ili više usluga (npr. šišanje i pranje u istom terminu), dan i slobodno vreme, pa se upiše ime i telefon (ili se prijavi nalogom).
 - Mušterija sa nalogom vidi svoje termine na stranici „Moj nalog”, može da označi omiljeni salon i da piše salonu poruke.
 - Podsetnik za termin stiže emailom (ne SMS-om) mušterijama koje imaju nalog sa emailom.
 - Ako je dan potpuno popunjen, može se poslati hitan zahtev; salon tada pokušava da nađe zamenu.
@@ -56,6 +56,7 @@ async function loadSalon(slug: string) {
       daysOff: { where: { date: { gte: new Date(`${todayIso(TIME_ZONE)}T00:00:00Z`) } }, orderBy: { date: "asc" }, take: 20 },
       services: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
       workers: { where: { isActive: true }, orderBy: { displayName: "asc" } },
+      serviceCombos: true,
     },
   });
 }
@@ -73,6 +74,12 @@ function describeSalon(salon: SalonWithData): string {
   const services = salon.services
     .map((s) => `- id=${s.id} | ${s.name}${s.category ? ` (${s.category})` : ""} | ${formatServicePrice(s)} | ${s.durationMinutes} min${s.description ? ` | ${s.description}` : ""}`)
     .join("\n");
+  const combos = salon.serviceCombos
+    .map((c) => {
+      const names = salon.services.filter((s) => c.serviceIds.includes(s.id)).map((s) => s.name);
+      return names.length === c.serviceIds.length ? `- ${names.join(" + ")}: ${c.durationMinutes} min` : null;
+    })
+    .filter((line): line is string => line !== null);
   const daysOff = salon.daysOff.length
     ? salon.daysOff.map((d) => `- ${formatDateSr(d.date.toISOString().slice(0, 10))}${d.reason ? ` (${d.reason})` : ""}`).join("\n")
     : "- nema najavljenih neradnih dana";
@@ -91,21 +98,29 @@ Neradni dani:
 ${daysOff}
 
 Usluge i cene (id koristi samo za alat, ne pokazuj ga mušteriji):
-${services}`;
+${services}
+
+Više usluga može u jednom terminu. Trajanje zajedno:
+${combos.length ? combos.join("\n") : "- (nije posebno podešeno)"}
+- ostale kombinacije: zbir trajanja usluga`;
 }
 
 const SALON_TOOLS: Anthropic.Beta.BetaTool[] = [
   {
     name: "find_free_slots",
     description:
-      "Vraća slobodna vremena za online zakazivanje za jednu uslugu ovog salona na jedan dan. Koristi kad mušterija pita da li ima mesta, kad može da dođe ili za konkretan dan.",
+      "Vraća slobodna vremena za online zakazivanje za jednu ili više usluga ovog salona (u istom terminu) na jedan dan. Koristi kad mušterija pita da li ima mesta, kad može da dođe ili za konkretan dan.",
     input_schema: {
       type: "object",
       properties: {
-        service_id: { type: "string", description: "id usluge iz cenovnika" },
+        service_ids: {
+          type: "array",
+          items: { type: "string" },
+          description: "id-jevi usluga iz cenovnika koje mušterija želi u istom terminu",
+        },
         date: { type: "string", description: "Datum u formatu YYYY-MM-DD" },
       },
-      required: ["service_id", "date"],
+      required: ["service_ids", "date"],
       additionalProperties: false,
     },
     strict: true,
@@ -127,18 +142,28 @@ const PLATFORM_TOOLS: Anthropic.Beta.BetaTool[] = [
 ];
 
 async function findFreeSlots(salon: SalonWithData, input: Record<string, unknown>): Promise<string> {
-  const serviceId = typeof input.service_id === "string" ? input.service_id : "";
+  const serviceIds = Array.isArray(input.service_ids)
+    ? input.service_ids.filter((id): id is string => typeof id === "string")
+    : [];
   const date = typeof input.date === "string" ? input.date : "";
-  const service = salon.services.find((s) => s.id === serviceId);
-  if (!service) return "Nepoznata usluga. Koristi id iz cenovnika.";
+  const chosen = salon.services.filter((s) => serviceIds.includes(s.id));
+  if (chosen.length === 0 || chosen.length !== new Set(serviceIds).size) {
+    return "Nepoznata usluga. Koristi id iz cenovnika.";
+  }
+  const label = chosen.map((s) => s.name).join(" + ");
   const today = todayIso(TIME_ZONE);
   if (!isValidDateIso(date) || date < today || date > addDaysIso(today, SLOT_LOOKAHEAD_DAYS)) {
     return `Datum mora biti između ${today} i ${addDaysIso(today, SLOT_LOOKAHEAD_DAYS)}.`;
   }
-  const slots = await getAvailableSlots({ salonId: salon.id, serviceId, dateIso: date, enforceLeadTime: true });
+  const slots = await getAvailableSlots({
+    salonId: salon.id,
+    serviceIds: chosen.map((s) => s.id),
+    dateIso: date,
+    enforceLeadTime: true,
+  });
   const day = formatDateSr(date);
-  if (slots.length === 0) return `${day}: nema slobodnih termina za „${service.name}” (salon ne radi ili je sve zauzeto).`;
-  return `${day}, „${service.name}”: slobodno u ${slots.map((s) => minutesToHHMM(s.minute)).join(", ")}.`;
+  if (slots.length === 0) return `${day}: nema slobodnih termina za „${label}” (salon ne radi ili je sve zauzeto).`;
+  return `${day}, „${label}”: slobodno u ${slots.map((s) => minutesToHHMM(s.minute)).join(", ")}.`;
 }
 
 async function searchSalons(input: Record<string, unknown>): Promise<string> {

@@ -7,7 +7,8 @@ type Result = { ok: true } | { ok: false; error: string };
 
 interface ManageBookingProps {
   slug: string;
-  serviceId: string;
+  // The booking's manage token: free times are searched for this booking's own length.
+  token: string;
   days: Array<{ iso: string; label: string; closed: boolean }>;
   cancel: () => Promise<Result>;
   reschedule: (dateIso: string, minute: number) => Promise<Result>;
@@ -22,7 +23,7 @@ const chipOn = "border-burgundy bg-burgundy text-white hover:border-burgundy";
 const chipOff = "";
 
 /** Cancel or move a booking from the customer's manage link. */
-export function ManageBooking({ slug, serviceId, days, cancel, reschedule }: ManageBookingProps) {
+export function ManageBooking({ slug, token, days, cancel, reschedule }: ManageBookingProps) {
   const [mode, setMode] = useState<"idle" | "move" | "confirmCancel">("idle");
   const [dateIso, setDateIso] = useState<string | null>(null);
   const [slots, setSlots] = useState<number[] | null>(null);
@@ -35,7 +36,7 @@ export function ManageBooking({ slug, serviceId, days, cancel, reschedule }: Man
     let active = true;
     setSlots(null);
     setMinute(null);
-    fetch(`/api/salons/${slug}/slots?serviceId=${encodeURIComponent(serviceId)}&date=${dateIso}`)
+    fetch(`/api/salons/${slug}/slots?token=${encodeURIComponent(token)}&date=${dateIso}`)
       .then((r) => r.json() as Promise<SlotsResponse>)
       .then((data) => {
         if (active) setSlots((data.slots ?? []).map((s) => s.minute));
@@ -46,7 +47,7 @@ export function ManageBooking({ slug, serviceId, days, cancel, reschedule }: Man
     return () => {
       active = false;
     };
-  }, [dateIso, slug, serviceId]);
+  }, [dateIso, slug, token]);
 
   const run = (action: () => Promise<Result>): void => {
     setError(null);

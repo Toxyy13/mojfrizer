@@ -14,6 +14,7 @@ import { BookingForm } from "@/components/BookingForm";
 import { AdminShell } from "@/components/AdminShell";
 import { bookForClient, closeUrgentRequest, setAppointmentStatus, swapForUrgent } from "./actions";
 import { UrgentRequests, type UrgentRequestView } from "./UrgentRequests";
+import { appointmentServicesInclude, resolveVisit, servicesLabel } from "@/lib/visit";
 
 export const dynamic = "force-dynamic";
 
@@ -49,14 +50,15 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
   const [y, m] = dateIso.split("-").map(Number);
   const nextMonthIso = `${m === 12 ? y + 1 : y}-${String(m === 12 ? 1 : m + 1).padStart(2, "0")}-01`;
 
-  const [workers, services, hours, daysOff, appointments, dayRevenue, monthRevenue] = await Promise.all([
+  const [workers, services, combos, hours, daysOff, appointments, dayRevenue, monthRevenue] = await Promise.all([
     db.workerProfile.findMany({ where: { salonId: salon.id, isActive: true }, orderBy: { displayName: "asc" } }),
     db.service.findMany({ where: { salonId: salon.id, isActive: true }, orderBy: { sortOrder: "asc" } }),
+    db.serviceCombo.findMany({ where: { salonId: salon.id }, select: { serviceIds: true, durationMinutes: true } }),
     db.workingHours.findMany({ where: { salonId: salon.id } }),
     db.salonDayOff.findMany({ where: { salonId: salon.id, date: { gte: new Date(`${dateIso}T00:00:00Z`) } } }),
     db.appointment.findMany({
       where: { salonId: salon.id, startTime: { gte: dayStart, lt: dayEnd } },
-      include: { service: true, client: { select: { id: true, name: true, phone: true, avatar: { select: { updatedAt: true } } } } },
+      include: { service: true, ...appointmentServicesInclude, client: { select: { id: true, name: true, phone: true, avatar: { select: { updatedAt: true } } } } },
       orderBy: { startTime: "asc" },
     }),
     getRevenue(salon.id, dayStart, dayEnd),
@@ -172,7 +174,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
                             <span className={`badge ml-auto ${STATUS_STYLE[a.status].badge}`}>{STATUS_LABEL[a.status]}</span>
                           </div>
                           <p className="mt-1 text-sm text-muted">
-                            {a.service.name} · {formatRsd(a.price)} · <PhoneLink phone={a.guestPhone ?? a.client?.phone ?? null} />
+                            {servicesLabel(a)} · {formatRsd(a.price)} · <PhoneLink phone={a.guestPhone ?? a.client?.phone ?? null} />
                           </p>
                           {a.note && <p className="mt-2 rounded-lg bg-cream px-3 py-2 text-xs text-muted">„{a.note}”</p>}
                           {flags.get(clientKeyOf(a))?.note && (
@@ -210,6 +212,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
               slug={salon.slug}
               mode="salon"
               services={toBookingServices(services)}
+              combos={combos}
               workers={toBookingWorkers(workers)}
               days={upcomingDays(hours, daysOff, 21, dateIso)}
               submit={bookForClient.bind(null, salon.slug)}
@@ -231,21 +234,24 @@ async function loadUrgentRequests(salonId: string, todayIsoDate: string): Promis
   return Promise.all(
     requests.map(async (r) => {
       const dateIso = r.date.toISOString().slice(0, 10);
+      const visit = await resolveVisit(salonId, r.serviceIds.length > 0 ? r.serviceIds : [r.serviceId]);
+      const names = visit ? visit.services.map((s) => s.name).join(" + ") : r.service.name;
+      const durationMinutes = visit?.durationMinutes ?? r.service.durationMinutes;
       const booked = await db.appointment.findMany({
         where: {
           salonId,
           status: "BOOKED",
           startTime: { gte: localToUtc(dateIso, 0, TIME_ZONE), lt: localToUtc(dateIso, 24 * 60, TIME_ZONE) },
         },
-        include: { service: true, worker: true, client: { select: { name: true, phone: true } } },
+        include: { service: true, ...appointmentServicesInclude, worker: true, client: { select: { name: true, phone: true } } },
         orderBy: { startTime: "asc" },
       });
       return {
         id: r.id,
         name: r.guestName,
         phone: r.guestPhone,
-        serviceName: r.service.name,
-        durationMinutes: r.service.durationMinutes,
+        serviceName: names,
+        durationMinutes,
         dateIso,
         dateLabel: formatDateSr(dateIso),
         reason: r.reason,
@@ -253,7 +259,7 @@ async function loadUrgentRequests(salonId: string, todayIsoDate: string): Promis
           id: a.id,
           label: `${formatLocalTime(a.startTime, TIME_ZONE)} ${a.guestName ?? a.client?.name ?? "Mušterija"} (${
             a.guestPhone ?? a.client?.phone ?? "bez telefona"
-          }) · ${a.service.name} · ${a.worker.displayName}`,
+          }) · ${servicesLabel(a)} · ${a.worker.displayName}`,
         })),
       };
     }),

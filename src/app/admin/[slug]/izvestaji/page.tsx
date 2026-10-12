@@ -6,6 +6,7 @@ import { formatRating, getSalonRating, ratingCountLabel } from "@/lib/reviews";
 import { formatRsd } from "@/lib/money";
 import { getMonthReport, isValidMonthIso, shiftMonth, type ReportRow } from "@/lib/reports";
 import { TIME_ZONE, todayIso } from "@/lib/time";
+import { servicesLabel } from "@/lib/visit";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,7 @@ export default async function ReportsPage({ params, searchParams }: PageProps) {
       where: { salonId: salon.id },
       orderBy: { createdAt: "desc" },
       take: 10,
-      include: { appointment: { select: { service: { select: { name: true } }, worker: { select: { displayName: true } } } } },
+      include: { appointment: { select: { service: { select: { name: true } }, services: { select: { service: { select: { name: true } } }, orderBy: { sortOrder: "asc" as const } }, worker: { select: { displayName: true } } } } },
     }),
   ]);
 
@@ -126,7 +127,7 @@ export default async function ReportsPage({ params, searchParams }: PageProps) {
               <span>
                 {rv.comment ? `„${rv.comment}”` : <span className="text-muted">bez komentara</span>}
                 <span className="block text-xs text-muted">
-                  {rv.authorName} · {rv.appointment.service.name} · {rv.appointment.worker.displayName}
+                  {rv.authorName} · {servicesLabel(rv.appointment)} · {rv.appointment.worker.displayName}
                 </span>
               </span>
               <span className="text-xs text-muted tabular-nums">{rv.createdAt.toLocaleDateString("sr-Latn-RS")}</span>

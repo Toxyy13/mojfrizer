@@ -61,6 +61,7 @@ export async function getMonthReport(salonId: string, monthIso: string): Promise
         clientId: true,
         client: { select: { phone: true } },
         service: { select: { name: true } },
+        services: { select: { price: true, service: { select: { name: true } } } },
         worker: { select: { displayName: true } },
       },
     }),
@@ -86,15 +87,10 @@ export async function getMonthReport(salonId: string, monthIso: string): Promise
     keys.add(clientKeyOf(a));
     if (a.status !== "COMPLETED") continue;
     revenue += a.price;
-    for (const [map, label] of [
-      [services, a.service.name],
-      [workers, a.worker.displayName],
-    ] as const) {
-      const row = map.get(label) ?? { label, count: 0, revenuePara: 0 };
-      row.count += 1;
-      row.revenuePara += a.price;
-      map.set(label, row);
-    }
+    // A visit with several services counts once per service, with that service's own price.
+    const items = a.services.length > 0 ? a.services : [{ price: a.price, service: a.service }];
+    for (const item of items) addRow(services, item.service.name, item.price);
+    addRow(workers, a.worker.displayName, a.price);
     const dateIso = formatLocalDateIso(a.startTime, TIME_ZONE);
     const day = days.get(dateIso) ?? { dateIso, revenuePara: 0, count: 0 };
     day.count += 1;
@@ -115,4 +111,11 @@ export async function getMonthReport(salonId: string, monthIso: string): Promise
     byDay: [...days.values()].sort((a, b) => a.dateIso.localeCompare(b.dateIso)),
     previousRevenuePara: previous._sum.price ?? 0,
   };
+}
+
+function addRow(map: Map<string, ReportRow>, label: string, revenuePara: number): void {
+  const row = map.get(label) ?? { label, count: 0, revenuePara: 0 };
+  row.count += 1;
+  row.revenuePara += revenuePara;
+  map.set(label, row);
 }

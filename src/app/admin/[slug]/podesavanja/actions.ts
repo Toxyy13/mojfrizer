@@ -15,6 +15,7 @@ import {
   salonInfoSchema,
 } from "@/lib/salonSettings";
 import { TIME_ZONE, WEEKDAYS_SR, addDaysIso, isValidDateIso, localToUtc } from "@/lib/time";
+import { MAX_SERVICES_PER_VISIT } from "@/lib/visit";
 
 // Each action redirects back with ?ok= or ?greska= so the page can show the outcome without client JS.
 function back(slug: string, section: string, outcome: { ok: string } | { error: string }): never {
@@ -253,4 +254,38 @@ export async function removeWorkerTimeOff(slug: string, formData: FormData): Pro
   await db.workerTimeOff.deleteMany({ where: { id: String(formData.get("id") ?? ""), salonId: salon.id } });
   refresh(slug);
   back(slug, "odsustva", { ok: "Odsustvo je uklonjeno." });
+}
+
+/** Saves how long a set of services takes together, e.g. šišanje + pranje = 30 min. */
+export async function saveServiceCombo(slug: string, formData: FormData): Promise<void> {
+  const { salon } = await requireSalonOwner(slug);
+  const requested = [...new Set(formData.getAll("serviceIds").map(String))];
+  const durationMinutes = Number(formData.get("durationMinutes"));
+  if (requested.length < 2) back(slug, "kombinacije", { error: "Izaberite bar dve usluge." });
+  if (requested.length > MAX_SERVICES_PER_VISIT) {
+    back(slug, "kombinacije", { error: `Najviše ${MAX_SERVICES_PER_VISIT} usluga u kombinaciji.` });
+  }
+  if (!Number.isInteger(durationMinutes) || durationMinutes < 5 || durationMinutes > 480) {
+    back(slug, "kombinacije", { error: "Trajanje mora biti između 5 i 480 minuta." });
+  }
+  const found = await db.service.count({ where: { id: { in: requested }, salonId: salon.id } });
+  if (found !== requested.length) back(slug, "kombinacije", { error: "Usluga nije pronađena." });
+  const serviceIds = [...requested].sort();
+  // The same set of services replaces its old duration instead of making a duplicate.
+  const existing = await db.serviceCombo.findMany({ where: { salonId: salon.id }, select: { id: true, serviceIds: true } });
+  const same = existing.find((c) => [...c.serviceIds].sort().join(",") === serviceIds.join(","));
+  if (same) {
+    await db.serviceCombo.update({ where: { id: same.id }, data: { durationMinutes } });
+  } else {
+    await db.serviceCombo.create({ data: { salonId: salon.id, serviceIds, durationMinutes } });
+  }
+  refresh(slug);
+  back(slug, "kombinacije", { ok: same ? "Trajanje kombinacije je izmenjeno." : "Kombinacija je dodata." });
+}
+
+export async function removeServiceCombo(slug: string, formData: FormData): Promise<void> {
+  const { salon } = await requireSalonOwner(slug);
+  await db.serviceCombo.deleteMany({ where: { id: String(formData.get("id") ?? ""), salonId: salon.id } });
+  refresh(slug);
+  back(slug, "kombinacije", { ok: "Kombinacija je obrisana. Te usluge zajedno traju koliko i zbir." });
 }

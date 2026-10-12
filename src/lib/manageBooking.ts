@@ -7,6 +7,7 @@ import { sendMail } from "./mail";
 import { notifyWaitlist } from "./waitlist";
 import { fullAddress } from "./salonAddress";
 import { TIME_ZONE, formatLocalDateIso, localToUtc } from "./time";
+import { appointmentServicesInclude, servicesLabel } from "./visit";
 
 // Customers manage a booking through a secret link (/termin/{token}), with or without an account.
 
@@ -41,6 +42,7 @@ export async function loadManagedAppointment(token: string) {
         },
       },
       service: true,
+      ...appointmentServicesInclude,
       worker: { select: { id: true, displayName: true } },
       client: { select: { name: true, email: true } },
       review: { select: { rating: true, comment: true } },
@@ -103,12 +105,12 @@ export async function cancelByCustomer(token: string): Promise<ManageResult> {
   await notifyWaitlist(a.salonId, formatLocalDateIso(a.startTime, TIME_ZONE));
   await notifySalon(a, `Otkazan termin: ${customerName(a)}`, [
     `${customerName(a)} je otkazao/la termin:`,
-    `${appointmentWhenFormat.format(a.startTime)}, ${a.service.name} (${a.worker.displayName})`,
+    `${appointmentWhenFormat.format(a.startTime)}, ${servicesLabel(a)} (${a.worker.displayName})`,
   ]);
   return { ok: true };
 }
 
-/** Moves a booking to a new free time, keeping the same service and, when free, the same hairdresser. */
+/** Moves a booking to a new free time, keeping its services and length and, when free, the same hairdresser. */
 export async function rescheduleByCustomer(token: string, dateIso: string, minute: number): Promise<ManageResult> {
   const a = await loadManagedAppointment(token);
   if (!a) return { ok: false, error: "Termin nije pronađen." };
@@ -117,7 +119,7 @@ export async function rescheduleByCustomer(token: string, dateIso: string, minut
   }
   const slots = await getAvailableSlots({
     salonId: a.salonId,
-    serviceId: a.serviceId,
+    durationMinutes: Math.round((a.endTime.getTime() - a.startTime.getTime()) / 60_000),
     dateIso,
     workerId: null,
     enforceLeadTime: true,
@@ -126,7 +128,7 @@ export async function rescheduleByCustomer(token: string, dateIso: string, minut
   if (!slot) return { ok: false, error: "Taj termin više nije slobodan. Izaberite drugi." };
 
   const startTime = localToUtc(dateIso, minute, TIME_ZONE);
-  const endTime = new Date(startTime.getTime() + a.service.durationMinutes * 60_000);
+  const endTime = new Date(startTime.getTime() + (a.endTime.getTime() - a.startTime.getTime()));
   const oldDayIso = formatLocalDateIso(a.startTime, TIME_ZONE);
   const workerIds = slot.workerIds.includes(a.workerId)
     ? [a.workerId, ...slot.workerIds.filter((w) => w !== a.workerId)]
@@ -161,7 +163,7 @@ export async function rescheduleByCustomer(token: string, dateIso: string, minut
       if (oldDayIso !== dateIso) await repriceDay(a.salonId, oldDayIso, a.id);
       await notifyWaitlist(a.salonId, oldDayIso);
       await notifySalon(a, `Pomeren termin: ${customerName(a)}`, [
-        `${customerName(a)} je pomerio/la termin (${a.service.name}):`,
+        `${customerName(a)} je pomerio/la termin (${servicesLabel(a)}):`,
         `sa: ${appointmentWhenFormat.format(a.startTime)}`,
         `na: ${appointmentWhenFormat.format(startTime)}`,
       ]);
@@ -203,7 +205,7 @@ export async function sendBookingConfirmation(appointmentId: string): Promise<vo
         "",
         `vaš termin u salonu ${full.salon.name} je zakazan:`,
         appointmentWhenFormat.format(full.startTime),
-        `Usluga: ${full.service.name} (${full.worker.displayName})`,
+        `Usluga: ${servicesLabel(full)} (${full.worker.displayName})`,
         `Adresa: ${fullAddress(full.salon)}`,
         "",
         `Otkažite, pomerite ili dodajte u kalendar: ${manageUrl(full.manageToken)}`,
@@ -229,7 +231,7 @@ export function toIcs(a: ManagedAppointment): string {
     `DTSTAMP:${stamp(new Date())}`,
     `DTSTART:${stamp(a.startTime)}`,
     `DTEND:${stamp(a.endTime)}`,
-    `SUMMARY:${escape(`${a.service.name}, ${a.salon.name}`)}`,
+    `SUMMARY:${escape(`${servicesLabel(a)}, ${a.salon.name}`)}`,
     `LOCATION:${escape(fullAddress(a.salon))}`,
     `DESCRIPTION:${escape(`Frizer: ${a.worker.displayName}\nOtkaži ili pomeri: ${manageUrl(a.manageToken)}`)}`,
     "BEGIN:VALARM",
