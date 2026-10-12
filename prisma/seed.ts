@@ -18,6 +18,7 @@ interface SeedService {
 const SERVICES: SeedService[] = [
   { name: "Muško šišanje", category: "Šišanje", priceRsd: 600, durationMinutes: 30 },
   { name: "Pranje kose", category: "Pranje", priceRsd: 150, durationMinutes: 15 },
+  { name: "Brijanje", category: "Brijanje", priceRsd: 150, durationMinutes: 15 },
 ];
 
 const rsdToPara = (rsd: number): number => rsd * 100;
