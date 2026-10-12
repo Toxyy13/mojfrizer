@@ -44,6 +44,8 @@ interface BookingFormProps {
   days: Array<{ iso: string; label: string; closed: boolean }>;
   mode: "public" | "salon";
   submit: (values: BookingFormValues) => Promise<BookingResult>;
+  /** Prefills name and phone for a logged-in customer. */
+  initialClient?: { name: string; phone: string };
   // When set, a fully booked day offers an urgent request the salon reviews by hand.
   requestUrgent?: (values: UrgentFormValues) => Promise<UrgentResult>;
 }
@@ -60,15 +62,15 @@ const label = "text-xs uppercase tracking-[0.2em] text-neutral-500";
 const input =
   "mt-2 w-full border-b border-neutral-300 bg-transparent py-2 text-lg outline-none transition-colors focus:border-burgundy";
 
-export function BookingForm({ slug, services, workers, days, mode, submit, requestUrgent }: BookingFormProps) {
+export function BookingForm({ slug, services, workers, days, mode, submit, initialClient, requestUrgent }: BookingFormProps) {
   const [serviceId, setServiceId] = useState<string>("");
   const [workerId, setWorkerId] = useState<string>("");
   const [dateIso, setDateIso] = useState<string>(days.find((d) => !d.closed)?.iso ?? days[0]?.iso ?? "");
   const [minute, setMinute] = useState<number | null>(null);
   const [slots, setSlots] = useState<number[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [clientName, setClientName] = useState("");
-  const [clientPhone, setClientPhone] = useState("");
+  const [clientName, setClientName] = useState(initialClient?.name ?? "");
+  const [clientPhone, setClientPhone] = useState(initialClient?.phone ?? "");
   const [note, setNote] = useState("");
   const [result, setResult] = useState<BookingResult | null>(null);
   const [pending, startTransition] = useTransition();
@@ -144,8 +146,8 @@ export function BookingForm({ slug, services, workers, days, mode, submit, reque
   const reset = (): void => {
     setResult(null);
     setMinute(null);
-    setClientName("");
-    setClientPhone("");
+    setClientName(initialClient?.name ?? "");
+    setClientPhone(initialClient?.phone ?? "");
     setNote("");
     setReason("");
     setUrgent(false);

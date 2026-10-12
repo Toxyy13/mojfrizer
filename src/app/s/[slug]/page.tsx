@@ -6,6 +6,9 @@ import { formatServicePrice } from "@/lib/money";
 import { TIME_ZONE, WEEKDAYS_SR, minutesToHHMM, todayIso, isoWeekdayOf } from "@/lib/time";
 import { serviceCategory, toBookingServices, toBookingWorkers, upcomingDays } from "@/lib/salonView";
 import { BookingForm } from "@/components/BookingForm";
+import { FavoriteButton } from "@/components/FavoriteButton";
+import { getSessionUser } from "@/lib/auth";
+import { formatPhone } from "@/lib/phone";
 import { bookOnline, requestUrgent } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +42,11 @@ export default async function SalonPage({ params }: PageProps) {
   const salon = await loadSalon(slug);
   if (!salon) notFound();
 
+  const session = await getSessionUser();
+  const customer = session
+    ? await db.user.findUnique({ where: { id: session.id }, select: { name: true, phone: true, favoriteSalonId: true } })
+    : null;
+
   const today = isoWeekdayOf(todayIso(TIME_ZONE));
   const categories = [...new Set(salon.services.map(serviceCategory))];
   const fullAddress = salon.address.includes(salon.city) ? salon.address : `${salon.address}, ${salon.city}`;
@@ -56,6 +64,15 @@ export default async function SalonPage({ params }: PageProps) {
           >
             Zakaži termin
           </a>
+          <div className="mt-6">
+            {customer ? (
+              <FavoriteButton salonId={salon.id} isFavorite={customer.favoriteSalonId === salon.id} returnTo={`/s/${salon.slug}`} />
+            ) : (
+              <Link href={`/prijava?next=/s/${salon.slug}`} className="text-sm text-neutral-600 underline underline-offset-4 hover:text-burgundy">
+                Prijavite se da ga označite kao omiljeni salon
+              </Link>
+            )}
+          </div>
         </div>
       </header>
 
@@ -135,6 +152,7 @@ export default async function SalonPage({ params }: PageProps) {
               workers={toBookingWorkers(salon.workers)}
               days={upcomingDays(salon.workingHours, salon.daysOff, 14)}
               submit={bookOnline.bind(null, salon.slug)}
+              initialClient={customer ? { name: customer.name, phone: customer.phone ? formatPhone(customer.phone) : "" } : undefined}
               requestUrgent={requestUrgent.bind(null, salon.slug)}
             />
           </div>
@@ -143,8 +161,8 @@ export default async function SalonPage({ params }: PageProps) {
 
       <footer className="mx-auto flex max-w-6xl justify-between px-6 py-10 text-xs text-neutral-500">
         <span>© {salon.name}</span>
-        <Link href="/prijava" className="hover:text-burgundy">
-          Prijava
+        <Link href={customer ? "/nalog" : "/prijava"} className="hover:text-burgundy">
+          {customer ? "Moj nalog" : "Prijava"}
         </Link>
       </footer>
     </main>

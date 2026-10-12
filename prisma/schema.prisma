@@ -39,10 +39,12 @@ enum BookingSource {
 // Global user (not salon-scoped). One account can be a client of many salons.
 model User {
   id             String   @id @default(cuid())
-  email          String   @unique
+  // Customers sign up with phone only; salon staff use email. At least one is set.
+  email          String?  @unique
   passwordHash   String
   name           String
-  phone          String?
+  // Normalized to +381..., used as the customer's login.
+  phone          String?  @unique
   role           Role     @default(CLIENT)
   // Salon the client lands on right after login.
   favoriteSalonId String?

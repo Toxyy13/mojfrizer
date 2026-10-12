@@ -1,35 +1,31 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { signIn, signOut, type SignInResult } from "@/lib/auth";
+import { signOut, startSession, verifyCredentials } from "@/lib/auth";
+import { landingPathFor, safeNextPath } from "@/lib/landing";
 
-export interface LoginState {
+export interface FormState {
   error: string | null;
+  /** Submitted non-secret values, so the form keeps them after an error. */
+  values?: Record<string, string>;
 }
 
-export async function login(_prev: LoginState, formData: FormData): Promise<LoginState> {
-  const email = String(formData.get("email") ?? "");
+/** Customers log in with their phone number, salon staff with email. */
+export async function login(_prev: FormState, formData: FormData): Promise<FormState> {
+  const loginValue = String(formData.get("login") ?? "");
   const password = String(formData.get("password") ?? "");
-  let result: SignInResult | null = null;
-  let target = "/";
+  const values = { login: loginValue };
+  let target: string;
   try {
-    result = await signIn(email, password);
-    if (result) target = await landingPath(result);
+    const user = await verifyCredentials(loginValue, password);
+    if (!user) return { error: "Pogrešan broj telefona ili lozinka.", values };
+    await startSession(user);
+    target = safeNextPath(formData.get("next")) ?? (await landingPathFor(user));
   } catch (error) {
     console.error(error);
-    return { error: "Greška pri prijavi. Pokušajte ponovo." };
+    return { error: "Greška pri prijavi. Pokušajte ponovo.", values };
   }
-  if (!result) return { error: "Pogrešan email ili lozinka." };
   redirect(target);
-}
-
-// Salon staff land in the admin panel; customers land on their favorite salon.
-async function landingPath(result: SignInResult): Promise<string> {
-  if (result.role !== "CLIENT") return "/admin";
-  if (!result.favoriteSalonId) return "/";
-  const salon = await db.salon.findUnique({ where: { id: result.favoriteSalonId }, select: { slug: true } });
-  return salon ? `/s/${salon.slug}` : "/";
 }
 
 export async function logout(): Promise<void> {

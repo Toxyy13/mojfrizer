@@ -22,10 +22,11 @@ Jedna aplikacija (Next.js + TypeScript + PostgreSQL + Prisma) za sve salone. Sva
 4. **Frontend** — urađeno osnovno:
    - `/` pretraga salona po imenu i gradu;
    - `/s/{slug}` stranica salona: adresa, mapa, radno vreme, cenovnik, online zakazivanje (gost samo sa imenom i telefonom, ili ulogovana mušterija);
-   - `/prijava` login: salon ide u admin, mušterija na svoj omiljeni salon;
+   - `/prijava` login: mušterija brojem telefona, salon email adresom; salon ide u admin, mušterija na svoj omiljeni salon;
+   - `/registracija` nalog mušterije (ime, telefon, lozinka); `/nalog` omiljeni salon i termini mušterije; dugme „omiljeni salon” na početnoj i na stranici salona;
    - `/admin/{slug}` raspored za dan po frizeru, statusi, upis termina za mušteriju koja zove telefonom, pazar.
 
-Sledeće: registracija mušterija i dugme „omiljeni salon”, podešavanja salona (cenovnik, radno vreme, neradni dani) u adminu, SMS/Viber podsetnici, chat.
+Sledeće: potvrda telefona SMS-om, podešavanja salona (cenovnik, radno vreme, neradni dani) u adminu, SMS/Viber podsetnici, chat.
 
 ## Pokretanje lokalno
 ```
@@ -36,4 +37,4 @@ npm run db:seed           # ubacuje Kod Olgice
 npm run dev               # http://localhost:3000/s/kod-olgice
 ```
 Baza mora da dozvoli ekstenziju `btree_gist` (Neon, Supabase i običan Postgres je imaju).
-Demo nalozi (lozinka `promeni-me`): `olgica@mojfrizer.com` (vlasnica), `milica@example.com` (mušterija, omiljeni salon Kod Olgice).
+Demo nalozi (lozinka `promeni-me`): `olgica@mojfrizer.com` (vlasnica), mušterija Milica, telefon `064 123 4567` (omiljeni salon Kod Olgice).

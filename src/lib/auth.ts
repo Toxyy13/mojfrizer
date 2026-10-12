@@ -3,13 +3,15 @@ import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import type { Role } from "@prisma/client";
 import { db } from "./db";
+import { looksLikeEmail, normalizePhone } from "./phone";
 
 const COOKIE_NAME = "mf_session";
 const SESSION_DAYS = 7;
 
 export interface SessionUser {
   id: string;
-  email: string;
+  // Customers who signed up with a phone number have no email.
+  email: string | null;
   name: string;
   role: Role;
 }
@@ -20,16 +22,23 @@ function secretKey(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
-export interface SignInResult {
-  role: Role;
-  favoriteSalonId: string | null;
-}
-
-export async function signIn(email: string, password: string): Promise<SignInResult | null> {
-  const user = await db.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+/** Looks up a user by email (salon staff) or phone (customers) and checks the password. */
+export async function verifyCredentials(login: string, password: string): Promise<SessionUser | null> {
+  const trimmed = login.trim();
+  const phone = looksLikeEmail(trimmed) ? null : normalizePhone(trimmed);
+  if (!phone && !looksLikeEmail(trimmed)) return null;
+  const where = phone ? { phone } : { email: trimmed.toLowerCase() };
+  const user = await db.user.findUnique({
+    where,
+    select: { id: true, email: true, name: true, role: true, passwordHash: true },
+  });
   if (!user) return null;
   const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) return null;
+  return ok ? { id: user.id, email: user.email, name: user.name, role: user.role } : null;
+}
+
+/** Sets the session cookie for an already verified user. */
+export async function startSession(user: SessionUser): Promise<void> {
   const token = await new SignJWT({ email: user.email, name: user.name, role: user.role })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(user.id)
@@ -44,7 +53,6 @@ export async function signIn(email: string, password: string): Promise<SignInRes
     path: "/",
     maxAge: SESSION_DAYS * 24 * 3600,
   });
-  return { role: user.role, favoriteSalonId: user.favoriteSalonId };
 }
 
 export async function signOut(): Promise<void> {
@@ -60,7 +68,8 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     const { payload } = await jwtVerify(token, secretKey());
     if (typeof payload.sub !== "string") return null;
     const role = payload.role === "ADMIN" || payload.role === "WORKER" ? payload.role : "CLIENT";
-    return { id: payload.sub, email: String(payload.email), name: String(payload.name), role };
+    const email = typeof payload.email === "string" ? payload.email : null;
+    return { id: payload.sub, email, name: String(payload.name), role };
   } catch {
     return null;
   }
