@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { getSessionUser, hashPassword, startSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { safeNextPath } from "@/lib/landing";
-import { normalizePhone } from "@/lib/phone";
+import { formatPhone, normalizePhone } from "@/lib/phone";
 import type { FormState } from "../prijava/actions";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -67,4 +67,31 @@ export async function setFavoriteSalon(formData: FormData): Promise<void> {
     return;
   }
   revalidatePath(returnTo);
+}
+
+export interface ProfileState extends FormState {
+  saved?: boolean;
+}
+
+/** Name and phone: salon staff call this number if something comes up with an appointment. */
+export async function updateProfile(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
+  const user = await getSessionUser();
+  if (!user) redirect("/prijava?next=/nalog/profil");
+  const name = String(formData.get("name") ?? "").trim();
+  const rawPhone = String(formData.get("phone") ?? "");
+  const values = { name, phone: rawPhone };
+  const phone = normalizePhone(rawPhone);
+  if (name.length < 2 || name.length > 80) return { error: "Upišite ime i prezime.", values };
+  if (!phone) return { error: "Upišite ispravan broj telefona, npr. 064 123 4567.", values };
+  try {
+    await db.user.update({ where: { id: user.id }, data: { name, phone } });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return { error: "Ovaj broj telefona već koristi drugi nalog.", values };
+    }
+    console.error(error);
+    return { error: "Čuvanje nije uspelo. Pokušajte ponovo.", values };
+  }
+  revalidatePath("/nalog", "layout");
+  return { error: null, saved: true, values: { name, phone: formatPhone(phone) } };
 }

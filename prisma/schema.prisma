@@ -61,6 +61,7 @@ model User {
   createdAppointments Appointment[]   @relation("CreatedAppointments")
   chatMessages        ChatMessage[]
   chatAsClient        ChatMessage[]   @relation("ChatClient")
+  avatar              UserAvatar?
 
   @@map("users")
 }
@@ -235,4 +236,16 @@ model ChatMessage {
   @@index([salonId, clientId, createdAt])
   @@index([clientId, createdAt])
   @@map("chat_messages")
+}
+
+// Profile photo, stored in the database (small, downscaled in the browser) in its own table
+// so that loading a user never loads the image.
+model UserAvatar {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mime      String
+  data      Bytes
+  updatedAt DateTime @updatedAt
+
+  @@map("user_avatars")
 }

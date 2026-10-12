@@ -1,6 +1,9 @@
 import Link from "next/link";
 import type { AppointmentStatus } from "@prisma/client";
 import { db } from "@/lib/db";
+import { formatPhone } from "@/lib/phone";
+import { Avatar } from "@/components/Avatar";
+import { avatarUrl } from "@/lib/avatar";
 import { requireSalonAccess } from "@/lib/access";
 import { unreadForSalon } from "@/lib/chat";
 import { getRevenue } from "@/lib/revenue";
@@ -53,7 +56,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
     db.salonDayOff.findMany({ where: { salonId: salon.id, date: { gte: new Date(`${dateIso}T00:00:00Z`) } } }),
     db.appointment.findMany({
       where: { salonId: salon.id, startTime: { gte: dayStart, lt: dayEnd } },
-      include: { service: true, client: { select: { name: true, phone: true } } },
+      include: { service: true, client: { select: { id: true, name: true, phone: true, avatar: { select: { updatedAt: true } } } } },
       orderBy: { startTime: "asc" },
     }),
     getRevenue(salon.id, dayStart, dayEnd),
@@ -142,6 +145,11 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
                         <span className="font-mono text-sm">
                           {formatLocalTime(a.startTime, TIME_ZONE)}–{formatLocalTime(a.endTime, TIME_ZONE)}
                         </span>
+                        {a.client && (
+                          <span className="self-center">
+                            <Avatar name={a.client.name} src={avatarUrl(a.client.id, a.client.avatar)} size={24} />
+                          </span>
+                        )}
                         <span className="font-medium">{a.guestName ?? a.client?.name ?? "Mušterija"}</span>
                         {a.source === "SALON" && (
                           <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">salon</span>
@@ -235,7 +243,7 @@ function PhoneLink({ phone }: { phone: string | null }) {
   if (!phone) return <span className="text-neutral-400">bez telefona</span>;
   return (
     <a href={`tel:${phone.replace(/\s/g, "")}`} className="underline underline-offset-2">
-      {phone}
+      {/^\+381\d+$/.test(phone) ? formatPhone(phone) : phone}
     </a>
   );
 }
