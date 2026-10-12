@@ -3,9 +3,11 @@ import type { Service, WorkerProfile, WorkingHours } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireSalonOwner } from "@/lib/access";
 import { formatServicePrice } from "@/lib/money";
-import { TIME_ZONE, WEEKDAYS_SR, minutesToHHMM, todayIso } from "@/lib/time";
+import { TIME_ZONE, WEEKDAYS_SR, formatLocalDateIso, formatLocalTime, minutesToHHMM, todayIso } from "@/lib/time";
 import {
   addDaysOff,
+  addWorkerTimeOff,
+  removeWorkerTimeOff,
   removeDayOff,
   saveSalonInfo,
   saveService,
@@ -33,7 +35,7 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
   const sp = await searchParams;
   const today = todayIso(TIME_ZONE);
 
-  const [services, hours, daysOff, workers] = await Promise.all([
+  const [services, hours, daysOff, workers, timeOff] = await Promise.all([
     db.service.findMany({ where: { salonId: salon.id }, orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }, { name: "asc" }] }),
     db.workingHours.findMany({ where: { salonId: salon.id }, orderBy: [{ dayOfWeek: "asc" }, { opensAt: "asc" }] }),
     db.salonDayOff.findMany({
@@ -41,6 +43,11 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
       orderBy: { date: "asc" },
     }),
     db.workerProfile.findMany({ where: { salonId: salon.id }, orderBy: [{ isActive: "desc" }, { displayName: "asc" }] }),
+    db.workerTimeOff.findMany({
+      where: { salonId: salon.id, endTime: { gt: new Date() } },
+      include: { worker: { select: { displayName: true } } },
+      orderBy: { startTime: "asc" },
+    }),
   ]);
 
   return (
@@ -53,6 +60,7 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
           ["#radno-vreme", "Radno vreme"],
           ["#neradni-dani", "Neradni dani"],
           ["#radnici", "Radnici"],
+          ["#odsustva", "Odsustva radnika"],
           ["#salon", "Podaci o salonu"],
         ].map(([href, label]) => (
           <a key={href} href={href} className="btn-ghost btn-sm shrink-0 justify-start">
@@ -162,6 +170,64 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
             <WorkerForm slug={salon.slug} worker={null} />
           </div>
         </div>
+      </Section>
+
+      <Section
+        id="odsustva"
+        title="Odsustva radnika"
+        hint="Godišnji odmor, bolovanje ili deo dana kad jedan frizer ne radi, a salon radi. Za ceo dan ostavite vreme prazno."
+      >
+        <form action={addWorkerTimeOff.bind(null, salon.slug)} className="grid gap-4 md:grid-cols-3">
+          <label>
+            <span className={LABEL}>Radnik</span>
+            <select name="workerId" required className={INPUT}>
+              {workers
+                .filter((w) => w.isActive)
+                .map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.displayName}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label>
+            <span className={LABEL}>Od datuma</span>
+            <input type="date" name="from" min={today} required className={INPUT} />
+          </label>
+          <label>
+            <span className={LABEL}>Do datuma (opciono)</span>
+            <input type="date" name="to" min={today} className={INPUT} />
+          </label>
+          <label>
+            <span className={LABEL}>Od (opciono)</span>
+            <input type="time" name="fromTime" className={INPUT} />
+          </label>
+          <label>
+            <span className={LABEL}>Do (opciono)</span>
+            <input type="time" name="toTime" className={INPUT} />
+          </label>
+          <label>
+            <span className={LABEL}>Razlog (opciono)</span>
+            <input name="reason" maxLength={120} placeholder="npr. Bolovanje" className={INPUT} />
+          </label>
+          <div className="md:col-span-3">
+            <button className={BUTTON}>Dodaj odsustvo</button>
+          </div>
+        </form>
+        <ul className="mt-6 divide-y divide-line border-y border-line">
+          {timeOff.length === 0 && <li className="py-4 text-sm text-muted">Nema zakazanih odsustva.</li>}
+          {timeOff.map((t) => (
+            <li key={t.id} className="flex flex-wrap items-baseline gap-x-4 py-3 text-sm">
+              <span className="font-medium">{t.worker.displayName}</span>
+              <span className="font-mono">{describeRange(t.startTime, t.endTime)}</span>
+              <span className="text-muted">{t.reason ?? ""}</span>
+              <form action={removeWorkerTimeOff.bind(null, salon.slug)} className="ml-auto">
+                <input type="hidden" name="id" value={t.id} />
+                <button className={LINK_BUTTON}>Ukloni</button>
+              </form>
+            </li>
+          ))}
+        </ul>
       </Section>
 
       <Section id="salon" title="Podaci o salonu" hint="Prikazuju se na javnoj stranici salona.">
@@ -339,4 +405,21 @@ function WorkerForm({ slug, worker }: { slug: string; worker: WorkerProfile | nu
       <button className={BUTTON}>{worker ? "Sačuvaj" : "Dodaj radnika"}</button>
     </form>
   );
+}
+
+function shortDateIso(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  return `${Number(d)}.${Number(m)}.${y}.`;
+}
+
+/** "12.10.2026. 13:00–15:00" for part of a day, "12.10.2026. – 14.10.2026." for whole days. */
+function describeRange(start: Date, end: Date): string {
+  const startDay = formatLocalDateIso(start, TIME_ZONE);
+  const startTime = formatLocalTime(start, TIME_ZONE);
+  const endTime = formatLocalTime(end, TIME_ZONE);
+  if (startTime === "00:00" && endTime === "00:00") {
+    const lastDay = formatLocalDateIso(new Date(end.getTime() - 3_600_000), TIME_ZONE);
+    return lastDay === startDay ? shortDateIso(startDay) : `${shortDateIso(startDay)} – ${shortDateIso(lastDay)}`;
+  }
+  return `${shortDateIso(startDay)} ${startTime}–${endTime}`;
 }

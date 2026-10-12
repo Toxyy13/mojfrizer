@@ -70,7 +70,13 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
   const statusAction = setAppointmentStatus.bind(null, slug);
   const urgentRequests = await loadUrgentRequests(salon.id, today);
   const activeCount = appointments.filter((a) => a.status === "BOOKED").length;
-  const flags = await clientFlags(salon.id, appointments.map(clientKeyOf));
+  const [flags, timeOff] = await Promise.all([
+    clientFlags(salon.id, appointments.map(clientKeyOf)),
+    db.workerTimeOff.findMany({
+      where: { salonId: salon.id, startTime: { lt: dayEnd }, endTime: { gt: dayStart } },
+      orderBy: { startTime: "asc" },
+    }),
+  ]);
 
   return (
     <AdminShell salon={salon} user={user} active="raspored">
@@ -124,6 +130,19 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
                   <span className="font-serif text-2xl">{w.displayName}</span>
                   <span className="text-sm text-muted">{list.filter((a) => a.status === "BOOKED").length} termina</span>
                 </h2>
+                {timeOff
+                  .filter((t) => t.workerId === w.id)
+                  .map((t) => (
+                    <p key={t.id} className="mt-4 rounded-2xl border border-dashed border-line bg-sand px-4 py-3 text-sm text-muted">
+                      Odsustvo{" "}
+                      {t.startTime <= dayStart && t.endTime >= dayEnd
+                        ? "ceo dan"
+                        : `${formatLocalTime(t.startTime < dayStart ? dayStart : t.startTime, TIME_ZONE)}–${
+                            t.endTime >= dayEnd ? "24:00" : formatLocalTime(t.endTime, TIME_ZONE)
+                          }`}
+                      {t.reason ? ` · ${t.reason}` : ""}
+                    </p>
+                  ))}
                 {list.length === 0 && (
                   <p className="mt-4 rounded-2xl border border-dashed border-line p-6 text-center text-sm text-muted">
                     Nema termina za ovaj dan.
