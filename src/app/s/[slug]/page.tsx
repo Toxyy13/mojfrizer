@@ -7,6 +7,7 @@ import { TIME_ZONE, WEEKDAYS_SR, minutesToHHMM, todayIso, isoWeekdayOf } from "@
 import { serviceCategory, toBookingServices, toBookingWorkers, upcomingDays } from "@/lib/salonView";
 import { BookingForm } from "@/components/BookingForm";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { AssistantWidget } from "@/components/AssistantWidget";
 import { getSessionUser } from "@/lib/auth";
 import { formatPhone } from "@/lib/phone";
 import { bookOnline, requestUrgent } from "./actions";
@@ -171,6 +172,7 @@ export default async function SalonPage({ params }: PageProps) {
           {customer ? "Moj nalog" : "Prijava"}
         </Link>
       </footer>
+      <AssistantWidget slug={salon.slug} salonName={salon.name} />
     </main>
   );
 }
