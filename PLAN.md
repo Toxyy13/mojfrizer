@@ -36,6 +36,8 @@ Profil mušterije (`/nalog/profil`): ime, telefon (obavezan za profil, banner na
 
 Mušterije salona (`/admin/{slug}/musterije`): spisak svih mušterija (gosti i nalozi, spojeni po poslednjih 8 cifara telefona) sa brojem dolazaka, potrošnjom, nedolascima, poslednjim i sledećim terminom; karton mušterije sa istorijom, beleškom salona i opcijom „samo telefonom" (blokira online zakazivanje, npr. posle više nedolazaka). Raspored prikazuje belešku i broj nedolazaka.
 
+Izveštaji (`/admin/{slug}/izvestaji`, samo vlasnik): za izabrani mesec prihod i poređenje sa prošlim, završeni/otkazani/nedolasci, broj i nove mušterije, udeo online zakazivanja, prosečan račun, prihod po usluzi, frizeru i danu.
+
 Email podsetnik: `GET /api/cron/reminders` (zaštićen `CRON_SECRET`-om) šalje mušterijama sa nalogom mejl za termine u narednih 24h, jednom po terminu. Treba ga zvati svakih ~30 min (cron na hostingu), a slanje traži `RESEND_API_KEY` i `MAIL_FROM` (bez ključa se mejl samo ispiše u log). Gosti bez naloga nemaju email, pa nemaju ni podsetnik.
 
 Email nalozi: posle registracije stiže mejl sa linkom za potvrdu adrese (`/potvrda-emaila`, važi 48 h; banner i „Pošalji ponovo” na `/nalog`), a podsetnici idu samo na potvrđene adrese (Google nalozi su odmah potvrđeni). „Zaboravljena lozinka” (`/zaboravljena-lozinka` → mejl → `/nova-lozinka`, link važi 1 h i jednokratan je); odgovor je uvek isti, da se ne vidi koji mejlovi imaju nalog, a na minut se šalje najviše jedan mejl po nalogu. Tokeni su u bazi samo kao hash (`email_tokens`).
