@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import type { FormState } from "@/app/account/actions";
+import type { FormState } from "@/app/prijava/actions";
 
 interface AuthField {
   name: string;

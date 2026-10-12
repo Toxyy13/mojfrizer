@@ -6,10 +6,10 @@ import { FavoriteButton } from "@/components/FavoriteButton";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { formatRsd } from "@/lib/money";
+import { formatPrice } from "@/lib/money";
 import { formatPhone } from "@/lib/phone";
 import { fullAddress } from "@/lib/salonAddress";
-import { logout } from "./actions";
+import { logout } from "../prijava/actions";
 
 export const metadata: Metadata = { title: "Moj nalog · mojfrizer" };
 export const dynamic = "force-dynamic";
@@ -62,7 +62,7 @@ function BookingList({ title, bookings, empty }: { title: string; bookings: Book
               </p>
             </div>
             <p className="text-sm text-neutral-500 md:text-right">
-              {b.price === 0 ? "Gratis" : formatRsd(b.price)} · {STATUS_LABEL[b.status]}
+              {formatPrice(b.price)} · {STATUS_LABEL[b.status]}
             </p>
           </li>
         ))}
@@ -73,7 +73,7 @@ function BookingList({ title, bookings, empty }: { title: string; bookings: Book
 
 export default async function AccountPage() {
   const session = await getSessionUser();
-  if (!session) redirect("/login?next=/account");
+  if (!session) redirect("/prijava?next=/nalog");
 
   const user = await db.user.findUnique({
     where: { id: session.id },
@@ -98,7 +98,7 @@ export default async function AccountPage() {
       },
     },
   });
-  if (!user) redirect("/login?next=/account");
+  if (!user) redirect("/prijava?next=/nalog");
 
   const now = new Date();
   const isUpcoming = (b: BookingRow): boolean => b.status === "BOOKED" && b.endTime >= now;
@@ -128,7 +128,7 @@ export default async function AccountPage() {
             ) : (
               <p className="mt-3 text-neutral-600">
                 Još niste izabrali.{" "}
-                <Link href="/search" className="text-burgundy underline underline-offset-4">
+                <Link href="/" className="text-burgundy underline underline-offset-4">
                   Pronađite salon
                 </Link>{" "}
                 i posle prijave idete pravo na njega.
@@ -136,7 +136,7 @@ export default async function AccountPage() {
             )}
           </div>
           {user.favoriteSalon && (
-            <FavoriteButton salonId={user.favoriteSalon.id} isFavorite returnTo="/account" />
+            <FavoriteButton salonId={user.favoriteSalon.id} isFavorite returnTo="/nalog" />
           )}
         </section>
 

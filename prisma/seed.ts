@@ -11,6 +11,7 @@ interface SeedService {
   name: string;
   category: string;
   priceRsd: number;
+  comboPriceRsd?: number;
   durationMinutes: number;
 }
 
@@ -19,8 +20,8 @@ const SERVICES: SeedService[] = [
   { name: "Muško šišanje", category: "Šišanje", priceRsd: 600, durationMinutes: 30 },
   { name: "Pranje kose", category: "Pranje", priceRsd: 150, durationMinutes: 15 },
   { name: "Brijanje", category: "Brijanje", priceRsd: 150, durationMinutes: 15 },
-  // Free when it is the only service.
-  { name: "Fazoniranje brade", category: "Brijanje", priceRsd: 0, durationMinutes: 10 },
+  // 200 RSD on its own, free together with another service.
+  { name: "Fazoniranje brade", category: "Brijanje", priceRsd: 200, comboPriceRsd: 0, durationMinutes: 10 },
 ];
 
 const rsdToPara = (rsd: number): number => rsd * 100;
@@ -72,6 +73,7 @@ async function main(): Promise<void> {
           name: service.name,
           category: service.category,
           price: rsdToPara(service.priceRsd),
+          comboPrice: service.comboPriceRsd === undefined ? null : rsdToPara(service.comboPriceRsd),
           durationMinutes: service.durationMinutes,
           sortOrder: index,
         })),

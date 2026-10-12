@@ -5,7 +5,7 @@ import { AuthForm } from "@/components/AuthForm";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getSessionUser } from "@/lib/auth";
 import { landingPathFor, safeNextPath } from "@/lib/landing";
-import { login } from "../account/actions";
+import { login } from "./actions";
 
 export const metadata: Metadata = { title: "Prijava · mojfrizer" };
 
@@ -16,9 +16,9 @@ interface PageProps {
 export default async function LoginPage({ searchParams }: PageProps) {
   const next = safeNextPath((await searchParams).next);
   const user = await getSessionUser();
-  if (user) redirect(next ?? (await landingPathFor(user.id)));
+  if (user) redirect(next ?? (await landingPathFor(user)));
 
-  const registerHref = next ? `/register?next=${encodeURIComponent(next)}` : "/register";
+  const registerHref = next ? `/registracija?next=${encodeURIComponent(next)}` : "/registracija";
   return (
     <>
       <SiteHeader />

@@ -11,15 +11,12 @@ export async function SiteHeader() {
           mojfrizer
         </Link>
         <div className="flex items-center gap-6 text-neutral-600">
-          <Link href="/search" className={link}>
-            Saloni
-          </Link>
           {user ? (
-            <Link href="/account" className={link}>
+            <Link href="/nalog" className={link}>
               Moj nalog
             </Link>
           ) : (
-            <Link href="/login" className={link}>
+            <Link href="/prijava" className={link}>
               Prijava
             </Link>
           )}

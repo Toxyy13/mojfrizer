@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
+import type { Role } from "@prisma/client";
 import { db } from "./db";
 import { looksLikeEmail, normalizePhone } from "./phone";
 
@@ -9,8 +10,10 @@ const SESSION_DAYS = 7;
 
 export interface SessionUser {
   id: string;
+  // Customers who signed up with a phone number have no email.
   email: string | null;
   name: string;
+  role: Role;
 }
 
 function secretKey(): Uint8Array {
@@ -19,20 +22,24 @@ function secretKey(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
-/** Looks up a user by email or phone and checks the password. Returns null on any mismatch. */
+/** Looks up a user by email (salon staff) or phone (customers) and checks the password. */
 export async function verifyCredentials(login: string, password: string): Promise<SessionUser | null> {
   const trimmed = login.trim();
   const phone = looksLikeEmail(trimmed) ? null : normalizePhone(trimmed);
+  if (!phone && !looksLikeEmail(trimmed)) return null;
   const where = phone ? { phone } : { email: trimmed.toLowerCase() };
-  const user = await db.user.findUnique({ where, select: { id: true, email: true, name: true, passwordHash: true } });
-  if (!user?.passwordHash) return null;
+  const user = await db.user.findUnique({
+    where,
+    select: { id: true, email: true, name: true, role: true, passwordHash: true },
+  });
+  if (!user) return null;
   const ok = await bcrypt.compare(password, user.passwordHash);
-  return ok ? { id: user.id, email: user.email, name: user.name } : null;
+  return ok ? { id: user.id, email: user.email, name: user.name, role: user.role } : null;
 }
 
 /** Sets the session cookie for an already verified user. */
 export async function startSession(user: SessionUser): Promise<void> {
-  const token = await new SignJWT({ email: user.email, name: user.name })
+  const token = await new SignJWT({ email: user.email, name: user.name, role: user.role })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(user.id)
     .setIssuedAt()
@@ -48,14 +55,6 @@ export async function startSession(user: SessionUser): Promise<void> {
   });
 }
 
-/** Accepts an email (salon staff) or a phone number (customers). */
-export async function signIn(login: string, password: string): Promise<boolean> {
-  const user = await verifyCredentials(login, password);
-  if (!user) return false;
-  await startSession(user);
-  return true;
-}
-
 export async function signOut(): Promise<void> {
   const store = await cookies();
   store.delete(COOKIE_NAME);
@@ -68,11 +67,9 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   try {
     const { payload } = await jwtVerify(token, secretKey());
     if (typeof payload.sub !== "string") return null;
-    return {
-      id: payload.sub,
-      email: typeof payload.email === "string" ? payload.email : null,
-      name: String(payload.name),
-    };
+    const role = payload.role === "ADMIN" || payload.role === "WORKER" ? payload.role : "CLIENT";
+    const email = typeof payload.email === "string" ? payload.email : null;
+    return { id: payload.sub, email, name: String(payload.name), role };
   } catch {
     return null;
   }

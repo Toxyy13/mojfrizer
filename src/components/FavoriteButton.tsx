@@ -1,4 +1,4 @@
-import { setFavoriteSalon } from "@/app/account/actions";
+import { setFavoriteSalon } from "@/app/nalog/actions";
 
 interface FavoriteButtonProps {
   salonId: string;

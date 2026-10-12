@@ -5,7 +5,7 @@ import { AuthForm } from "@/components/AuthForm";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getSessionUser } from "@/lib/auth";
 import { safeNextPath } from "@/lib/landing";
-import { register } from "../account/actions";
+import { register } from "../nalog/actions";
 
 export const metadata: Metadata = { title: "Registracija · mojfrizer" };
 
@@ -15,9 +15,9 @@ interface PageProps {
 
 export default async function RegisterPage({ searchParams }: PageProps) {
   const next = safeNextPath((await searchParams).next);
-  if (await getSessionUser()) redirect(next ?? "/account");
+  if (await getSessionUser()) redirect(next ?? "/nalog");
 
-  const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : "/login";
+  const loginHref = next ? `/prijava?next=${encodeURIComponent(next)}` : "/prijava";
   return (
     <>
       <SiteHeader />

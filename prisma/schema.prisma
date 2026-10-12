@@ -131,6 +131,8 @@ model Service {
   description     String?
   category        String?
   price           Int // in para: 1500 RSD = 150000
+  // Price when booked in the same visit as another service (null = same as price).
+  comboPrice      Int?
   durationMinutes Int
   sortOrder       Int     @default(0)
   isActive        Boolean @default(true)
@@ -155,8 +157,9 @@ model Appointment {
   guestName  String?
   guestPhone String?
   source      BookingSource
-  createdById String
-  createdBy   User            @relation("CreatedAppointments", fields: [createdById], references: [id])
+  // Null for online bookings made by a guest without an account.
+  createdById String?
+  createdBy   User?           @relation("CreatedAppointments", fields: [createdById], references: [id], onDelete: SetNull)
   startTime DateTime          @db.Timestamptz(3)
   endTime   DateTime          @db.Timestamptz(3)
   status    AppointmentStatus @default(BOOKED)
