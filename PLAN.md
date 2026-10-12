@@ -24,6 +24,7 @@ Jedna aplikacija (Next.js + TypeScript + PostgreSQL + Prisma) za sve salone. Sva
    - `/s/{slug}` stranica salona: adresa, mapa, radno vreme, cenovnik, online zakazivanje (gost samo sa imenom i telefonom, ili ulogovana mušterija);
    - `/prijava` login: mušterija brojem telefona, salon email adresom; salon ide u admin, mušterija na svoj omiljeni salon;
    - `/registracija` nalog mušterije (ime, telefon, lozinka); `/nalog` omiljeni salon i termini mušterije; dugme „omiljeni salon” na početnoj i na stranici salona;
+   - chat salon–mušterija: mušterija piše sa `/poruke/{slug}` (dugme na stranici salona, razgovori u `/nalog`), salon odgovara u `/admin/{slug}/poruke`; nepročitane poruke se broje, stranica se osvežava na 5 s (kasnije pravi real-time, Pusher/Supabase);
    - `/admin/{slug}` raspored za dan po frizeru, statusi, upis termina za mušteriju koja zove telefonom, pazar.
 
 Sledeće: potvrda telefona SMS-om, podešavanja salona (cenovnik, radno vreme, neradni dani) u adminu, SMS/Viber podsetnici, chat.

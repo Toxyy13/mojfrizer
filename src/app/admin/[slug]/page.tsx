@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { AppointmentStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireSalonAccess } from "@/lib/access";
+import { unreadForSalon } from "@/lib/chat";
 import { getRevenue } from "@/lib/revenue";
 import { formatRsd } from "@/lib/money";
 import { TIME_ZONE, addDaysIso, formatDateSr, formatLocalTime, isValidDateIso, localToUtc, todayIso } from "@/lib/time";
@@ -65,6 +66,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
 
   const statusAction = setAppointmentStatus.bind(null, slug);
   const urgentRequests = await loadUrgentRequests(salon.id, today);
+  const unreadMessages = await unreadForSalon(salon.id);
   const activeCount = appointments.filter((a) => a.status === "BOOKED").length;
 
   return (
@@ -75,6 +77,9 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
           <h1 className="font-serif text-5xl">{salon.name}</h1>
         </div>
         <nav className="flex gap-6 text-sm">
+          <Link href={`/admin/${salon.slug}/poruke`} className="underline underline-offset-4 hover:text-burgundy">
+            Poruke{unreadMessages > 0 ? ` (${unreadMessages})` : ""}
+          </Link>
           <Link href={`/s/${salon.slug}`} className="underline underline-offset-4 hover:text-burgundy">
             Javna stranica
           </Link>

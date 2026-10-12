@@ -57,6 +57,7 @@ model User {
   urgentRequests      UrgentRequest[]
   createdAppointments Appointment[]   @relation("CreatedAppointments")
   chatMessages        ChatMessage[]
+  chatAsClient        ChatMessage[]   @relation("ChatClient")
 
   @@map("users")
 }
@@ -209,15 +210,24 @@ model UrgentRequest {
   @@map("urgent_requests")
 }
 
+// One conversation per (salon, customer). The salon side is shared by owner and staff.
 model ChatMessage {
   id        String   @id @default(cuid())
   salonId   String
   salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  // The customer this conversation is with.
+  clientId  String
+  client    User     @relation("ChatClient", fields: [clientId], references: [id], onDelete: Cascade)
+  // Who wrote it: the customer, or a salon staff member.
   senderId  String
   sender    User     @relation(fields: [senderId], references: [id])
+  fromSalon Boolean
   text      String
+  // Set when the other side opens the conversation.
+  readAt    DateTime?
   createdAt DateTime @default(now())
 
-  @@index([salonId, createdAt])
+  @@index([salonId, clientId, createdAt])
+  @@index([clientId, createdAt])
   @@map("chat_messages")
 }

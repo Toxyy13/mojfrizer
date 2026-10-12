@@ -64,7 +64,13 @@ export default async function SalonPage({ params }: PageProps) {
           >
             Zakaži termin
           </a>
-          <div className="mt-6">
+          <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-3">
+            <Link
+              href={`/poruke/${salon.slug}`}
+              className="text-sm text-neutral-600 underline underline-offset-4 hover:text-burgundy"
+            >
+              Pošaljite poruku salonu
+            </Link>
             {customer ? (
               <FavoriteButton salonId={salon.id} isFavorite={customer.favoriteSalonId === salon.id} returnTo={`/s/${salon.slug}`} />
             ) : (

@@ -100,6 +100,21 @@ export default async function AccountPage() {
   });
   if (!user) redirect("/prijava?next=/nalog");
 
+  const [chats, unread] = await Promise.all([
+    db.chatMessage.findMany({
+      where: { clientId: session.id },
+      orderBy: { createdAt: "desc" },
+      distinct: ["salonId"],
+      select: { text: true, salon: { select: { id: true, name: true, slug: true } } },
+    }),
+    db.chatMessage.groupBy({
+      by: ["salonId"],
+      where: { clientId: session.id, fromSalon: true, readAt: null },
+      _count: { _all: true },
+    }),
+  ]);
+  const unreadBy = new Map(unread.map((u) => [u.salonId, u._count._all]));
+
   const now = new Date();
   const isUpcoming = (b: BookingRow): boolean => b.status === "BOOKED" && b.endTime >= now;
   const upcoming = user.clientAppointments.filter(isUpcoming).reverse();
@@ -139,6 +154,31 @@ export default async function AccountPage() {
             <FavoriteButton salonId={user.favoriteSalon.id} isFavorite returnTo="/nalog" />
           )}
         </section>
+
+        {chats.length > 0 && (
+          <section className="mt-20">
+            <h2 className="text-xs uppercase tracking-[0.3em] text-neutral-500">Poruke</h2>
+            <ul className="mt-6 border-t border-neutral-200">
+              {chats.map((c) => {
+                const count = unreadBy.get(c.salon.id) ?? 0;
+                return (
+                  <li key={c.salon.id}>
+                    <Link
+                      href={`/poruke/${c.salon.slug}`}
+                      className="flex items-baseline justify-between gap-4 border-b border-neutral-200 py-5 hover:text-burgundy"
+                    >
+                      <span className="min-w-0">
+                        <span className={`block text-xl ${count > 0 ? "font-semibold" : ""}`}>{c.salon.name}</span>
+                        <span className="mt-1 block truncate text-sm text-neutral-500">{c.text}</span>
+                      </span>
+                      {count > 0 && <span className="shrink-0 bg-burgundy px-2 py-0.5 text-xs text-white">{count} nova</span>}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         <BookingList title="Predstojeći termini" bookings={upcoming} empty="Nemate zakazanih termina." />
         <BookingList title="Ranije" bookings={past} empty="Još nema ranijih termina." />
