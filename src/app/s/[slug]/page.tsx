@@ -6,7 +6,7 @@ import { formatServicePrice } from "@/lib/money";
 import { TIME_ZONE, WEEKDAYS_SR, minutesToHHMM, todayIso, isoWeekdayOf } from "@/lib/time";
 import { serviceCategory, toBookingServices, toBookingWorkers, upcomingDays } from "@/lib/salonView";
 import { BookingForm } from "@/components/BookingForm";
-import { bookOnline } from "./actions";
+import { bookOnline, requestUrgent } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -135,6 +135,7 @@ export default async function SalonPage({ params }: PageProps) {
               workers={toBookingWorkers(salon.workers)}
               days={upcomingDays(salon.workingHours, salon.daysOff, 14)}
               submit={bookOnline.bind(null, salon.slug)}
+              requestUrgent={requestUrgent.bind(null, salon.slug)}
             />
           </div>
         </div>
