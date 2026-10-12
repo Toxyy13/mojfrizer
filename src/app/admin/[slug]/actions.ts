@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { requireSalonAccess } from "@/lib/access";
 import { applyComboPricing } from "@/lib/comboPricing";
 import { bookingInputSchema, createAppointment, type BookingResult } from "@/lib/booking";
+import { setUrgentRequestStatus, swapForUrgentRequest, swapSchema } from "@/lib/urgent";
 
 export async function bookForClient(slug: string, raw: unknown): Promise<BookingResult> {
   const { salon, user } = await requireSalonAccess(slug);
@@ -41,6 +42,45 @@ export async function setAppointmentStatus(slug: string, formData: FormData): Pr
     });
   } catch (error) {
     // Re-activating a cancelled slot that is now taken violates the overlap constraint.
+    console.error(error);
+  }
+  revalidatePath(`/admin/${slug}`);
+}
+
+export interface SwapState {
+  error: string | null;
+}
+
+export async function swapForUrgent(slug: string, _prev: SwapState, formData: FormData): Promise<SwapState> {
+  const { salon, user } = await requireSalonAccess(slug);
+  const parsed = swapSchema.safeParse({
+    requestId: formData.get("requestId"),
+    appointmentId: formData.get("appointmentId"),
+    newDateIso: formData.get("newDateIso"),
+    newTime: formData.get("newTime"),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Neispravni podaci" };
+  try {
+    const result = await swapForUrgentRequest(salon.id, user.id, parsed.data);
+    if (!result.ok) return { error: result.error };
+  } catch (error) {
+    console.error(error);
+    return { error: "Zamena nije uspela. Pokušajte ponovo." };
+  }
+  revalidatePath(`/admin/${slug}`);
+  return { error: null };
+}
+
+const URGENT_STATUSES = ["RESOLVED", "DECLINED"] as const;
+
+export async function closeUrgentRequest(slug: string, formData: FormData): Promise<void> {
+  const { salon } = await requireSalonAccess(slug);
+  const status = String(formData.get("status") ?? "");
+  const match = URGENT_STATUSES.find((s) => s === status);
+  if (!match) return;
+  try {
+    await setUrgentRequestStatus(salon.id, String(formData.get("id") ?? ""), match);
+  } catch (error) {
     console.error(error);
   }
   revalidatePath(`/admin/${slug}`);
