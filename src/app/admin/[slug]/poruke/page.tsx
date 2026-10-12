@@ -2,6 +2,8 @@ import Link from "next/link";
 import { requireSalonAccess } from "@/lib/access";
 import { db } from "@/lib/db";
 import { formatPhone } from "@/lib/phone";
+import { Avatar } from "@/components/Avatar";
+import { avatarUrl } from "@/lib/avatar";
 import { ChatRefresh } from "@/components/ChatRefresh";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +22,7 @@ export default async function AdminInbox({ params }: PageProps) {
       orderBy: { createdAt: "desc" },
       distinct: ["clientId"],
       take: 100,
-      select: { text: true, fromSalon: true, createdAt: true, client: { select: { id: true, name: true, phone: true } } },
+      select: { text: true, fromSalon: true, createdAt: true, client: { select: { id: true, name: true, phone: true, avatar: { select: { updatedAt: true } } } } },
     }),
     db.chatMessage.groupBy({
       by: ["clientId"],
@@ -48,9 +50,10 @@ export default async function AdminInbox({ params }: PageProps) {
             <li key={c.client.id}>
               <Link
                 href={`/admin/${slug}/poruke/${c.client.id}`}
-                className="flex items-baseline justify-between gap-4 border-b border-neutral-200 py-5 transition-colors hover:text-burgundy"
+                className="flex items-center justify-between gap-4 border-b border-neutral-200 py-5 transition-colors hover:text-burgundy"
               >
-                <span className="min-w-0">
+                <Avatar name={c.client.name} src={avatarUrl(c.client.id, c.client.avatar)} size={40} />
+                <span className="min-w-0 flex-1">
                   <span className={`block text-xl ${count > 0 ? "font-semibold" : ""}`}>{c.client.name}</span>
                   <span className="mt-1 block truncate text-sm text-neutral-500">
                     {c.fromSalon ? "Vi: " : ""}
