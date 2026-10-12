@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminShell } from "@/components/AdminShell";
 import { requireSalonAccess } from "@/lib/access";
 import { displayPhone, listSalonClients, shortDate } from "@/lib/clients";
 import { formatRsd } from "@/lib/money";
@@ -12,20 +13,15 @@ interface PageProps {
 
 export default async function ClientsPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
-  const { salon } = await requireSalonAccess(slug);
+  const { salon, user } = await requireSalonAccess(slug);
   const q = ((await searchParams).q ?? "").slice(0, 60);
   const clients = await listSalonClients(salon.id, q);
 
   return (
-    <main className="page pb-24">
-      <header className="flex flex-wrap items-baseline justify-between gap-4 border-b border-line py-8">
-        <div>
-          <p className="eyebrow">Mušterije</p>
-          <h1 className="font-serif text-5xl">{salon.name}</h1>
-        </div>
-        <Link href={`/admin/${salon.slug}`} className="link text-sm">
-          ← Raspored
-        </Link>
+    <AdminShell salon={salon} user={user} active="musterije">
+      <div>
+      <header>
+        <h1 className="font-serif text-3xl sm:text-4xl">Mušterije</h1>
       </header>
 
       <form className="mt-8 flex gap-3" role="search">
@@ -63,9 +59,9 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
                   {c.blockedOnline && <span className="badge ml-2 bg-sand">samo telefonom</span>}
                   {c.note && <span className="mt-0.5 block truncate text-xs text-muted">{c.note}</span>}
                 </td>
-                <td className="py-3 pr-4 font-mono">{displayPhone(c.phone)}</td>
-                <td className="py-3 pr-4 text-right font-mono">{c.visits}</td>
-                <td className="py-3 pr-4 text-right font-mono">{formatRsd(c.spentPara)}</td>
+                <td className="py-3 pr-4 tabular-nums">{displayPhone(c.phone)}</td>
+                <td className="py-3 pr-4 text-right tabular-nums">{c.visits}</td>
+                <td className="py-3 pr-4 text-right tabular-nums">{formatRsd(c.spentPara)}</td>
                 <td className="py-3 pr-4">{shortDate(c.lastVisit)}</td>
                 <td className="py-3 pr-4">{shortDate(c.nextVisit)}</td>
               </tr>
@@ -74,6 +70,7 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
         </table>
         {clients.length === 0 && <p className="py-8 text-muted">Nema mušterija{q ? " za ovu pretragu" : " još"}.</p>}
       </div>
-    </main>
+      </div>
+    </AdminShell>
   );
 }

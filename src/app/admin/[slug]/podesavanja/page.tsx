@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AdminShell } from "@/components/AdminShell";
 import type { Service, WorkerProfile, WorkingHours } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireSalonOwner } from "@/lib/access";
@@ -24,14 +24,14 @@ interface PageProps {
   searchParams: Promise<{ ok?: string; greska?: string }>;
 }
 
-const INPUT = "w-full border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-charcoal focus:outline-none";
-const LABEL = "block text-xs uppercase tracking-[0.15em] text-neutral-500";
-const BUTTON = "bg-charcoal px-5 py-2 text-sm text-white transition-colors hover:bg-burgundy";
-const LINK_BUTTON = "text-sm underline underline-offset-4 hover:text-burgundy";
+const INPUT = "field py-2.5 text-sm";
+const LABEL = "field-label block";
+const BUTTON = "btn-primary";
+const LINK_BUTTON = "link text-sm text-muted";
 
 export default async function SalonSettingsPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
-  const { salon } = await requireSalonOwner(slug);
+  const { salon, user } = await requireSalonOwner(slug);
   const sp = await searchParams;
   const today = todayIso(TIME_ZONE);
 
@@ -51,51 +51,41 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
   ]);
 
   return (
-    <main className="mx-auto max-w-5xl px-6 pb-24">
-      <header className="flex flex-wrap items-baseline justify-between gap-4 border-b border-neutral-200 py-8">
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">Podešavanja</p>
-          <h1 className="font-serif text-5xl">{salon.name}</h1>
-        </div>
-        <nav className="flex gap-6 text-sm">
-          <Link href={`/admin/${salon.slug}`} className="underline underline-offset-4 hover:text-burgundy">
-            ← Raspored
-          </Link>
-          <Link href={`/s/${salon.slug}`} className="underline underline-offset-4 hover:text-burgundy">
-            Javna stranica
-          </Link>
-        </nav>
-      </header>
-
+    <AdminShell salon={salon} user={user} active="podesavanja">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[12rem_minmax(0,1fr)]">
+      <nav className="flex gap-1 overflow-x-auto lg:sticky lg:top-36 lg:flex-col lg:self-start" aria-label="Odeljci">
+        <h1 className="eyebrow mb-2 hidden px-3 lg:block">Podešavanja</h1>
+        {[
+          ["#usluge", "Cenovnik"],
+          ["#radno-vreme", "Radno vreme"],
+          ["#neradni-dani", "Neradni dani"],
+          ["#radnici", "Radnici"],
+          ["#odsustva", "Odsustva radnika"],
+          ["#salon", "Podaci o salonu"],
+        ].map(([href, label]) => (
+          <a key={href} href={href} className="btn-ghost btn-sm shrink-0 justify-start">
+            {label}
+          </a>
+        ))}
+      </nav>
+      <div className="grid min-w-0 gap-6">
       {(sp.ok || sp.greska) && (
-        <p
-          role="status"
-          className={`mt-6 border-l-2 px-4 py-3 text-sm ${sp.greska ? "border-burgundy bg-cream text-burgundy" : "border-forest bg-cream text-forest"}`}
-        >
+        <p role="status" className={sp.greska ? "alert-error" : "rounded-xl bg-forest-soft px-4 py-3 text-sm text-forest"}>
           {sp.greska ?? sp.ok}
         </p>
       )}
 
-      <nav className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm" aria-label="Odeljci">
-        <a href="#usluge" className={LINK_BUTTON}>Cenovnik</a>
-        <a href="#radno-vreme" className={LINK_BUTTON}>Radno vreme</a>
-        <a href="#neradni-dani" className={LINK_BUTTON}>Neradni dani</a>
-        <a href="#radnici" className={LINK_BUTTON}>Radnici</a>
-        <a href="#odsustva" className={LINK_BUTTON}>Odsustva radnika</a>
-        <a href="#salon" className={LINK_BUTTON}>Podaci o salonu</a>
-      </nav>
-
       <Section id="usluge" title="Cenovnik" hint="Cene su u dinarima. Usluga koja se skloni ostaje u starim terminima, ali se ne može zakazati.">
-        <ul className="border-t border-neutral-200">
+        <ul className="divide-y divide-line border-y border-line">
           {services.map((s) => (
-            <li key={s.id} className="border-b border-neutral-200">
+            <li key={s.id}>
               <details>
-                <summary className={`flex cursor-pointer flex-wrap items-baseline gap-x-4 py-4 ${s.isActive ? "" : "text-neutral-400"}`}>
+                <summary className={`flex cursor-pointer flex-wrap items-baseline gap-x-4 rounded-lg px-2 py-4 hover:bg-cream ${s.isActive ? "" : "text-muted line-through"}`}>
                   <span className="text-lg">{s.name}</span>
-                  <span className="text-xs text-neutral-400">{s.category ?? "Ostalo"} · {s.durationMinutes} min</span>
-                  <span className="ml-auto font-mono text-sm">{s.isActive ? formatServicePrice(s) : "sklonjeno"}</span>
+                  <span className="text-xs text-muted">{s.category ?? "Ostalo"} · {s.durationMinutes} min</span>
+                  <span className="ml-auto text-sm font-medium tabular-nums">{s.isActive ? formatServicePrice(s) : "sklonjeno"}</span>
                 </summary>
-                <div className="pb-6">
+                <div className="px-2 pb-6">
                   <ServiceForm slug={salon.slug} service={s} />
                   <form action={toggleService.bind(null, salon.slug)} className="mt-3">
                     <input type="hidden" name="id" value={s.id} />
@@ -107,7 +97,7 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
             </li>
           ))}
         </ul>
-        <div className="mt-8 border border-neutral-200 p-6">
+        <div className="mt-6 rounded-2xl bg-cream p-5">
           <h3 className="font-serif text-2xl">Nova usluga</h3>
           <div className="mt-4">
             <ServiceForm slug={salon.slug} service={null} nextSortOrder={services.length} />
@@ -142,15 +132,15 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
           </label>
           <button className={BUTTON}>Dodaj</button>
         </form>
-        <ul className="mt-6 border-t border-neutral-200">
-          {daysOff.length === 0 && <li className="py-4 text-sm text-neutral-500">Nema zakazanih neradnih dana.</li>}
+        <ul className="mt-6 divide-y divide-line border-y border-line">
+          {daysOff.length === 0 && <li className="py-4 text-sm text-muted">Nema zakazanih neradnih dana.</li>}
           {daysOff.map((d) => {
             const iso = d.date.toISOString().slice(0, 10);
             const [y, m, day] = iso.split("-");
             return (
-              <li key={d.id} className="flex items-baseline gap-4 border-b border-neutral-200 py-3 text-sm">
-                <span className="font-mono">{`${Number(day)}.${Number(m)}.${y}.`}</span>
-                <span className="text-neutral-500">{d.reason ?? ""}</span>
+              <li key={d.id} className="flex items-baseline gap-4 py-3 text-sm">
+                <span className="font-medium tabular-nums">{`${Number(day)}.${Number(m)}.${y}.`}</span>
+                <span className="text-muted">{d.reason ?? ""}</span>
                 <form action={removeDayOff.bind(null, salon.slug)} className="ml-auto">
                   <input type="hidden" name="id" value={d.id} />
                   <button className={LINK_BUTTON}>Ukloni</button>
@@ -162,9 +152,9 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
       </Section>
 
       <Section id="radnici" title="Radnici" hint="Mušterije mogu da izaberu frizera pri zakazivanju. Neaktivan radnik ne prima nove termine.">
-        <ul className="border-t border-neutral-200">
+        <ul className="divide-y divide-line border-y border-line">
           {workers.map((w) => (
-            <li key={w.id} className="border-b border-neutral-200 py-4">
+            <li key={w.id} className="py-4">
               <WorkerForm slug={salon.slug} worker={w} />
               <form action={toggleWorker.bind(null, salon.slug)} className="mt-2">
                 <input type="hidden" name="id" value={w.id} />
@@ -174,7 +164,7 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
             </li>
           ))}
         </ul>
-        <div className="mt-8 border border-neutral-200 p-6">
+        <div className="mt-6 rounded-2xl bg-cream p-5">
           <h3 className="font-serif text-2xl">Novi radnik</h3>
           <div className="mt-4">
             <WorkerForm slug={salon.slug} worker={null} />
@@ -224,13 +214,13 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
             <button className={BUTTON}>Dodaj odsustvo</button>
           </div>
         </form>
-        <ul className="mt-6 border-t border-neutral-200">
-          {timeOff.length === 0 && <li className="py-4 text-sm text-neutral-500">Nema zakazanih odsustva.</li>}
+        <ul className="mt-6 divide-y divide-line border-y border-line">
+          {timeOff.length === 0 && <li className="py-4 text-sm text-muted">Nema zakazanih odsustva.</li>}
           {timeOff.map((t) => (
-            <li key={t.id} className="flex flex-wrap items-baseline gap-x-4 border-b border-neutral-200 py-3 text-sm">
+            <li key={t.id} className="flex flex-wrap items-baseline gap-x-4 py-3 text-sm">
               <span className="font-medium">{t.worker.displayName}</span>
               <span className="font-mono">{describeRange(t.startTime, t.endTime)}</span>
-              <span className="text-neutral-500">{t.reason ?? ""}</span>
+              <span className="text-muted">{t.reason ?? ""}</span>
               <form action={removeWorkerTimeOff.bind(null, salon.slug)} className="ml-auto">
                 <input type="hidden" name="id" value={t.id} />
                 <button className={LINK_BUTTON}>Ukloni</button>
@@ -287,17 +277,19 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
           </div>
         </form>
       </Section>
-    </main>
+      </div>
+      </div>
+    </AdminShell>
   );
 }
 
 function Section(props: { id: string; title: string; hint: string; children: React.ReactNode }) {
   return (
-    <section id={props.id} className="mt-16 scroll-mt-6" aria-labelledby={`${props.id}-naslov`}>
-      <h2 id={`${props.id}-naslov`} className="font-serif text-4xl">
+    <section id={props.id} className="card scroll-mt-36 p-5 sm:p-7" aria-labelledby={`${props.id}-naslov`}>
+      <h2 id={`${props.id}-naslov`} className="font-serif text-3xl">
         {props.title}
       </h2>
-      <p className="mt-1 mb-6 text-sm text-neutral-500">{props.hint}</p>
+      <p className="mt-1 mb-6 text-sm text-muted">{props.hint}</p>
       {props.children}
     </section>
   );
@@ -368,10 +360,10 @@ function DayHoursRow({ day, ranges }: { day: number; ranges: WorkingHours[] }) {
   const hasBreak = ranges.length >= 2;
   const time = (m: number | undefined, fallback: string): string => (m === undefined ? fallback : minutesToHHMM(m));
   return (
-    <fieldset className="grid grid-cols-2 items-end gap-3 border-b border-neutral-200 pb-3 md:grid-cols-[9rem_repeat(4,minmax(0,1fr))]">
+    <fieldset className="grid grid-cols-2 items-end gap-3 border-b border-line pb-4 md:grid-cols-[9rem_repeat(4,minmax(0,1fr))]">
       <label className="col-span-2 flex items-center gap-2 md:col-span-1">
-        <input type="checkbox" name={`open-${day}`} defaultChecked={open} />
-        <span>{WEEKDAYS_SR[day]}</span>
+        <input type="checkbox" name={`open-${day}`} defaultChecked={open} className="size-5 accent-burgundy" />
+        <span className="font-medium">{WEEKDAYS_SR[day]}</span>
       </label>
       <label>
         <span className={LABEL}>Od</span>

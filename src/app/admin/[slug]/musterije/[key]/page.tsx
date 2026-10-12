@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminShell } from "@/components/AdminShell";
 import { notFound } from "next/navigation";
 import type { AppointmentStatus } from "@prisma/client";
 import { db } from "@/lib/db";
@@ -25,7 +26,7 @@ const STATUS_LABEL: Record<AppointmentStatus, string> = {
 export default async function ClientPage({ params, searchParams }: PageProps) {
   const { slug, key: rawKey } = await params;
   const key = decodeURIComponent(rawKey);
-  const { salon } = await requireSalonAccess(slug);
+  const { salon, user } = await requireSalonAccess(slug);
   if (!isValidClientKey(key)) notFound();
   const [client] = await listSalonClients(salon.id, "", key);
   if (!client) notFound();
@@ -38,22 +39,25 @@ export default async function ClientPage({ params, searchParams }: PageProps) {
   });
 
   return (
-    <main className="page max-w-4xl pb-24">
-      <header className="border-b border-line py-8">
-        <Link href={`/admin/${salon.slug}/musterije`} className="link text-sm">
-          ← Sve mušterije
+    <AdminShell salon={salon} user={user} active="musterije">
+      <div className="mx-auto max-w-4xl">
+      <header className="flex flex-wrap items-center gap-3 border-b border-line pb-6">
+        <Link href={`/admin/${salon.slug}/musterije`} className="btn-ghost size-11 shrink-0 p-0 text-lg" aria-label="Sve mušterije">
+          ←
         </Link>
-        <h1 className="mt-4 font-serif text-5xl">{client.name}</h1>
-        <p className="mt-2 font-mono text-sm">
-          {client.phone ? (
-            <a href={`tel:${client.phone.replace(/\s/g, "")}`} className="link">
-              {displayPhone(client.phone)}
-            </a>
-          ) : (
-            "bez telefona"
-          )}
-          {client.hasAccount && <span className="badge ml-3 bg-forest-soft text-forest">ima nalog</span>}
-        </p>
+        <div className="min-w-0 flex-1">
+          <h1 className="font-serif text-3xl sm:text-4xl">{client.name}</h1>
+          <p className="mt-1 text-sm text-muted">
+            {client.phone ? (
+              <a href={`tel:${client.phone.replace(/\s/g, "")}`} className="link">
+                {displayPhone(client.phone)}
+              </a>
+            ) : (
+              "bez telefona"
+            )}
+            {client.hasAccount && <span className="badge ml-3 bg-forest-soft text-forest">ima nalog</span>}
+          </p>
+        </div>
       </header>
 
       <section className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-4" aria-label="Pregled">
@@ -94,13 +98,13 @@ export default async function ClientPage({ params, searchParams }: PageProps) {
         <ul className="mt-4 border-t border-line">
           {history.map((a) => (
             <li key={a.id} className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-line py-3 text-sm">
-              <span className="font-mono">
+              <span className="tabular-nums">
                 {shortDate(a.startTime)} {formatLocalTime(a.startTime, TIME_ZONE)}
               </span>
               <span>{a.service.name}</span>
               <span className="text-muted">{a.worker.displayName}</span>
               {a.note && <span className="text-xs italic text-muted">„{a.note}"</span>}
-              <span className="ml-auto font-mono">{formatRsd(a.price)}</span>
+              <span className="ml-auto tabular-nums">{formatRsd(a.price)}</span>
               <span className={`w-28 text-right ${a.status === "NO_SHOW" ? "text-burgundy" : "text-muted"}`}>
                 {STATUS_LABEL[a.status]}
               </span>
@@ -108,7 +112,8 @@ export default async function ClientPage({ params, searchParams }: PageProps) {
           ))}
         </ul>
       </section>
-    </main>
+      </div>
+    </AdminShell>
   );
 }
 
@@ -116,7 +121,7 @@ function Stat({ label, value, warn = false }: { label: string; value: string; wa
   return (
     <div className="bg-white p-5">
       <p className="eyebrow">{label}</p>
-      <p className={`mt-2 font-mono text-xl ${warn ? "text-burgundy" : ""}`}>{value}</p>
+      <p className={`mt-2 font-serif text-2xl tabular-nums ${warn ? "text-burgundy" : ""}`}>{value}</p>
     </div>
   );
 }
