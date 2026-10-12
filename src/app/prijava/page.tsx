@@ -11,7 +11,7 @@ import { login } from "./actions";
 export const metadata: Metadata = { title: "Prijava · mojfrizer" };
 
 interface PageProps {
-  searchParams: Promise<{ next?: string; greska?: string }>;
+  searchParams: Promise<{ next?: string; greska?: string; lozinka?: string }>;
 }
 
 export default async function LoginPage({ searchParams }: PageProps) {
@@ -32,6 +32,11 @@ export default async function LoginPage({ searchParams }: PageProps) {
             Prijava preko Google naloga nije uspela. Pokušajte ponovo ili se prijavite emailom.
           </p>
         )}
+        {params.lozinka === "nova" && (
+          <p className="mt-8 border-l-2 border-forest pl-4 text-forest" role="status">
+            Lozinka je promenjena. Prijavite se novom lozinkom.
+          </p>
+        )}
         <GoogleButton next={next} />
         <AuthForm
           action={login}
@@ -43,6 +48,11 @@ export default async function LoginPage({ searchParams }: PageProps) {
             { name: "password", label: "Lozinka", type: "password", autoComplete: "current-password" },
           ]}
         />
+        <p className="mt-6 text-sm">
+          <Link href="/zaboravljena-lozinka" className="text-neutral-600 underline underline-offset-4 hover:text-burgundy">
+            Zaboravljena lozinka?
+          </Link>
+        </p>
         <p className="mt-16 border-t border-neutral-200 pt-6 text-sm text-neutral-600">
           Nemate nalog?{" "}
           <Link href={registerHref} className="text-burgundy underline underline-offset-4">

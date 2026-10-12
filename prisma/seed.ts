@@ -46,7 +46,7 @@ async function main(): Promise<void> {
   const owner = await prisma.user.upsert({
     where: { email: "olgica@mojfrizer.com" },
     update: {},
-    create: { email: "olgica@mojfrizer.com", passwordHash, name: "Olgica", role: Role.ADMIN },
+    create: { email: "olgica@mojfrizer.com", passwordHash, name: "Olgica", role: Role.ADMIN, emailVerifiedAt: new Date() },
   });
 
   const existing = await prisma.salon.findUnique({ where: { slug: "kod-olgice" } });
@@ -91,6 +91,7 @@ async function main(): Promise<void> {
     update: {},
     create: {
       email: "milica@example.com",
+      emailVerifiedAt: new Date(),
       phone: "+381641234567",
       passwordHash,
       name: "Milica Demo",
