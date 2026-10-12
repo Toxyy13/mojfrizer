@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminShell } from "@/components/AdminShell";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/Avatar";
 import { avatarUrl } from "@/lib/avatar";
@@ -17,7 +18,7 @@ interface PageProps {
 
 export default async function AdminConversation({ params }: PageProps) {
   const { slug, clientId } = await params;
-  const { salon } = await requireSalonAccess(slug);
+  const { salon, user } = await requireSalonAccess(slug);
 
   // The conversation must belong to this salon; otherwise another tenant's customer could be opened by id.
   const messages = await loadConversation(salon.id, clientId);
@@ -27,30 +28,27 @@ export default async function AdminConversation({ params }: PageProps) {
   await markRead(salon.id, clientId, true);
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
-      <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">{salon.name}</p>
-      <div className="mt-4 flex items-center gap-4">
-        <Avatar name={client.name} src={avatarUrl(client.id, client.avatar)} size={56} />
-        <h1 className="font-serif text-5xl leading-none">{client.name}</h1>
+    <AdminShell salon={salon} user={user} active="poruke">
+      <div className="mx-auto max-w-2xl">
+        <header className="flex items-center gap-3">
+          <Link href={`/admin/${slug}/poruke`} className="btn-ghost size-11 shrink-0 p-0 text-lg" aria-label="Sve poruke">
+            ←
+          </Link>
+          <Avatar name={client.name} src={avatarUrl(client.id, client.avatar)} size={44} />
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate font-serif text-2xl leading-tight sm:text-3xl">{client.name}</h1>
+            {client.phone && <p className="text-sm text-muted">{formatPhone(client.phone)}</p>}
+          </div>
+          {client.phone && (
+            <a href={`tel:${client.phone}`} className="btn-secondary btn-sm">
+              Pozovi
+            </a>
+          )}
+        </header>
+        <div className="mt-6">
+          <ChatThread messages={messages} viewerIsSalon send={sendToClient.bind(null, slug, clientId)} emptyHint="" />
+        </div>
       </div>
-      <p className="mt-3 text-sm text-neutral-600">
-        {client.phone && (
-          <a href={`tel:${client.phone}`} className="mr-4 underline underline-offset-4 hover:text-burgundy">
-            {formatPhone(client.phone)}
-          </a>
-        )}
-        <Link href={`/admin/${slug}/poruke`} className="underline underline-offset-4 hover:text-burgundy">
-          ← Sve poruke
-        </Link>
-      </p>
-      <div className="mt-10">
-        <ChatThread
-          messages={messages}
-          viewerIsSalon
-          send={sendToClient.bind(null, slug, clientId)}
-          emptyHint=""
-        />
-      </div>
-    </main>
+    </AdminShell>
   );
 }

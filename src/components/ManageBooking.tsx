@@ -17,10 +17,9 @@ function hhmm(minute: number): string {
   return `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
 }
 
-const chip =
-  "rounded-full border px-4 py-2 text-sm transition-all duration-300 ease-out disabled:cursor-not-allowed disabled:opacity-30";
-const chipOn = "border-burgundy bg-burgundy text-white";
-const chipOff = "border-neutral-300 hover:-translate-y-0.5 hover:border-neutral-500";
+const chip = "chip";
+const chipOn = "border-burgundy bg-burgundy text-white hover:border-burgundy";
+const chipOff = "";
 
 /** Cancel or move a booking from the customer's manage link. */
 export function ManageBooking({ slug, serviceId, days, cancel, reschedule }: ManageBookingProps) {
@@ -65,14 +64,14 @@ export function ManageBooking({ slug, serviceId, days, cancel, reschedule }: Man
           <button
             type="button"
             onClick={() => setMode("move")}
-            className="bg-charcoal px-6 py-3 text-sm text-white transition-colors hover:bg-burgundy"
+            className="btn-primary"
           >
             Pomeri termin
           </button>
           <button
             type="button"
             onClick={() => setMode("confirmCancel")}
-            className="border border-neutral-300 px-6 py-3 text-sm transition-colors hover:border-burgundy hover:text-burgundy"
+            className="btn-secondary"
           >
             Otkaži termin
           </button>
@@ -80,18 +79,18 @@ export function ManageBooking({ slug, serviceId, days, cancel, reschedule }: Man
       )}
 
       {mode === "confirmCancel" && (
-        <div className="border border-burgundy p-6">
+        <div className="rounded-2xl border border-burgundy/30 bg-burgundy-soft p-5">
           <p>Sigurno želite da otkažete termin?</p>
           <div className="mt-4 flex gap-4">
             <button
               type="button"
               disabled={pending}
               onClick={() => run(cancel)}
-              className="bg-burgundy px-6 py-3 text-sm text-white disabled:opacity-50"
+              className="btn-primary"
             >
               {pending ? "Otkazujem…" : "Da, otkaži"}
             </button>
-            <button type="button" onClick={() => setMode("idle")} className="text-sm underline underline-offset-4">
+            <button type="button" onClick={() => setMode("idle")} className="btn-ghost">
               Ne
             </button>
           </div>
@@ -99,9 +98,9 @@ export function ManageBooking({ slug, serviceId, days, cancel, reschedule }: Man
       )}
 
       {mode === "move" && (
-        <div className="grid gap-6 border border-neutral-200 p-6">
+        <div className="card grid gap-6 p-5">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">Novi dan</p>
+            <p className="eyebrow">Novi dan</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {days.map((d) => (
                 <button
@@ -118,9 +117,9 @@ export function ManageBooking({ slug, serviceId, days, cancel, reschedule }: Man
           </div>
           {dateIso && (
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">Novo vreme</p>
-              {slots === null && <p className="mt-3 text-sm text-neutral-500">Učitavam slobodne termine…</p>}
-              {slots?.length === 0 && <p className="mt-3 text-sm text-neutral-500">Tog dana nema slobodnih termina.</p>}
+              <p className="eyebrow">Novo vreme</p>
+              {slots === null && <p className="mt-3 text-sm text-muted">Učitavam slobodne termine…</p>}
+              {slots?.length === 0 && <p className="mt-3 text-sm text-muted">Tog dana nema slobodnih termina.</p>}
               <div className="mt-3 flex flex-wrap gap-2">
                 {slots?.map((m) => (
                   <button key={m} type="button" onClick={() => setMinute(m)} className={`${chip} ${minute === m ? chipOn : chipOff}`}>
@@ -135,11 +134,11 @@ export function ManageBooking({ slug, serviceId, days, cancel, reschedule }: Man
               type="button"
               disabled={pending || !dateIso || minute === null}
               onClick={() => dateIso && minute !== null && run(() => reschedule(dateIso, minute))}
-              className="bg-burgundy px-6 py-3 text-sm text-white disabled:opacity-40"
+              className="btn-primary"
             >
               {pending ? "Pomeram…" : "Potvrdi novi termin"}
             </button>
-            <button type="button" onClick={() => setMode("idle")} className="text-sm underline underline-offset-4">
+            <button type="button" onClick={() => setMode("idle")} className="btn-ghost">
               Odustani
             </button>
           </div>
@@ -147,7 +146,7 @@ export function ManageBooking({ slug, serviceId, days, cancel, reschedule }: Man
       )}
 
       {error && (
-        <p role="alert" className="text-sm text-burgundy">
+        <p role="alert" className="alert-error">
           {error}
         </p>
       )}

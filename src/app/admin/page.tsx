@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
@@ -14,14 +15,16 @@ export default async function AdminHome() {
   });
   if (salons.length === 1) redirect(`/admin/${salons[0].slug}`);
   return (
-    <main className="mx-auto max-w-3xl px-6 py-24">
-      <h1 className="font-serif text-5xl">Vaši saloni</h1>
-      {salons.length === 0 && <p className="mt-6 text-neutral-600">Nemate pristup nijednom salonu.</p>}
-      <ul className="mt-10 border-t border-neutral-200">
+    <main className="page max-w-xl py-16">
+      <Logo />
+      <h1 className="mt-10 font-serif text-4xl">Vaši saloni</h1>
+      {salons.length === 0 && <p className="mt-4 text-muted">Nemate pristup nijednom salonu.</p>}
+      <ul className="mt-6 grid gap-2">
         {salons.map((s) => (
           <li key={s.slug}>
-            <Link href={`/admin/${s.slug}`} className="block border-b border-neutral-200 py-5 font-serif text-3xl hover:text-burgundy">
+            <Link href={`/admin/${s.slug}`} className="card flex items-center justify-between p-5 font-serif text-2xl transition-colors hover:border-charcoal">
               {s.name}
+              <span aria-hidden className="text-muted">→</span>
             </Link>
           </li>
         ))}
