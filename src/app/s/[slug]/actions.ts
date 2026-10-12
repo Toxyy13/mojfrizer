@@ -5,6 +5,7 @@ import { getSessionUser } from "@/lib/auth";
 import { bookingInputSchema, createAppointment, type BookingResult } from "@/lib/booking";
 import { isBlockedOnline } from "@/lib/clients";
 import { sendBookingConfirmation } from "@/lib/manageBooking";
+import { joinWaitlist, type WaitlistResult } from "@/lib/waitlist";
 import { createUrgentRequest, urgentRequestSchema, type ActionResult } from "@/lib/urgent";
 
 export async function bookOnline(slug: string, raw: unknown): Promise<BookingResult> {
@@ -43,5 +44,18 @@ export async function requestUrgent(slug: string, raw: unknown): Promise<ActionR
   } catch (error) {
     console.error(error);
     return { ok: false, error: "Došlo je do greške. Pokušajte ponovo ili nas pozovite." };
+  }
+}
+
+export async function joinSalonWaitlist(slug: string, serviceId: string, dateIso: string): Promise<WaitlistResult> {
+  try {
+    const user = await getSessionUser();
+    if (!user) return { ok: false, error: "login" };
+    const salon = await db.salon.findFirst({ where: { slug, isActive: true }, select: { id: true } });
+    if (!salon) return { ok: false, error: "Salon nije pronađen." };
+    return await joinWaitlist(salon.id, user.id, serviceId, dateIso);
+  } catch (error) {
+    console.error(error);
+    return { ok: false, error: "Došlo je do greške. Pokušajte ponovo." };
   }
 }

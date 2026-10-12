@@ -13,7 +13,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { StickyBookBar } from "@/components/StickyBookBar";
 import { getSessionUser } from "@/lib/auth";
 import { formatPhone } from "@/lib/phone";
-import { bookOnline, requestUrgent } from "./actions";
+import { bookOnline, joinSalonWaitlist, requestUrgent } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -202,6 +202,7 @@ export default async function SalonPage({ params }: PageProps) {
                 submit={bookOnline.bind(null, salon.slug)}
                 initialClient={customer ? { name: customer.name, phone: customer.phone ? formatPhone(customer.phone) : "" } : undefined}
                 requestUrgent={requestUrgent.bind(null, salon.slug)}
+                joinWaitlist={joinSalonWaitlist.bind(null, salon.slug)}
               />
             </div>
           </div>

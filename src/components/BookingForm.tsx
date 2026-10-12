@@ -49,6 +49,8 @@ interface BookingFormProps {
   initialClient?: { name: string; phone: string };
   // When set, a fully booked day offers an urgent request the salon reviews by hand.
   requestUrgent?: (values: UrgentFormValues) => Promise<UrgentResult>;
+  // When set, a fully booked day lets a logged-in customer wait for a freed slot (error "login" = not logged in).
+  joinWaitlist?: (serviceId: string, dateIso: string) => Promise<UrgentResult>;
 }
 
 function hhmm(minute: number): string {
@@ -72,7 +74,17 @@ function splitDayLabel(label: string): [string, string] {
   return i === -1 ? [label, ""] : [label.slice(0, i), label.slice(i + 1)];
 }
 
-export function BookingForm({ slug, services, workers, days, mode, submit, initialClient, requestUrgent }: BookingFormProps) {
+export function BookingForm({
+  slug,
+  services,
+  workers,
+  days,
+  mode,
+  submit,
+  initialClient,
+  requestUrgent,
+  joinWaitlist,
+}: BookingFormProps) {
   const [serviceId, setServiceId] = useState<string>("");
   const [workerId, setWorkerId] = useState<string>("");
   const [dateIso, setDateIso] = useState<string>(days.find((d) => !d.closed)?.iso ?? days[0]?.iso ?? "");
@@ -86,6 +98,8 @@ export function BookingForm({ slug, services, workers, days, mode, submit, initi
   const [pending, startTransition] = useTransition();
   const [refreshKey, setRefreshKey] = useState(0);
   const [urgent, setUrgent] = useState(false);
+  // "service|date" -> outcome of joining the waitlist for that day.
+  const [waitlist, setWaitlist] = useState<Record<string, UrgentResult>>({});
   const [reason, setReason] = useState("");
   const [urgentSent, setUrgentSent] = useState(false);
 
@@ -309,6 +323,21 @@ export function BookingForm({ slug, services, workers, days, mode, submit, initi
           {slots && slots.length === 0 && !urgent && (
             <div className="grid gap-3">
               <p className="rounded-xl bg-sand/60 px-4 py-3 text-sm text-muted">Nema slobodnih termina za ovaj dan. Probajte drugi dan.</p>
+              {joinWaitlist && serviceId && dateIso && !days.find((d) => d.iso === dateIso)?.closed && (
+                <WaitlistOffer
+                  outcome={waitlist[`${serviceId}|${dateIso}`]}
+                  loginHref={`/prijava?next=${encodeURIComponent(`/s/${slug}#zakazivanje`)}`}
+                  onJoin={async () => {
+                    const key = `${serviceId}|${dateIso}`;
+                    try {
+                      const res = await joinWaitlist(serviceId, dateIso);
+                      setWaitlist((w) => ({ ...w, [key]: res }));
+                    } catch {
+                      setWaitlist((w) => ({ ...w, [key]: { ok: false, error: "Došlo je do greške. Pokušajte ponovo." } }));
+                    }
+                  }}
+                />
+              )}
               {requestUrgent && !days.find((d) => d.iso === dateIso)?.closed && (
                 <div className="rounded-xl border border-burgundy/25 p-4">
                   <p className="text-sm">Morate baš ovog dana? Pošaljite hitan zahtev i salon će probati da zameni termin sa nekim.</p>
@@ -423,5 +452,37 @@ export function BookingForm({ slug, services, workers, days, mode, submit, initi
         </button>
       </div>
     </form>
+  );
+}
+
+function WaitlistOffer(props: { outcome: UrgentResult | undefined; loginHref: string; onJoin: () => Promise<void> }) {
+  const [pending, startTransition] = useTransition();
+  if (props.outcome?.ok) {
+    return (
+      <p className="rounded-xl bg-forest-soft px-4 py-3 text-sm text-forest" role="status">
+        Na listi čekanja ste. Ako se oslobodi termin, javljamo vam mejlom.
+      </p>
+    );
+  }
+  const error = props.outcome && !props.outcome.ok ? props.outcome.error : null;
+  return (
+    <div className="rounded-xl border border-line p-4">
+      <p className="text-sm">Javite mi mejlom ako se ovog dana oslobodi termin.</p>
+      {error === "login" ? (
+        <a href={props.loginHref} className="btn-secondary btn-sm mt-3">
+          Prijavite se za listu čekanja
+        </a>
+      ) : (
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => startTransition(props.onJoin)}
+          className="btn-secondary btn-sm mt-3"
+        >
+          {pending ? "Upisujem…" : "Lista čekanja"}
+        </button>
+      )}
+      {error && error !== "login" && <p className="alert-error mt-3">{error}</p>}
+    </div>
   );
 }

@@ -5,6 +5,8 @@ import type { AppointmentStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireSalonAccess } from "@/lib/access";
 import { applyComboPricing } from "@/lib/comboPricing";
+import { TIME_ZONE, formatLocalDateIso } from "@/lib/time";
+import { notifyWaitlist } from "@/lib/waitlist";
 import { bookingInputSchema, createAppointment, type BookingResult } from "@/lib/booking";
 import { setUrgentRequestStatus, swapForUrgentRequest, swapSchema } from "@/lib/urgent";
 
@@ -40,6 +42,10 @@ export async function setAppointmentStatus(slug: string, formData: FormData): Pr
       // Cancelling or restoring a service can change combo prices in the same visit.
       if (count > 0) await applyComboPricing(tx, id);
     });
+    if (status === "CANCELLED") {
+      const cancelled = await db.appointment.findFirst({ where: { id, salonId: salon.id }, select: { startTime: true } });
+      if (cancelled) await notifyWaitlist(salon.id, formatLocalDateIso(cancelled.startTime, TIME_ZONE));
+    }
   } catch (error) {
     // Re-activating a cancelled slot that is now taken violates the overlap constraint.
     console.error(error);

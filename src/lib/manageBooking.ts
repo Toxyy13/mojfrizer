@@ -3,6 +3,7 @@ import { db } from "./db";
 import { getAvailableSlots } from "./booking";
 import { applyComboPricing } from "./comboPricing";
 import { sendMail } from "./mail";
+import { notifyWaitlist } from "./waitlist";
 import { fullAddress } from "./salonAddress";
 import { TIME_ZONE, formatLocalDateIso, localToUtc } from "./time";
 
@@ -101,6 +102,7 @@ export async function cancelByCustomer(token: string): Promise<ManageResult> {
     await tx.appointment.update({ where: { id: a.id }, data: { status: "CANCELLED" } });
     await applyComboPricing(tx, a.id);
   });
+  await notifyWaitlist(a.salonId, formatLocalDateIso(a.startTime, TIME_ZONE));
   await notifySalon(a, `Otkazan termin: ${customerName(a)}`, [
     `${customerName(a)} je otkazao/la termin:`,
     `${appointmentWhenFormat.format(a.startTime)}, ${a.service.name} (${a.worker.displayName})`,
@@ -159,6 +161,7 @@ export async function rescheduleByCustomer(token: string, dateIso: string, minut
       if (!moved) continue;
       await db.$transaction((tx) => applyComboPricing(tx, a.id));
       if (oldDayIso !== dateIso) await repriceDay(a.salonId, oldDayIso, a.id);
+      await notifyWaitlist(a.salonId, oldDayIso);
       await notifySalon(a, `Pomeren termin: ${customerName(a)}`, [
         `${customerName(a)} je pomerio/la termin (${a.service.name}):`,
         `sa: ${appointmentWhenFormat.format(a.startTime)}`,
