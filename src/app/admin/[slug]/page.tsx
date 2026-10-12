@@ -6,6 +6,7 @@ import { Avatar } from "@/components/Avatar";
 import { avatarUrl } from "@/lib/avatar";
 import { requireSalonAccess } from "@/lib/access";
 import { unreadForSalon } from "@/lib/chat";
+import { clientFlags, clientKeyOf } from "@/lib/clients";
 import { getRevenue } from "@/lib/revenue";
 import { formatRsd } from "@/lib/money";
 import { TIME_ZONE, addDaysIso, formatDateSr, formatLocalTime, isValidDateIso, localToUtc, todayIso } from "@/lib/time";
@@ -71,6 +72,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
   const urgentRequests = await loadUrgentRequests(salon.id, today);
   const unreadMessages = await unreadForSalon(salon.id);
   const activeCount = appointments.filter((a) => a.status === "BOOKED").length;
+  const flags = await clientFlags(salon.id, appointments.map(clientKeyOf));
 
   return (
     <main className="mx-auto max-w-7xl px-6 pb-24">
@@ -82,6 +84,9 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
         <nav className="flex gap-6 text-sm">
           <Link href={`/admin/${salon.slug}/poruke`} className="underline underline-offset-4 hover:text-burgundy">
             Poruke{unreadMessages > 0 ? ` (${unreadMessages})` : ""}
+          </Link>
+          <Link href={`/admin/${salon.slug}/musterije`} className="underline underline-offset-4 hover:text-burgundy">
+            Mušterije
           </Link>
           {salon.ownerId === user.id && (
             <Link href={`/admin/${salon.slug}/podesavanja`} className="underline underline-offset-4 hover:text-burgundy">
@@ -155,7 +160,17 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
                             <Avatar name={a.client.name} src={avatarUrl(a.client.id, a.client.avatar)} size={24} />
                           </span>
                         )}
-                        <span className="font-medium">{a.guestName ?? a.client?.name ?? "Mušterija"}</span>
+                        <Link
+                          href={`/admin/${salon.slug}/musterije/${encodeURIComponent(clientKeyOf(a))}`}
+                          className="font-medium hover:text-burgundy"
+                        >
+                          {a.guestName ?? a.client?.name ?? "Mušterija"}
+                        </Link>
+                        {(flags.get(clientKeyOf(a))?.noShows ?? 0) > 0 && (
+                          <span className="text-[10px] uppercase tracking-wider text-burgundy">
+                            {flags.get(clientKeyOf(a))?.noShows}× nije došao
+                          </span>
+                        )}
                         {a.source === "SALON" && (
                           <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">salon</span>
                         )}
@@ -165,6 +180,9 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
                         <PhoneLink phone={a.guestPhone ?? a.client?.phone ?? null} />
                       </p>
                       {a.note && <p className="mt-1 text-xs italic text-neutral-500">{a.note}</p>}
+                      {flags.get(clientKeyOf(a))?.note && (
+                        <p className="mt-1 text-xs text-neutral-500">Beleška: {flags.get(clientKeyOf(a))?.note}</p>
+                      )}
                       <div className="mt-2 flex items-center gap-3 text-xs">
                         <span className="text-neutral-500">{STATUS_LABEL[a.status]}</span>
                         {a.status === "BOOKED" ? (

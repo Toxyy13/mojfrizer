@@ -3,6 +3,7 @@
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { bookingInputSchema, createAppointment, type BookingResult } from "@/lib/booking";
+import { isBlockedOnline } from "@/lib/clients";
 import { sendBookingConfirmation } from "@/lib/manageBooking";
 import { createUrgentRequest, urgentRequestSchema, type ActionResult } from "@/lib/urgent";
 
@@ -14,10 +15,14 @@ export async function bookOnline(slug: string, raw: unknown): Promise<BookingRes
     if (!salon) return { ok: false, error: "Salon nije pronađen." };
     // Guests can book with just name and phone; a logged-in customer gets the booking on their account.
     const user = await getSessionUser();
+    const clientId = user?.role === "CLIENT" ? user.id : null;
+    if (await isBlockedOnline(salon.id, { guestPhone: parsed.data.clientPhone, clientId })) {
+      return { ok: false, error: "Za ovaj termin pozovite salon telefonom." };
+    }
     const result = await createAppointment(salon.id, parsed.data, {
       source: "ONLINE",
       createdById: user?.id ?? null,
-      clientId: user?.role === "CLIENT" ? user.id : null,
+      clientId,
     });
     if (result.ok) await sendBookingConfirmation(result.appointmentId);
     return result;
