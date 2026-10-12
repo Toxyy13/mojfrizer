@@ -54,7 +54,7 @@ Copy and paste this snippet at the start of your Claude prompt session:
 Chosen direction: **A. Editorial**, made warm and touch-friendly. All tokens and shared classes live in `src/app/globals.css`.
 
 * **Colors:** `cream` page background, `white` cards, `line` borders, `charcoal` text, `muted` secondary text, `burgundy` accent (`burgundy-soft` for tinted backgrounds), `forest` for success.
-* **Fonts:** `font-serif` (Fraunces) for headings and big numbers, `font-sans` (Inter) for everything else.
+* **Fonts:** `font-serif` (Bricolage Grotesque, variable width and weight) for headings and the giant wordmark, `font-sans` (Plus Jakarta Sans) for text. Both ship latin-ext (š ž č ć đ). Motion helpers in `globals.css`: `reveal`, `reveal-scale`, `animate-letter`, `wordmark-letter`, `btn-shine`, `spotlight`. Do not fade large form blocks.
 * **Classes to reuse on new pages:** `page` (container), `eyebrow` (small uppercase label), `card`, `btn-primary`, `btn-secondary`, `btn-ghost`, `btn-sm`, `field` + `field-label` + `field-hint`, `chip` (selected via `aria-pressed`), `badge`, `alert-error`, `link`.
 * **Shared layout:** `SiteHeader` (sticky) and `SiteFooter` on customer pages.
 * **Mobile first:** tap targets at least 44px (`min-h-11`), 16px side gutter (`page`), primary action reachable with the thumb.
