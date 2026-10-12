@@ -87,7 +87,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
                 {openNow.label}
               </span>
             </div>
-            <h1 className="mt-4 font-serif text-5xl leading-[0.95] tracking-tight sm:text-7xl md:text-8xl">{salon.name}</h1>
+            <h1 className="mt-4 font-serif text-[clamp(3.25rem,13vw,9rem)] font-extrabold leading-[0.9] tracking-[-0.04em]">{salon.name}</h1>
             <p className="mt-4 text-lg text-muted">{salon.description ?? fullAddress}</p>
           </div>
 
@@ -113,7 +113,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
           </div>
         </section>
 
-        <section className="page grid gap-3 md:grid-cols-3" aria-label="Informacije">
+        <section className="page reveal grid gap-3 md:grid-cols-3" aria-label="Informacije">
           <article className="card overflow-hidden md:col-span-2">
             <iframe
               title={`Mapa: ${fullAddress}`}
@@ -164,10 +164,10 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
           </aside>
         </section>
 
-        <section className="page mt-20 grid gap-8 md:grid-cols-[1fr_2fr]" aria-labelledby="cenovnik">
+        <section className="page reveal mt-24 grid gap-8 md:grid-cols-[1fr_2fr]" aria-labelledby="cenovnik">
           <div>
             <p className="eyebrow">Usluge</p>
-            <h2 id="cenovnik" className="mt-3 font-serif text-4xl sm:text-5xl">
+            <h2 id="cenovnik" className="mt-3 font-serif text-5xl font-bold leading-none sm:text-7xl">
               Cenovnik
             </h2>
             {cheapest !== null && <p className="mt-3 text-muted">Usluge već od {formatPrice(cheapest)}.</p>}
@@ -220,11 +220,11 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
           </section>
         )}
 
-        <section id="zakazivanje" className="page mt-20 scroll-mt-20" aria-labelledby="zakazi-naslov">
+        <section id="zakazivanje" className="page mt-24 scroll-mt-20" aria-labelledby="zakazi-naslov">
           <div className="card grid gap-10 p-5 sm:p-8 md:grid-cols-[1fr_2fr] md:p-10">
             <div>
               <p className="eyebrow">Online zakazivanje</p>
-              <h2 id="zakazi-naslov" className="mt-3 font-serif text-4xl sm:text-5xl">
+              <h2 id="zakazi-naslov" className="mt-3 font-serif text-5xl font-bold leading-none sm:text-6xl">
                 Zakažite termin
               </h2>
               <p className="mt-4 text-sm text-muted">

@@ -1,15 +1,16 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { Fraunces, Inter } from "next/font/google";
+import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
-// Fraunces renders Serbian diacritics (š, ć, ž) cleanly at display sizes.
-const fraunces = Fraunces({
+// Display: Bricolage Grotesque (variable width and weight, used for the big animated wordmark).
+// Body: Plus Jakarta Sans. Both ship latin-ext, so š, ž, č, ć, đ render natively.
+const display = Bricolage_Grotesque({
   subsets: ["latin", "latin-ext"],
-  variable: "--font-fraunces",
-  axes: ["opsz", "SOFT"],
+  variable: "--font-display",
+  axes: ["opsz", "wdth"],
 });
-const inter = Inter({ subsets: ["latin", "latin-ext"], variable: "--font-inter" });
+const body = Plus_Jakarta_Sans({ subsets: ["latin", "latin-ext"], variable: "--font-body" });
 
 export const metadata: Metadata = {
   title: "mojfrizer · zakažite frizera online",
@@ -22,7 +23,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="sr-Latn" className={`${fraunces.variable} ${inter.variable}`}>
+    <html lang="sr-Latn" className={`${display.variable} ${body.variable}`}>
       <body className="min-h-dvh bg-cream font-sans text-charcoal antialiased">{children}</body>
     </html>
   );
