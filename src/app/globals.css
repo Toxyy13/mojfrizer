@@ -18,8 +18,8 @@
   --color-muted: #6f6a64;
   --color-forest: #1b3a2b;
   --color-forest-soft: #e6efe9;
-  --font-serif: var(--font-fraunces), "Fraunces", Georgia, serif;
-  --font-sans: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-display), "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-body), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --animate-rise: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 
   @keyframes rise {
@@ -115,4 +115,120 @@
 
 @utility link {
   @apply underline decoration-line decoration-1 underline-offset-4 transition-colors hover:text-burgundy hover:decoration-burgundy;
+}
+
+/* ---------- Motion ---------- */
+
+@layer base {
+  /* Display font has no italic: emphasis is color, not slant. */
+  em {
+    font-style: normal;
+  }
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+}
+
+@theme {
+  --animate-float: float 14s ease-in-out infinite;
+  --animate-float-slow: float 22s ease-in-out infinite reverse;
+  --animate-marquee: marquee 38s linear infinite;
+  --animate-letter: letter 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-fade-up: fade-up 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+
+  @keyframes float {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(4%, -6%, 0) scale(1.12); }
+  }
+  @keyframes marquee {
+    to { transform: translateX(-50%); }
+  }
+  @keyframes letter {
+    from { opacity: 0; transform: translateY(70%) rotate(6deg); filter: blur(10px); }
+    to { opacity: 1; transform: none; filter: blur(0); }
+  }
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+/* Giant wordmark: each letter swells in width and weight under the pointer. */
+@utility wordmark-letter {
+  display: inline-block;
+  font-variation-settings: "wdth" 100, "wght" 800;
+  transition: font-variation-settings 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.4s, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  &:hover {
+    font-variation-settings: "wdth" 75, "wght" 300;
+    color: var(--color-burgundy);
+    transform: translateY(-2%) rotate(-3deg);
+  }
+}
+
+/* Sweep of light across primary buttons. */
+@utility btn-shine {
+  position: relative;
+  overflow: hidden;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 0.28) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 0.7s ease;
+  }
+  &:hover::after {
+    transform: translateX(120%);
+  }
+}
+
+/* Spotlight that follows the pointer (set --mx / --my from script). */
+@utility spotlight {
+  background: radial-gradient(520px circle at var(--mx, 50%) var(--my, 30%), rgb(107 29 47 / 0.14), transparent 60%);
+}
+
+/* Scroll-driven reveal. Pure CSS: browsers without support just show the content. */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: reveal-in linear both;
+    animation-timeline: view();
+    animation-range: entry 5% cover 28%;
+  }
+  .reveal-scale {
+    animation: reveal-scale linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 35%;
+  }
+  .parallax-slow {
+    animation: parallax linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 90vh;
+  }
+  @keyframes reveal-in {
+    from { opacity: 0; transform: translateY(48px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes reveal-scale {
+    from { opacity: 0; transform: scale(0.94) translateY(32px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes parallax {
+    to { transform: translateY(-12vh) scale(0.96); opacity: 0.2; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    animation-timeline: auto !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
