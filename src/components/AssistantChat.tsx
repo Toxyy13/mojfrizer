@@ -79,22 +79,25 @@ export function AssistantChat({ slug, salonName }: AssistantChatProps) {
   const suggestions = slug ? SALON_SUGGESTIONS : HOME_SUGGESTIONS;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+    <div className={`fixed right-4 z-50 flex flex-col items-end gap-3 sm:right-6 sm:bottom-6 ${
+        // Salon pages have a sticky booking bar on phones; sit above it.
+        slug ? "bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-6" : "bottom-4"
+      }`}>
       {open && (
         <section
           aria-label="AI asistent"
-          className="flex h-[min(32rem,75vh)] w-[calc(100vw-2rem)] max-w-sm flex-col border border-neutral-200 bg-white"
+          className="animate-rise flex h-[min(32rem,70dvh)] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-[0_24px_60px_-20px_rgb(0_0_0/0.3)]"
         >
-          <header className="flex items-start justify-between border-b border-neutral-200 bg-cream px-5 py-4">
+          <header className="flex items-start justify-between border-b border-line bg-cream px-5 py-4">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.25em] text-neutral-500">AI asistent</p>
+              <p className="eyebrow">AI asistent</p>
               <h2 className="font-serif text-2xl leading-tight">{salonName ?? "mojfrizer"}</h2>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Zatvori asistenta"
-              className="text-xl leading-none text-neutral-500 transition-colors hover:text-burgundy"
+              className="grid size-9 place-items-center rounded-full text-xl leading-none text-muted transition-colors hover:bg-sand hover:text-charcoal"
             >
               ×
             </button>
@@ -103,7 +106,7 @@ export function AssistantChat({ slug, salonName }: AssistantChatProps) {
           <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-5 py-4 text-sm" aria-live="polite">
             {messages.length === 0 && (
               <div>
-                <p className="text-neutral-600">
+                <p className="text-muted">
                   {slug
                     ? "Pitajte me za cene, radno vreme ili slobodne termine."
                     : "Pomoći ću vam da nađete salon i objasniću kako se zakazuje."}
@@ -114,7 +117,7 @@ export function AssistantChat({ slug, salonName }: AssistantChatProps) {
                       key={s}
                       type="button"
                       onClick={() => void ask(s)}
-                      className="border border-neutral-200 px-3 py-1.5 text-left text-xs transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-burgundy hover:text-burgundy"
+                      className="rounded-full border border-line px-3 py-1.5 text-left text-xs transition-all duration-200 ease-out hover:border-burgundy hover:text-burgundy"
                     >
                       {s}
                     </button>
@@ -127,14 +130,14 @@ export function AssistantChat({ slug, salonName }: AssistantChatProps) {
                 key={i}
                 className={
                   m.role === "user"
-                    ? "ml-8 whitespace-pre-wrap bg-charcoal px-3 py-2 text-white"
-                    : "mr-8 whitespace-pre-wrap border border-neutral-200 bg-cream px-3 py-2"
+                    ? "ml-8 whitespace-pre-wrap rounded-2xl rounded-br-md bg-burgundy px-3.5 py-2 text-white"
+                    : "mr-8 whitespace-pre-wrap rounded-2xl rounded-bl-md bg-sand px-3.5 py-2"
                 }
               >
                 {m.role === "assistant" ? linkify(m.content) : m.content}
               </p>
             ))}
-            {pending && <p className="mr-8 animate-pulse text-neutral-500">Asistent piše…</p>}
+            {pending && <p className="mr-8 animate-pulse text-muted">Asistent piše…</p>}
             {error && <p className="text-burgundy">{error}</p>}
           </div>
 
@@ -142,12 +145,12 @@ export function AssistantChat({ slug, salonName }: AssistantChatProps) {
             <a
               href="#zakazivanje"
               onClick={() => setOpen(false)}
-              className="border-t border-neutral-200 px-5 py-2 text-center text-xs uppercase tracking-[0.2em] text-burgundy hover:bg-cream"
+              className="border-t border-line px-5 py-2.5 text-center text-sm font-medium text-burgundy hover:bg-cream"
             >
               Zakaži termin
             </a>
           )}
-          <form onSubmit={onSubmit} className="flex gap-2 border-t border-neutral-200 px-3 py-3">
+          <form onSubmit={onSubmit} className="flex gap-2 border-t border-line p-2">
             <label htmlFor="assistant-input" className="sr-only">
               Vaše pitanje
             </label>
@@ -157,25 +160,26 @@ export function AssistantChat({ slug, salonName }: AssistantChatProps) {
               onChange={(e) => setInput(e.target.value)}
               maxLength={1000}
               placeholder="Napišite pitanje…"
-              className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none placeholder:text-neutral-400"
+              className="min-w-0 flex-1 bg-transparent px-3 py-2 text-base outline-none placeholder:text-neutral-400"
             />
             <button
               type="submit"
               disabled={pending || !input.trim()}
-              className="bg-burgundy px-4 text-xs uppercase tracking-[0.15em] text-white transition-colors hover:bg-burgundy-dark disabled:opacity-40"
+              className="btn-primary btn-sm shrink-0"
             >
               Pošalji
             </button>
           </form>
-          <p className="px-5 pb-2 text-[10px] text-neutral-400">Odgovore daje AI i mogu sadržati greške. Termin potvrđuje salon.</p>
+          <p className="px-5 pb-2.5 text-[10px] text-muted">Odgovore daje AI i mogu sadržati greške. Termin potvrđuje salon.</p>
         </section>
       )}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="bg-burgundy px-5 py-3 text-xs uppercase tracking-[0.2em] text-white transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-burgundy-dark"
+        className="btn bg-charcoal text-white shadow-[0_10px_30px_-10px_rgb(0_0_0/0.4)] hover:-translate-y-0.5 hover:bg-black"
       >
+        <span aria-hidden>{open ? "×" : "✦"}</span>
         {open ? "Zatvori" : "Pitajte asistenta"}
       </button>
     </div>
