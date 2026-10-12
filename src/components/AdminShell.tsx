@@ -4,7 +4,7 @@ import { logout } from "@/app/prijava/actions";
 import { unreadForSalon } from "@/lib/chat";
 import { Logo } from "./Logo";
 
-export type AdminTab = "raspored" | "poruke" | "podesavanja";
+export type AdminTab = "raspored" | "poruke" | "musterije" | "izvestaji" | "podesavanja";
 
 interface AdminShellProps {
   salon: { id: string; name: string; slug: string; ownerId: string };
@@ -20,7 +20,11 @@ export async function AdminShell({ salon, user, active, children }: AdminShellPr
     { id: "raspored", label: "Raspored", href: `/admin/${salon.slug}` },
     { id: "poruke", label: "Poruke", href: `/admin/${salon.slug}/poruke`, badge: unread },
   ];
-  if (salon.ownerId === user.id) tabs.push({ id: "podesavanja", label: "Podešavanja", href: `/admin/${salon.slug}/podesavanja` });
+  tabs.push({ id: "musterije", label: "Mušterije", href: `/admin/${salon.slug}/musterije` });
+  if (salon.ownerId === user.id) {
+    tabs.push({ id: "izvestaji", label: "Izveštaji", href: `/admin/${salon.slug}/izvestaji` });
+    tabs.push({ id: "podesavanja", label: "Podešavanja", href: `/admin/${salon.slug}/podesavanja` });
+  }
 
   return (
     <div className="min-h-dvh">

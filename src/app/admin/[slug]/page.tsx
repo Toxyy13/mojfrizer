@@ -5,6 +5,7 @@ import { formatPhone } from "@/lib/phone";
 import { Avatar } from "@/components/Avatar";
 import { avatarUrl } from "@/lib/avatar";
 import { requireSalonAccess } from "@/lib/access";
+import { clientFlags, clientKeyOf } from "@/lib/clients";
 import { getRevenue } from "@/lib/revenue";
 import { formatRsd } from "@/lib/money";
 import { TIME_ZONE, addDaysIso, formatDateSr, formatLocalTime, isValidDateIso, localToUtc, todayIso } from "@/lib/time";
@@ -69,6 +70,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
   const statusAction = setAppointmentStatus.bind(null, slug);
   const urgentRequests = await loadUrgentRequests(salon.id, today);
   const activeCount = appointments.filter((a) => a.status === "BOOKED").length;
+  const flags = await clientFlags(salon.id, appointments.map(clientKeyOf));
 
   return (
     <AdminShell salon={salon} user={user} active="raspored">
@@ -138,9 +140,15 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             {a.client && <Avatar name={a.client.name} src={avatarUrl(a.client.id, a.client.avatar)} size={24} />}
-                            <span className={`font-medium ${a.status === "CANCELLED" ? "line-through" : ""}`}>
+                            <Link
+                              href={`/admin/${salon.slug}/musterije/${encodeURIComponent(clientKeyOf(a))}`}
+                              className={`font-medium hover:text-burgundy ${a.status === "CANCELLED" ? "line-through" : ""}`}
+                            >
                               {a.guestName ?? a.client?.name ?? "Mušterija"}
-                            </span>
+                            </Link>
+                            {(flags.get(clientKeyOf(a))?.noShows ?? 0) > 0 && (
+                              <span className="badge bg-burgundy text-white">{flags.get(clientKeyOf(a))?.noShows}× nije došao</span>
+                            )}
                             {a.source === "SALON" && <span className="badge bg-sand text-muted">upisao salon</span>}
                             <span className={`badge ml-auto ${STATUS_STYLE[a.status].badge}`}>{STATUS_LABEL[a.status]}</span>
                           </div>
@@ -148,6 +156,9 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
                             {a.service.name} · {formatRsd(a.price)} · <PhoneLink phone={a.guestPhone ?? a.client?.phone ?? null} />
                           </p>
                           {a.note && <p className="mt-2 rounded-lg bg-cream px-3 py-2 text-xs text-muted">„{a.note}”</p>}
+                          {flags.get(clientKeyOf(a))?.note && (
+                            <p className="mt-2 text-xs text-muted">Beleška: {flags.get(clientKeyOf(a))?.note}</p>
+                          )}
                           <div className="mt-3 flex flex-wrap gap-2">
                             {a.status === "BOOKED" ? (
                               <>
