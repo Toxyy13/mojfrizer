@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { cancelByCustomer, rescheduleByCustomer, type ManageResult } from "@/lib/manageBooking";
+import { submitReview } from "@/lib/reviews";
 import { isValidDateIso } from "@/lib/time";
 
 export async function cancelBooking(token: string): Promise<ManageResult> {
@@ -27,4 +28,14 @@ export async function rescheduleBooking(token: string, dateIso: string, minute: 
     console.error(error);
     return { ok: false, error: "Pomeranje nije uspelo. Pokušajte ponovo ili pozovite salon." };
   }
+}
+
+export async function reviewVisit(token: string, formData: FormData): Promise<void> {
+  try {
+    const result = await submitReview(token, Number(formData.get("rating")), String(formData.get("comment") ?? ""));
+    if (!result.ok) console.error(`review refused: ${result.error}`);
+  } catch (error) {
+    console.error(error);
+  }
+  revalidatePath(`/termin/${token}`);
 }

@@ -12,6 +12,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StickyBookBar } from "@/components/StickyBookBar";
 import { getSessionUser } from "@/lib/auth";
+import { formatRating, getSalonRating, ratingCountLabel } from "@/lib/reviews";
 import { formatPhone } from "@/lib/phone";
 import { bookOnline, joinSalonWaitlist, requestUrgent } from "./actions";
 
@@ -49,6 +50,10 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
   const salon = await loadSalon(slug);
   if (!salon) notFound();
 
+  const [rating, reviews] = await Promise.all([
+    getSalonRating(salon.id),
+    db.review.findMany({ where: { salonId: salon.id }, orderBy: { createdAt: "desc" }, take: 6 }),
+  ]);
   const session = await getSessionUser();
   const customer = session
     ? await db.user.findUnique({ where: { id: session.id }, select: { name: true, phone: true, favoriteSalonId: true } })
@@ -71,6 +76,11 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
           <div className="animate-rise">
             <div className="flex flex-wrap items-center gap-2">
               <span className="eyebrow">Frizerski salon · {salon.city}</span>
+              {rating.count > 0 && (
+                <a href="#ocene" className="badge bg-burgundy-soft text-burgundy">
+                  ★ {formatRating(rating.average)} · {ratingCountLabel(rating.count)}
+                </a>
+              )}
               <span className={`badge ${openNow.open ? "bg-forest-soft text-forest" : "bg-sand text-muted"}`}>
                 <span aria-hidden className={`mr-1.5 size-1.5 rounded-full ${openNow.open ? "bg-forest" : "bg-muted"}`} />
                 {openNow.label}
@@ -182,6 +192,32 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
             ))}
           </div>
         </section>
+
+        {reviews.length > 0 && (
+          <section id="ocene" className="page mt-20 grid scroll-mt-20 gap-8 md:grid-cols-[1fr_2fr]" aria-labelledby="ocene-naslov">
+            <div>
+              <p className="eyebrow">Utisci mušterija</p>
+              <h2 id="ocene-naslov" className="mt-3 font-serif text-4xl sm:text-5xl">
+                ★ {formatRating(rating.average)}
+              </h2>
+              <p className="mt-3 text-muted">
+                {ratingCountLabel(rating.count)}, samo od mušterija koje su bile u salonu.
+              </p>
+            </div>
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {reviews.map((r) => (
+                <li key={r.id} className="card p-5">
+                  <p className="text-burgundy" aria-label={`${r.rating} od 5`}>
+                    {"★".repeat(r.rating)}
+                    <span className="text-line">{"★".repeat(5 - r.rating)}</span>
+                  </p>
+                  {r.comment && <p className="mt-2 text-sm">„{r.comment}”</p>}
+                  <p className="mt-3 text-xs text-muted">{r.authorName}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section id="zakazivanje" className="page mt-20 scroll-mt-20" aria-labelledby="zakazi-naslov">
           <div className="card grid gap-10 p-5 sm:p-8 md:grid-cols-[1fr_2fr] md:p-10">
