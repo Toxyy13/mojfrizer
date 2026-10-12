@@ -23,37 +23,37 @@ export function ChatThread({ messages, viewerIsSalon, send, emptyHint }: ChatThr
   return (
     <div>
       <ChatRefresh />
-      <ol className="grid gap-4 border-y border-neutral-200 py-8" aria-live="polite">
-        {messages.length === 0 && <li className="text-neutral-500">{emptyHint}</li>}
+      <ol className="grid min-h-64 content-end gap-3 rounded-2xl border border-line bg-white p-4 sm:p-6" aria-live="polite">
+        {messages.length === 0 && <li className="self-center py-10 text-center text-sm text-muted">{emptyHint}</li>}
         {messages.map((m) => {
           const mine = m.fromSalon === viewerIsSalon;
           return (
             <li key={m.id} className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
               <p
-                className={`max-w-[85%] whitespace-pre-wrap break-words px-4 py-3 ${
-                  mine ? "bg-burgundy text-white" : "border border-neutral-300"
+                className={`max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed ${
+                  mine ? "rounded-br-md bg-burgundy text-white" : "rounded-bl-md bg-sand"
                 }`}
               >
                 {m.text}
               </p>
-              <span className="mt-1 text-xs text-neutral-500">{timeFormat.format(m.createdAt)}</span>
+              <span className="mt-1 px-1 text-[11px] text-muted">{timeFormat.format(m.createdAt)}</span>
             </li>
           );
         })}
       </ol>
-      <form action={send} className="mt-6 flex items-end gap-4">
+      <form action={send} className="sticky bottom-3 mt-4 flex items-end gap-2 rounded-2xl border border-line bg-white p-2 shadow-[0_8px_30px_-12px_rgb(0_0_0/0.15)]">
         <label className="flex-1">
           <span className="sr-only">Poruka</span>
           <textarea
             name="text"
             required
-            rows={2}
+            rows={1}
             maxLength={MAX_MESSAGE_LENGTH}
             placeholder="Napišite poruku…"
-            className="w-full resize-none border-b border-neutral-300 bg-transparent py-2 text-lg outline-none transition-colors focus:border-burgundy"
+            className="block max-h-40 w-full resize-none bg-transparent px-3 py-2.5 text-base outline-none placeholder:text-neutral-400"
           />
         </label>
-        <button className="bg-burgundy px-8 py-3 text-sm uppercase tracking-[0.2em] text-white transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-burgundy-dark">
+        <button className="btn-primary shrink-0 px-5">
           Pošalji
         </button>
       </form>
