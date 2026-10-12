@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { AdminShell } from "@/components/AdminShell";
 import { requireSalonOwner } from "@/lib/access";
+import { db } from "@/lib/db";
+import { formatRating, getSalonRating, ratingCountLabel } from "@/lib/reviews";
 import { formatRsd } from "@/lib/money";
 import { getMonthReport, isValidMonthIso, shiftMonth, type ReportRow } from "@/lib/reports";
 import { TIME_ZONE, todayIso } from "@/lib/time";
@@ -31,7 +33,16 @@ export default async function ReportsPage({ params, searchParams }: PageProps) {
   const current = todayIso(TIME_ZONE).slice(0, 7);
   const requested = (await searchParams).mesec ?? "";
   const monthIso = isValidMonthIso(requested) ? requested : current;
-  const r = await getMonthReport(salon.id, monthIso);
+  const [r, rating, reviews] = await Promise.all([
+    getMonthReport(salon.id, monthIso),
+    getSalonRating(salon.id),
+    db.review.findMany({
+      where: { salonId: salon.id },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      include: { appointment: { select: { service: { select: { name: true } }, worker: { select: { displayName: true } } } } },
+    }),
+  ]);
 
   const booked = r.byStatus.BOOKED + r.byStatus.COMPLETED + r.byStatus.NO_SHOW + r.byStatus.CANCELLED;
   const change = r.previousRevenuePara > 0 ? (r.revenuePara - r.previousRevenuePara) / r.previousRevenuePara : null;
@@ -91,6 +102,34 @@ export default async function ReportsPage({ params, searchParams }: PageProps) {
               <span className="tabular-nums text-muted">{`${Number(d.dateIso.slice(8))}.${Number(d.dateIso.slice(5, 7))}.`}</span>
               <span className="h-3 rounded-full bg-burgundy/80" style={{ width: `${(d.revenuePara / maxDay) * 100}%` }} />
               <span className="text-right tabular-nums">{formatRsd(d.revenuePara)}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="mt-12" aria-labelledby="ocene">
+        <h2 id="ocene" className="eyebrow">
+          Ocene mušterija{rating.count > 0 ? ` · ★ ${formatRating(rating.average)} (${ratingCountLabel(rating.count)})` : ""}
+        </h2>
+        {reviews.length === 0 && (
+          <p className="mt-4 text-sm text-muted">
+            Još nema ocena. Mušterija može da oceni završen termin preko linka „Moj termin” ili iz svog naloga.
+          </p>
+        )}
+        <ul className="mt-4 divide-y divide-line border-y border-line">
+          {reviews.map((rv) => (
+            <li key={rv.id} className="grid gap-1 py-3 text-sm sm:grid-cols-[6rem_1fr_auto] sm:items-baseline sm:gap-4">
+              <span className="text-burgundy" aria-label={`${rv.rating} od 5`}>
+                {"★".repeat(rv.rating)}
+                <span className="text-line">{"★".repeat(5 - rv.rating)}</span>
+              </span>
+              <span>
+                {rv.comment ? `„${rv.comment}”` : <span className="text-muted">bez komentara</span>}
+                <span className="block text-xs text-muted">
+                  {rv.authorName} · {rv.appointment.service.name} · {rv.appointment.worker.displayName}
+                </span>
+              </span>
+              <span className="text-xs text-muted tabular-nums">{rv.createdAt.toLocaleDateString("sr-Latn-RS")}</span>
             </li>
           ))}
         </ul>

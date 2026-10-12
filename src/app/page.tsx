@@ -6,6 +6,7 @@ import { AssistantWidget } from "@/components/AssistantWidget";
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { fullAddress } from "@/lib/salonAddress";
+import { formatRating, getSalonRatings } from "@/lib/reviews";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,7 @@ export default async function HomePage({ searchParams }: HomeProps) {
     }),
     user ? db.user.findUnique({ where: { id: user.id }, select: { favoriteSalonId: true } }) : null,
   ]);
+  const ratings = await getSalonRatings(salons.map((s) => s.id));
 
   const returnTo = q ? `/?q=${encodeURIComponent(q)}` : "/";
   return (
@@ -138,7 +140,12 @@ export default async function HomePage({ searchParams }: HomeProps) {
                   <Link href={`/s/${s.slug}`} className="block font-serif text-2xl leading-tight after:absolute after:inset-0">
                     {s.name}
                   </Link>
-                  <p className="mt-1 truncate text-sm text-muted">{fullAddress(s)}</p>
+                  <p className="mt-1 truncate text-sm text-muted">
+                    {ratings.has(s.id) && (
+                      <span className="mr-2 text-burgundy">★ {formatRating(ratings.get(s.id)?.average ?? 0)}</span>
+                    )}
+                    {fullAddress(s)}
+                  </p>
                 </div>
                 <div className="relative z-10 flex shrink-0 items-center gap-2">
                   {me && (

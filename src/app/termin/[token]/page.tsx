@@ -10,7 +10,8 @@ import { formatPrice } from "@/lib/money";
 import { fullAddress } from "@/lib/salonAddress";
 import { upcomingDays } from "@/lib/salonView";
 import { TIME_ZONE, todayIso } from "@/lib/time";
-import { cancelBooking, rescheduleBooking } from "./actions";
+import { canReview } from "@/lib/reviews";
+import { cancelBooking, rescheduleBooking, reviewVisit } from "./actions";
 
 export const metadata: Metadata = { title: "Moj termin · mojfrizer", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -80,6 +81,44 @@ export default async function ManageBookingPage({ params }: { params: Promise<{ 
               Dodaj u kalendar telefona
             </a>
           </p>
+        )}
+
+        {a.review ? (
+          <section className="card mt-8 p-6" aria-label="Vaša ocena">
+            <p className="eyebrow">Vaša ocena</p>
+            <p className="mt-2 text-2xl text-burgundy" aria-label={`${a.review.rating} od 5`}>
+              {"★".repeat(a.review.rating)}
+              <span className="text-line">{"★".repeat(5 - a.review.rating)}</span>
+            </p>
+            {a.review.comment && <p className="mt-2 text-sm text-muted">„{a.review.comment}”</p>}
+            <p className="mt-2 text-xs text-muted">Hvala!</p>
+          </section>
+        ) : (
+          canReview(a) && (
+            <section className="card mt-8 p-6" aria-labelledby="oceni">
+              <h2 id="oceni" className="font-serif text-2xl">
+                Kako je bilo?
+              </h2>
+              <p className="field-hint mt-1">Ocena se prikazuje na stranici salona sa vašim imenom i prvim slovom prezimena.</p>
+              <form action={reviewVisit.bind(null, token)} className="mt-4 grid gap-4">
+                {/* Stars are in reverse DOM order, so "this one and every later sibling" = this rating and below. */}
+                <fieldset className="flex flex-row-reverse justify-end gap-1 [&>label:has(:checked)]:text-burgundy [&>label:has(:checked)~label]:text-burgundy [&>label:hover]:text-burgundy [&>label:hover~label]:text-burgundy">
+                  <legend className="sr-only">Ocena od 1 do 5</legend>
+                  {[5, 4, 3, 2, 1].map((n) => (
+                    <label key={n} className="cursor-pointer text-3xl text-line transition-colors">
+                      <input type="radio" name="rating" value={n} required className="sr-only" />
+                      <span aria-hidden>★</span>
+                      <span className="sr-only">{n}</span>
+                    </label>
+                  ))}
+                </fieldset>
+                <textarea name="comment" rows={3} maxLength={500} placeholder="Komentar (nije obavezno)" className="field" />
+                <div>
+                  <button className="btn-primary btn-sm">Pošalji ocenu</button>
+                </div>
+              </form>
+            </section>
+          )
         )}
 
         <section className="mt-8 border-t border-line pt-8">

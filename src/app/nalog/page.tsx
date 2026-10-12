@@ -13,6 +13,7 @@ import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/money";
 import { formatPhone } from "@/lib/phone";
 import { fullAddress } from "@/lib/salonAddress";
+import { canReview } from "@/lib/reviews";
 import { logout } from "../prijava/actions";
 import { resendVerification } from "./actions";
 
@@ -45,6 +46,7 @@ interface BookingRow {
   status: AppointmentStatus;
   price: number;
   manageToken: string;
+  review: { id: string } | null;
   salon: { name: string; slug: string };
   service: { id: string; name: string };
   worker: { id: string; displayName: string };
@@ -98,6 +100,11 @@ function BookingList({ title, bookings, empty, upcoming }: { title: string; book
                   Otkaži / pomeri
                 </Link>
               )}
+              {!b.review && canReview(b) && (
+                <Link href={`/termin/${b.manageToken}`} className="link mt-1 mr-3 inline-block text-xs text-burgundy">
+                  Oceni
+                </Link>
+              )}
               {b.status !== "BOOKED" && (
                 <Link
                   href={`/s/${b.salon.slug}?usluga=${b.service.id}&frizer=${b.worker.id}#zakazivanje`}
@@ -138,6 +145,7 @@ export default async function AccountPage() {
           status: true,
           price: true,
           manageToken: true,
+          review: { select: { id: true } },
           salon: { select: { name: true, slug: true } },
           service: { select: { id: true, name: true } },
           worker: { select: { id: true, displayName: true } },

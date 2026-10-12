@@ -46,6 +46,7 @@ export async function loadManagedAppointment(token: string) {
       service: true,
       worker: { select: { id: true, displayName: true } },
       client: { select: { name: true, email: true } },
+      review: { select: { rating: true, comment: true } },
     },
   });
 }
