@@ -7,6 +7,7 @@ import { TIME_ZONE, WEEKDAYS_SR, minutesToHHMM, todayIso, isoWeekdayOf, zonedPar
 import { serviceCategory, toBookingServices, toBookingWorkers, upcomingDays } from "@/lib/salonView";
 import { BookingForm } from "@/components/BookingForm";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { AssistantWidget } from "@/components/AssistantWidget";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StickyBookBar } from "@/components/StickyBookBar";
@@ -208,6 +209,7 @@ export default async function SalonPage({ params }: PageProps) {
       </main>
       <SiteFooter />
       <StickyBookBar targetId="zakazivanje" label="Zakaži termin" hint={openNow.label} />
+      <AssistantWidget slug={salon.slug} salonName={salon.name} />
     </>
   );
 }
