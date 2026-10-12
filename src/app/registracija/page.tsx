@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { GoogleButton } from "@/components/GoogleButton";
 import { AuthForm } from "@/components/AuthForm";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getSessionUser } from "@/lib/auth";
@@ -27,6 +28,7 @@ export default async function RegisterPage({ searchParams }: PageProps) {
         <p className="mt-6 text-neutral-600">
           Sa nalogom vidite svoje termine i odmah dolazite na omiljeni salon.
         </p>
+        <GoogleButton next={next} />
         <AuthForm
           action={register}
           next={next}

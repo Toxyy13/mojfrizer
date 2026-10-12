@@ -32,7 +32,7 @@ export async function verifyCredentials(login: string, password: string): Promis
     where,
     select: { id: true, email: true, name: true, role: true, passwordHash: true },
   });
-  if (!user) return null;
+  if (!user?.passwordHash) return null;
   const ok = await bcrypt.compare(password, user.passwordHash);
   return ok ? { id: user.id, email: user.email, name: user.name, role: user.role } : null;
 }
