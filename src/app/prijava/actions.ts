@@ -10,7 +10,7 @@ export interface FormState {
   values?: Record<string, string>;
 }
 
-/** Customers log in with their phone number, salon staff with email. */
+/** Email (or, for older accounts, a phone number) plus password. */
 export async function login(_prev: FormState, formData: FormData): Promise<FormState> {
   const loginValue = String(formData.get("login") ?? "");
   const password = String(formData.get("password") ?? "");
@@ -18,7 +18,7 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
   let target: string;
   try {
     const user = await verifyCredentials(loginValue, password);
-    if (!user) return { error: "Pogrešan broj telefona ili lozinka.", values };
+    if (!user) return { error: "Pogrešna email adresa ili lozinka.", values };
     await startSession(user);
     target = safeNextPath(formData.get("next")) ?? (await landingPathFor(user));
   } catch (error) {

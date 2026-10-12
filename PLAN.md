@@ -22,12 +22,14 @@ Jedna aplikacija (Next.js + TypeScript + PostgreSQL + Prisma) za sve salone. Sva
 4. **Frontend** — urađeno osnovno:
    - `/` pretraga salona po imenu i gradu;
    - `/s/{slug}` stranica salona: adresa, mapa, radno vreme, cenovnik, online zakazivanje (gost samo sa imenom i telefonom, ili ulogovana mušterija);
-   - `/prijava` login: mušterija brojem telefona, salon email adresom; salon ide u admin, mušterija na svoj omiljeni salon;
-   - `/registracija` nalog mušterije (ime, telefon, lozinka); `/nalog` omiljeni salon i termini mušterije; dugme „omiljeni salon” na početnoj i na stranici salona;
+   - `/prijava` login: svi emailom (stari nalozi sa telefonom mogu i telefonom); salon ide u admin, mušterija na svoj omiljeni salon;
+   - `/registracija` nalog mušterije (ime, email, lozinka, telefon nije obavezan); `/nalog` omiljeni salon i termini mušterije; dugme „omiljeni salon” na početnoj i na stranici salona;
    - chat salon–mušterija: mušterija piše sa `/poruke/{slug}` (dugme na stranici salona, razgovori u `/nalog`), salon odgovara u `/admin/{slug}/poruke`; nepročitane poruke se broje, stranica se osvežava na 5 s (kasnije pravi real-time, Pusher/Supabase);
    - `/admin/{slug}` raspored za dan po frizeru, statusi, upis termina za mušteriju koja zove telefonom, pazar.
 
-Sledeće: potvrda telefona SMS-om, podešavanja salona (cenovnik, radno vreme, neradni dani) u adminu, SMS/Viber podsetnici, chat.
+Email podsetnik: `GET /api/cron/reminders` (zaštićen `CRON_SECRET`-om) šalje mušterijama sa nalogom mejl za termine u narednih 24h, jednom po terminu. Treba ga zvati svakih ~30 min (cron na hostingu), a slanje traži `RESEND_API_KEY` i `MAIL_FROM` (bez ključa se mejl samo ispiše u log). Gosti bez naloga nemaju email, pa nemaju ni podsetnik.
+
+Sledeće: zaboravljena lozinka, potvrda emaila, podešavanja salona (cenovnik, radno vreme, neradni dani) u adminu, SMS/Viber podsetnici, chat.
 
 ## Pokretanje lokalno
 ```
@@ -38,4 +40,4 @@ npm run db:seed           # ubacuje Kod Olgice
 npm run dev               # http://localhost:3000/s/kod-olgice
 ```
 Baza mora da dozvoli ekstenziju `btree_gist` (Neon, Supabase i običan Postgres je imaju).
-Demo nalozi (lozinka `promeni-me`): `olgica@mojfrizer.com` (vlasnica), mušterija Milica, telefon `064 123 4567` (omiljeni salon Kod Olgice).
+Demo nalozi (lozinka `promeni-me`): `olgica@mojfrizer.com` (vlasnica), mušterija `milica@example.com` (omiljeni salon Kod Olgice).
