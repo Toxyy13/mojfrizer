@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cream: #f7f3ec;
+  --color-burgundy: #6b1d2f;
+  --color-burgundy-dark: #4f1522;
+  --color-charcoal: #1f1d1b;
+  --color-forest: #1b3a2b;
+  --font-serif: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  --font-sans: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
+}

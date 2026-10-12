@@ -89,6 +89,7 @@ async function main(): Promise<void> {
     update: {},
     create: {
       email: "milica@example.com",
+      phone: "+381641234567",
       passwordHash,
       name: "Milica Demo",
       role: Role.CLIENT,

@@ -28,4 +28,11 @@ npm install
 npm run db:migrate        # pravi tabele
 npm run db:seed           # ubacuje Kod Olgice
 ```
-Demo nalozi (lozinka `promeni-me`): `olgica@mojfrizer.com` (vlasnica), `milica@example.com` (mušterija, omiljeni salon Kod Olgice).
+Demo nalozi (lozinka `promeni-me`): `olgica@mojfrizer.com` (vlasnica), mušterija Milica sa telefonom `064 123 4567` (omiljeni salon Kod Olgice).
+
+## Nalozi mušterija
+- `/register`: ime, broj telefona i lozinka. `/login`: mušterije telefonom, saloni email adresom.
+- Posle prijave: omiljeni salon (`/s/{slug}`), pa panel salona za vlasnike i radnike, inače `/search`.
+- `/search`: pretraga po nazivu, gradu ili ulici, uz dugme za omiljeni salon.
+- `/account`: omiljeni salon, predstojeći i raniji termini.
+- Zakazivanje bez naloga i dalje radi. Telefon se za sada ne potvrđuje SMS-om.
