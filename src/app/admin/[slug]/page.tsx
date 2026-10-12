@@ -72,7 +72,13 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
   const urgentRequests = await loadUrgentRequests(salon.id, today);
   const unreadMessages = await unreadForSalon(salon.id);
   const activeCount = appointments.filter((a) => a.status === "BOOKED").length;
-  const flags = await clientFlags(salon.id, appointments.map(clientKeyOf));
+  const [flags, timeOff] = await Promise.all([
+    clientFlags(salon.id, appointments.map(clientKeyOf)),
+    db.workerTimeOff.findMany({
+      where: { salonId: salon.id, startTime: { lt: dayEnd }, endTime: { gt: dayStart } },
+      orderBy: { startTime: "asc" },
+    }),
+  ]);
 
   return (
     <main className="mx-auto max-w-7xl px-6 pb-24">
@@ -152,6 +158,19 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
             return (
               <article key={w.id} aria-label={`Termini: ${w.displayName}`}>
                 <h3 className="border-b border-charcoal pb-2 text-xs uppercase tracking-[0.2em]">{w.displayName}</h3>
+                {timeOff
+                  .filter((t) => t.workerId === w.id)
+                  .map((t) => (
+                    <p key={t.id} className="border-b border-l-2 border-dashed border-neutral-300 py-3 pl-4 text-sm text-neutral-500">
+                      Odsustvo{" "}
+                      {t.startTime <= dayStart && t.endTime >= dayEnd
+                        ? "ceo dan"
+                        : `${formatLocalTime(t.startTime < dayStart ? dayStart : t.startTime, TIME_ZONE)}–${
+                            t.endTime >= dayEnd ? "24:00" : formatLocalTime(t.endTime, TIME_ZONE)
+                          }`}
+                      {t.reason ? ` · ${t.reason}` : ""}
+                    </p>
+                  ))}
                 {list.length === 0 && <p className="py-6 text-sm text-neutral-400">Nema termina.</p>}
                 <ol>
                   {list.map((a) => (

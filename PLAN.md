@@ -40,6 +40,8 @@ Izveštaji (`/admin/{slug}/izvestaji`, samo vlasnik): za izabrani mesec prihod i
 
 Otvaranje salona (`/registracija-salona`): vlasnik sam otvori salon (naziv, grad, adresa, telefon + svoj nalog, ili postojeći nalog ako je prijavljen). Dobija adresu `/s/{slug}` (iz naziva, npr. `studio-djurdja`), radno vreme pon–pet 9–17 i sub 9–14 i sebe kao prvog frizera, pa ide pravo na Podešavanja. U pretrazi se pojavljuje kad unese bar jednu uslugu. Naplata i probni period još nisu napravljeni.
 
+Odsustva radnika (Podešavanja → Odsustva radnika): odmor, bolovanje ili deo dana za jednog frizera dok salon radi. Ti termini se ne nude za zakazivanje, a raspored ih prikazuje.
+
 Email podsetnik: `GET /api/cron/reminders` (zaštićen `CRON_SECRET`-om) šalje mušterijama sa nalogom mejl za termine u narednih 24h, jednom po terminu. Treba ga zvati svakih ~30 min (cron na hostingu), a slanje traži `RESEND_API_KEY` i `MAIL_FROM` (bez ključa se mejl samo ispiše u log). Gosti bez naloga nemaju email, pa nemaju ni podsetnik.
 
 Email nalozi: posle registracije stiže mejl sa linkom za potvrdu adrese (`/potvrda-emaila`, važi 48 h; banner i „Pošalji ponovo” na `/nalog`), a podsetnici idu samo na potvrđene adrese (Google nalozi su odmah potvrđeni). „Zaboravljena lozinka” (`/zaboravljena-lozinka` → mejl → `/nova-lozinka`, link važi 1 h i jednokratan je); odgovor je uvek isti, da se ne vidi koji mejlovi imaju nalog, a na minut se šalje najviše jedan mejl po nalogu. Tokeni su u bazi samo kao hash (`email_tokens`).

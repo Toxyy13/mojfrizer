@@ -45,16 +45,19 @@ export async function getAvailableSlots(query: SlotQuery): Promise<Slot[]> {
 
   const dayStart = localToUtc(query.dateIso, 0, TIME_ZONE);
   const dayEnd = localToUtc(query.dateIso, 24 * 60, TIME_ZONE);
-  const busy = await db.appointment.findMany({
-    where: {
-      salonId: salon.id,
-      workerId: { in: workers.map((w) => w.id) },
-      status: { in: [...ACTIVE_STATUSES] },
-      startTime: { lt: dayEnd },
-      endTime: { gt: dayStart },
-    },
-    select: { workerId: true, startTime: true, endTime: true },
-  });
+  const workerFilter = {
+    salonId: salon.id,
+    workerId: { in: workers.map((w) => w.id) },
+    startTime: { lt: dayEnd },
+    endTime: { gt: dayStart },
+  };
+  const select = { workerId: true, startTime: true, endTime: true } as const;
+  // A worker is busy during their appointments and their time off (vacation, sick leave, blocked time).
+  const [appointments, timeOff] = await Promise.all([
+    db.appointment.findMany({ where: { ...workerFilter, status: { in: [...ACTIVE_STATUSES] } }, select }),
+    db.workerTimeOff.findMany({ where: workerFilter, select }),
+  ]);
+  const busy = [...appointments, ...timeOff];
 
   const earliest = Date.now() + (query.enforceLeadTime ? ONLINE_LEAD_MINUTES * 60_000 : 0);
   const slots: Slot[] = [];

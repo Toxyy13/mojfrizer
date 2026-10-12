@@ -95,6 +95,7 @@ model Salon {
   favoritedBy  User[]          @relation("FavoriteSalon")
   urgentRequests UrgentRequest[]
   clientNotes  SalonClientNote[]
+  workerTimeOff WorkerTimeOff[]
 
   @@index([city])
   @@map("salons")
@@ -137,6 +138,7 @@ model WorkerProfile {
   isActive     Boolean  @default(true)
 
   appointments Appointment[]
+  timeOff      WorkerTimeOff[]
 
   @@unique([salonId, userId])
   @@index([salonId])
@@ -292,4 +294,20 @@ model EmailToken {
 
   @@index([userId, kind, createdAt])
   @@map("email_tokens")
+}
+
+// One hairdresser unavailable for a while (vacation, sick leave, a longer break) while the salon stays open.
+model WorkerTimeOff {
+  id        String        @id @default(cuid())
+  salonId   String
+  salon     Salon         @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  workerId  String
+  worker    WorkerProfile @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  startTime DateTime      @db.Timestamptz(3)
+  endTime   DateTime      @db.Timestamptz(3)
+  reason    String?
+  createdAt DateTime      @default(now())
+
+  @@index([salonId, workerId, startTime])
+  @@map("worker_time_off")
 }

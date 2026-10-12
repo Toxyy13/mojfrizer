@@ -9,11 +9,12 @@ import { formatPhone, normalizePhone } from "@/lib/phone";
 import {
   MAX_DAYS_OFF_RANGE,
   dayOffSchema,
+  hhmmToMinutes,
   parseWeeklyHours,
   readServiceForm,
   salonInfoSchema,
 } from "@/lib/salonSettings";
-import { WEEKDAYS_SR, addDaysIso, isValidDateIso } from "@/lib/time";
+import { TIME_ZONE, WEEKDAYS_SR, addDaysIso, isValidDateIso, localToUtc } from "@/lib/time";
 
 // Each action redirects back with ?ok= or ?greska= so the page can show the outcome without client JS.
 function back(slug: string, section: string, outcome: { ok: string } | { error: string }): never {
@@ -200,4 +201,56 @@ export async function toggleWorker(slug: string, formData: FormData): Promise<vo
   await db.workerProfile.updateMany({ where: { id, salonId: salon.id }, data: { isActive } });
   refresh(slug);
   back(slug, "radnici", { ok: isActive ? "Radnik je ponovo aktivan." : "Radnik više ne prima termine." });
+}
+
+/** Blocks one hairdresser: whole days (no times) or a time window within one day. */
+export async function addWorkerTimeOff(slug: string, formData: FormData): Promise<void> {
+  const { salon } = await requireSalonOwner(slug);
+  const workerId = String(formData.get("workerId") ?? "");
+  const from = String(formData.get("from") ?? "");
+  const to = String(formData.get("to") ?? "") || from;
+  const fromTime = String(formData.get("fromTime") ?? "").trim();
+  const toTime = String(formData.get("toTime") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim().slice(0, 120) || null;
+
+  const worker = await db.workerProfile.findFirst({ where: { id: workerId, salonId: salon.id }, select: { id: true } });
+  if (!worker) back(slug, "odsustva", { error: "Izaberite radnika." });
+  if (!isValidDateIso(from) || !isValidDateIso(to) || to < from) {
+    back(slug, "odsustva", { error: "Proverite datume odsustva." });
+  }
+  if (addDaysIso(from, MAX_DAYS_OFF_RANGE) < to) back(slug, "odsustva", { error: `Najviše ${MAX_DAYS_OFF_RANGE} dana odjednom.` });
+
+  let startTime: Date;
+  let endTime: Date;
+  if (fromTime || toTime) {
+    const start = hhmmToMinutes(fromTime);
+    const end = hhmmToMinutes(toTime);
+    if (start === null || end === null || start >= end || from !== to) {
+      back(slug, "odsustva", { error: "Za deo dana izaberite jedan datum i vreme od–do." });
+    }
+    startTime = localToUtc(from, start, TIME_ZONE);
+    endTime = localToUtc(from, end, TIME_ZONE);
+  } else {
+    startTime = localToUtc(from, 0, TIME_ZONE);
+    endTime = localToUtc(addDaysIso(to, 1), 0, TIME_ZONE);
+  }
+
+  await db.workerTimeOff.create({ data: { salonId: salon.id, workerId, startTime, endTime, reason } });
+  refresh(slug);
+  const booked = await db.appointment.count({
+    where: { salonId: salon.id, workerId, status: "BOOKED", startTime: { lt: endTime }, endTime: { gt: startTime } },
+  });
+  back(slug, "odsustva", {
+    ok:
+      booked > 0
+        ? `Odsustvo je dodato. Pažnja: u tom periodu ovaj radnik već ima ${booked} zakazanih termina.`
+        : "Odsustvo je dodato.",
+  });
+}
+
+export async function removeWorkerTimeOff(slug: string, formData: FormData): Promise<void> {
+  const { salon } = await requireSalonOwner(slug);
+  await db.workerTimeOff.deleteMany({ where: { id: String(formData.get("id") ?? ""), salonId: salon.id } });
+  refresh(slug);
+  back(slug, "odsustva", { ok: "Odsustvo je uklonjeno." });
 }
