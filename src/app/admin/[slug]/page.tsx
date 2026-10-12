@@ -8,7 +8,8 @@ import { TIME_ZONE, addDaysIso, formatDateSr, formatLocalTime, isValidDateIso, l
 import { toBookingServices, toBookingWorkers, upcomingDays } from "@/lib/salonView";
 import { BookingForm } from "@/components/BookingForm";
 import { logout } from "@/app/prijava/actions";
-import { bookForClient, setAppointmentStatus } from "./actions";
+import { bookForClient, closeUrgentRequest, setAppointmentStatus, swapForUrgent } from "./actions";
+import { UrgentRequests, type UrgentRequestView } from "./UrgentRequests";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +64,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
   ]);
 
   const statusAction = setAppointmentStatus.bind(null, slug);
+  const urgentRequests = await loadUrgentRequests(salon.id, today);
   const activeCount = appointments.filter((a) => a.status === "BOOKED").length;
 
   return (
@@ -111,6 +113,14 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
           <p className="text-xs text-neutral-500">{monthRevenue.completedCount} završenih</p>
         </div>
       </section>
+
+      {urgentRequests.length > 0 && (
+        <UrgentRequests
+          requests={urgentRequests}
+          swap={swapForUrgent.bind(null, slug)}
+          close={closeUrgentRequest.bind(null, slug)}
+        />
+      )}
 
       <section className="mt-12 grid gap-12 lg:grid-cols-3">
         <div className={`grid min-w-0 gap-8 lg:col-span-2 ${workers.length > 1 ? "md:grid-cols-2" : ""}`}>
@@ -174,6 +184,45 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
         </aside>
       </section>
     </main>
+  );
+}
+
+/** Pending urgent requests from today on, each with that day's booked appointments as swap candidates. */
+async function loadUrgentRequests(salonId: string, todayIsoDate: string): Promise<UrgentRequestView[]> {
+  const requests = await db.urgentRequest.findMany({
+    where: { salonId, status: "PENDING", date: { gte: new Date(`${todayIsoDate}T00:00:00Z`) } },
+    include: { service: true },
+    orderBy: [{ date: "asc" }, { createdAt: "asc" }],
+  });
+  return Promise.all(
+    requests.map(async (r) => {
+      const dateIso = r.date.toISOString().slice(0, 10);
+      const booked = await db.appointment.findMany({
+        where: {
+          salonId,
+          status: "BOOKED",
+          startTime: { gte: localToUtc(dateIso, 0, TIME_ZONE), lt: localToUtc(dateIso, 24 * 60, TIME_ZONE) },
+        },
+        include: { service: true, worker: true, client: { select: { name: true, phone: true } } },
+        orderBy: { startTime: "asc" },
+      });
+      return {
+        id: r.id,
+        name: r.guestName,
+        phone: r.guestPhone,
+        serviceName: r.service.name,
+        durationMinutes: r.service.durationMinutes,
+        dateIso,
+        dateLabel: formatDateSr(dateIso),
+        reason: r.reason,
+        candidates: booked.map((a) => ({
+          id: a.id,
+          label: `${formatLocalTime(a.startTime, TIME_ZONE)} ${a.guestName ?? a.client?.name ?? "Mušterija"} (${
+            a.guestPhone ?? a.client?.phone ?? "bez telefona"
+          }) · ${a.service.name} · ${a.worker.displayName}`,
+        })),
+      };
+    }),
   );
 }
 

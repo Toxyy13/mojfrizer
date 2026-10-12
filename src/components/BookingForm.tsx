@@ -27,6 +27,16 @@ export interface BookingFormValues {
   note: string | null;
 }
 
+export interface UrgentFormValues {
+  serviceId: string;
+  dateIso: string;
+  clientName: string;
+  clientPhone: string;
+  reason: string;
+}
+
+export type UrgentResult = { ok: true } | { ok: false; error: string };
+
 interface BookingFormProps {
   slug: string;
   services: BookingService[];
@@ -36,6 +46,8 @@ interface BookingFormProps {
   submit: (values: BookingFormValues) => Promise<BookingResult>;
   /** Prefills name and phone for a logged-in customer. */
   initialClient?: { name: string; phone: string };
+  // When set, a fully booked day offers an urgent request the salon reviews by hand.
+  requestUrgent?: (values: UrgentFormValues) => Promise<UrgentResult>;
 }
 
 function hhmm(minute: number): string {
@@ -50,7 +62,7 @@ const label = "text-xs uppercase tracking-[0.2em] text-neutral-500";
 const input =
   "mt-2 w-full border-b border-neutral-300 bg-transparent py-2 text-lg outline-none transition-colors focus:border-burgundy";
 
-export function BookingForm({ slug, services, workers, days, mode, submit, initialClient }: BookingFormProps) {
+export function BookingForm({ slug, services, workers, days, mode, submit, initialClient, requestUrgent }: BookingFormProps) {
   const [serviceId, setServiceId] = useState<string>("");
   const [workerId, setWorkerId] = useState<string>("");
   const [dateIso, setDateIso] = useState<string>(days.find((d) => !d.closed)?.iso ?? days[0]?.iso ?? "");
@@ -63,6 +75,9 @@ export function BookingForm({ slug, services, workers, days, mode, submit, initi
   const [result, setResult] = useState<BookingResult | null>(null);
   const [pending, startTransition] = useTransition();
   const [refreshKey, setRefreshKey] = useState(0);
+  const [urgent, setUrgent] = useState(false);
+  const [reason, setReason] = useState("");
+  const [urgentSent, setUrgentSent] = useState(false);
 
   const service = useMemo(() => services.find((s) => s.id === serviceId), [services, serviceId]);
 
@@ -89,9 +104,25 @@ export function BookingForm({ slug, services, workers, days, mode, submit, initi
     return () => controller.abort();
   }, [slug, serviceId, workerId, dateIso, mode, refreshKey]);
 
-  useEffect(() => setMinute(null), [serviceId, workerId, dateIso]);
+  useEffect(() => {
+    setMinute(null);
+    setUrgent(false);
+  }, [serviceId, workerId, dateIso]);
 
   const onSubmit = (): void => {
+    if (urgent && requestUrgent) {
+      if (!serviceId) return;
+      startTransition(async () => {
+        try {
+          const res = await requestUrgent({ serviceId, dateIso, clientName, clientPhone, reason });
+          if (res.ok) setUrgentSent(true);
+          else setResult(res);
+        } catch {
+          setResult({ ok: false, error: "Došlo je do greške. Pokušajte ponovo." });
+        }
+      });
+      return;
+    }
     if (!serviceId || minute === null) return;
     startTransition(async () => {
       try {
@@ -118,8 +149,28 @@ export function BookingForm({ slug, services, workers, days, mode, submit, initi
     setClientName(initialClient?.name ?? "");
     setClientPhone(initialClient?.phone ?? "");
     setNote("");
+    setReason("");
+    setUrgent(false);
+    setUrgentSent(false);
     setRefreshKey((k) => k + 1);
   };
+
+  if (urgentSent) {
+    return (
+      <div className="border border-neutral-200 p-8 md:p-12" role="status">
+        <p className={label}>Hitan zahtev je poslat</p>
+        <p className="mt-4 font-serif text-4xl">
+          {service?.name}, {days.find((d) => d.iso === dateIso)?.label ?? dateIso}
+        </p>
+        <p className="mt-2 text-neutral-600">
+          Salon će pokušati da nađe zamenu sa nekim od zakazanih mušterija i pozvaće vas na {clientPhone}.
+        </p>
+        <button type="button" onClick={reset} className="mt-8 text-sm underline underline-offset-4 hover:text-burgundy">
+          Nazad na zakazivanje
+        </button>
+      </div>
+    );
+  }
 
   if (result?.ok) {
     return (
@@ -226,8 +277,49 @@ export function BookingForm({ slug, services, workers, days, mode, submit, initi
           {!serviceId && <p className="text-sm text-neutral-500">Prvo izaberite uslugu.</p>}
           {serviceId && slots === null && !loadError && <p className="text-sm text-neutral-500">Učitavam termine…</p>}
           {loadError && <p className="text-sm text-burgundy">{loadError}</p>}
-          {slots && slots.length === 0 && (
-            <p className="text-sm text-neutral-500">Nema slobodnih termina za ovaj dan. Probajte drugi dan.</p>
+          {slots && slots.length === 0 && !urgent && (
+            <div className="grid gap-3">
+              <p className="text-sm text-neutral-500">Nema slobodnih termina za ovaj dan. Probajte drugi dan.</p>
+              {requestUrgent && !days.find((d) => d.iso === dateIso)?.closed && (
+                <div className="border-l-2 border-burgundy pl-4">
+                  <p className="text-sm">Morate baš ovog dana? Pošaljite hitan zahtev i salon će probati da zameni termin sa nekim.</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUrgent(true);
+                      setResult(null);
+                    }}
+                    className="mt-3 border border-burgundy px-4 py-2 text-sm text-burgundy transition-colors hover:bg-burgundy hover:text-white"
+                  >
+                    Hitno zakazivanje
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+          {urgent && (
+            <div className="grid gap-2 border-l-2 border-burgundy pl-4">
+              <p className="text-sm font-medium text-burgundy">Hitan zahtev</p>
+              <label className="block">
+                <span className="text-sm text-neutral-600">Zašto vam je hitno?</span>
+                <textarea
+                  className={`${input} resize-none`}
+                  rows={2}
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  required
+                  minLength={5}
+                  maxLength={300}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => setUrgent(false)}
+                className="justify-self-start text-xs underline underline-offset-4 text-neutral-500 hover:text-burgundy"
+              >
+                Odustani od hitnog zahteva
+              </button>
+            </div>
           )}
           {slots && slots.length > 0 && (
             <div className="flex flex-wrap gap-2">
@@ -279,10 +371,16 @@ export function BookingForm({ slug, services, workers, days, mode, submit, initi
 
       <button
         type="submit"
-        disabled={pending || minute === null || !serviceId}
+        disabled={pending || !serviceId || (!urgent && minute === null)}
         className="justify-self-start bg-burgundy px-10 py-4 text-sm uppercase tracking-[0.2em] text-white transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-burgundy-dark disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {pending ? "Zakazujem…" : mode === "public" ? "Zakaži termin" : "Upiši termin"}
+        {pending
+          ? "Šaljem…"
+          : urgent
+            ? "Pošalji hitan zahtev"
+            : mode === "public"
+              ? "Zakaži termin"
+              : "Upiši termin"}
       </button>
     </form>
   );

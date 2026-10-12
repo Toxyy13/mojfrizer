@@ -3,6 +3,7 @@
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { bookingInputSchema, createAppointment, type BookingResult } from "@/lib/booking";
+import { createUrgentRequest, urgentRequestSchema, type ActionResult } from "@/lib/urgent";
 
 export async function bookOnline(slug: string, raw: unknown): Promise<BookingResult> {
   try {
@@ -17,6 +18,20 @@ export async function bookOnline(slug: string, raw: unknown): Promise<BookingRes
       createdById: user?.id ?? null,
       clientId: user?.role === "CLIENT" ? user.id : null,
     });
+  } catch (error) {
+    console.error(error);
+    return { ok: false, error: "Došlo je do greške. Pokušajte ponovo ili nas pozovite." };
+  }
+}
+
+export async function requestUrgent(slug: string, raw: unknown): Promise<ActionResult> {
+  try {
+    const parsed = urgentRequestSchema.safeParse(raw);
+    if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Neispravni podaci" };
+    const salon = await db.salon.findFirst({ where: { slug, isActive: true }, select: { id: true } });
+    if (!salon) return { ok: false, error: "Salon nije pronađen." };
+    const user = await getSessionUser();
+    return await createUrgentRequest(salon.id, parsed.data, user?.role === "CLIENT" ? user.id : null);
   } catch (error) {
     console.error(error);
     return { ok: false, error: "Došlo je do greške. Pokušajte ponovo ili nas pozovite." };

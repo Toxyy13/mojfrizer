@@ -9,7 +9,7 @@ import { BookingForm } from "@/components/BookingForm";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { getSessionUser } from "@/lib/auth";
 import { formatPhone } from "@/lib/phone";
-import { bookOnline } from "./actions";
+import { bookOnline, requestUrgent } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -153,6 +153,7 @@ export default async function SalonPage({ params }: PageProps) {
               days={upcomingDays(salon.workingHours, salon.daysOff, 14)}
               submit={bookOnline.bind(null, salon.slug)}
               initialClient={customer ? { name: customer.name, phone: customer.phone ? formatPhone(customer.phone) : "" } : undefined}
+              requestUrgent={requestUrgent.bind(null, salon.slug)}
             />
           </div>
         </div>
