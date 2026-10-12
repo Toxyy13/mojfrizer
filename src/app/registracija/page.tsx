@@ -30,6 +30,12 @@ export default async function RegisterPage({ searchParams }: PageProps) {
           <Link href={loginHref} className="font-medium text-burgundy hover:underline">
             Prijavite se
           </Link>
+          <span className="mt-2 block">
+            Imate salon?{" "}
+            <Link href="/registracija-salona" className="font-medium text-burgundy hover:underline">
+              Otvorite ga na mojfrizer.com
+            </Link>
+          </span>
         </>
       }
     >

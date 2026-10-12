@@ -36,6 +36,8 @@ export default async function HomePage({ searchParams }: HomeProps) {
     db.salon.findMany({
       where: {
         isActive: true,
+        // A newly opened salon shows up in search once it has a price list.
+        services: { some: { isActive: true } },
         ...(q
           ? {
               OR: [
