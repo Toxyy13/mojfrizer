@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { SiteHeader } from "@/components/SiteHeader";
+import { AssistantWidget } from "@/components/AssistantWidget";
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { fullAddress } from "@/lib/salonAddress";
@@ -82,6 +83,7 @@ export default async function HomePage({ searchParams }: HomeProps) {
           </p>
         )}
       </main>
+      <AssistantWidget />
     </>
   );
 }
