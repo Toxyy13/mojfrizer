@@ -51,6 +51,9 @@ interface BookingFormProps {
   requestUrgent?: (values: UrgentFormValues) => Promise<UrgentResult>;
   // When set, a fully booked day lets a logged-in customer wait for a freed slot (error "login" = not logged in).
   joinWaitlist?: (serviceId: string, dateIso: string) => Promise<UrgentResult>;
+  /** Preselects a service and hairdresser, e.g. for "book again". Ignored when not offered. */
+  initialServiceId?: string;
+  initialWorkerId?: string;
 }
 
 function hhmm(minute: number): string {
@@ -84,9 +87,11 @@ export function BookingForm({
   initialClient,
   requestUrgent,
   joinWaitlist,
+  initialServiceId,
+  initialWorkerId,
 }: BookingFormProps) {
-  const [serviceId, setServiceId] = useState<string>("");
-  const [workerId, setWorkerId] = useState<string>("");
+  const [serviceId, setServiceId] = useState<string>(services.some((s) => s.id === initialServiceId) ? initialServiceId ?? "" : "");
+  const [workerId, setWorkerId] = useState<string>(workers.some((w) => w.id === initialWorkerId) ? initialWorkerId ?? "" : "");
   const [dateIso, setDateIso] = useState<string>(days.find((d) => !d.closed)?.iso ?? days[0]?.iso ?? "");
   const [minute, setMinute] = useState<number | null>(null);
   const [slots, setSlots] = useState<number[] | null>(null);

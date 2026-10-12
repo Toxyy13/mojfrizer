@@ -46,8 +46,8 @@ interface BookingRow {
   price: number;
   manageToken: string;
   salon: { name: string; slug: string };
-  service: { name: string };
-  worker: { displayName: string };
+  service: { id: string; name: string };
+  worker: { id: string; displayName: string };
 }
 
 const dayFormat = new Intl.DateTimeFormat("sr-Latn-RS", { timeZone: TIME_ZONE, day: "numeric" });
@@ -98,6 +98,14 @@ function BookingList({ title, bookings, empty, upcoming }: { title: string; book
                   Otkaži / pomeri
                 </Link>
               )}
+              {b.status !== "BOOKED" && (
+                <Link
+                  href={`/s/${b.salon.slug}?usluga=${b.service.id}&frizer=${b.worker.id}#zakazivanje`}
+                  className="link mt-1 inline-block text-xs text-muted"
+                >
+                  Zakaži ponovo
+                </Link>
+              )}
             </div>
           </li>
         ))}
@@ -131,8 +139,8 @@ export default async function AccountPage() {
           price: true,
           manageToken: true,
           salon: { select: { name: true, slug: true } },
-          service: { select: { name: true } },
-          worker: { select: { displayName: true } },
+          service: { select: { id: true, name: true } },
+          worker: { select: { id: true, displayName: true } },
         },
       },
     },
