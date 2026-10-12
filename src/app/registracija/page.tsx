@@ -34,7 +34,8 @@ export default async function RegisterPage({ searchParams }: PageProps) {
           pendingLabel="Pravim nalog…"
           fields={[
             { name: "name", label: "Ime i prezime", type: "text", autoComplete: "name" },
-            { name: "phone", label: "Broj telefona", type: "tel", autoComplete: "tel", hint: "Npr. 064 123 4567" },
+            { name: "email", label: "Email adresa", type: "email", autoComplete: "email", hint: "Na nju stiže podsetnik za termin." },
+            { name: "phone", label: "Broj telefona (nije obavezno)", type: "tel", autoComplete: "tel", hint: "Npr. 064 123 4567", optional: true },
             { name: "password", label: "Lozinka", type: "password", autoComplete: "new-password", hint: "Bar 8 znakova" },
           ]}
         />

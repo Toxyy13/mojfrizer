@@ -6,9 +6,10 @@ import type { FormState } from "@/app/prijava/actions";
 interface AuthField {
   name: string;
   label: string;
-  type: "text" | "tel" | "password";
+  type: "text" | "tel" | "email" | "password";
   autoComplete: string;
   hint?: string;
+  optional?: boolean;
 }
 
 interface AuthFormProps {
@@ -34,7 +35,7 @@ export function AuthForm({ action, fields, submitLabel, pendingLabel, next }: Au
           <input
             name={field.name}
             type={field.type}
-            required
+            required={!field.optional}
             autoComplete={field.autoComplete}
             defaultValue={field.type === "password" ? undefined : state.values?.[field.name]}
             className={input}

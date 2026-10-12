@@ -31,7 +31,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
           submitLabel="Prijava"
           pendingLabel="Prijavljujem…"
           fields={[
-            { name: "login", label: "Broj telefona", type: "text", autoComplete: "username", hint: "Saloni se prijavljuju email adresom." },
+            { name: "login", label: "Email adresa", type: "text", autoComplete: "username" },
             { name: "password", label: "Lozinka", type: "password", autoComplete: "current-password" },
           ]}
         />
