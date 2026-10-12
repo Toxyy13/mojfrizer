@@ -46,3 +46,15 @@ This document serves as a strict system prompt and visual identity guide for Cla
 Copy and paste this snippet at the start of your Claude prompt session:
 
 > *"Claude, look at the active rules in my `DESIGN.md` file. I need you to build a webpage for [INSERT PROJECT NAME]. Do not use generic 3-card blocks or neon gradients. Follow the [Editorial / Dark Neo-Brutalism] direction exactly. Focus on asymmetric layouts, thin dividers, strong typographic hierarchy, and elegant micro-interactions."*
+
+---
+
+## 5. mojfrizer design system (in code)
+
+Chosen direction: **A. Editorial**, made warm and touch-friendly. All tokens and shared classes live in `src/app/globals.css`.
+
+* **Colors:** `cream` page background, `white` cards, `line` borders, `charcoal` text, `muted` secondary text, `burgundy` accent (`burgundy-soft` for tinted backgrounds), `forest` for success.
+* **Fonts:** `font-serif` (Fraunces) for headings and big numbers, `font-sans` (Inter) for everything else.
+* **Classes to reuse on new pages:** `page` (container), `eyebrow` (small uppercase label), `card`, `btn-primary`, `btn-secondary`, `btn-ghost`, `btn-sm`, `field` + `field-label` + `field-hint`, `chip` (selected via `aria-pressed`), `badge`, `alert-error`, `link`.
+* **Shared layout:** `SiteHeader` (sticky) and `SiteFooter` on customer pages.
+* **Mobile first:** tap targets at least 44px (`min-h-11`), 16px side gutter (`page`), primary action reachable with the thumb.

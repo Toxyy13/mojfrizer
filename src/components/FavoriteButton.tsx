@@ -16,13 +16,14 @@ export function FavoriteButton({ salonId, isFavorite, returnTo }: FavoriteButton
       <button
         aria-pressed={isFavorite}
         title={isFavorite ? "Klikni da ukloniš iz omiljenih" : undefined}
-        className={`border px-4 py-2 text-xs uppercase tracking-[0.2em] transition-all duration-300 ease-out hover:-translate-y-0.5 ${
+        className={`btn btn-sm border ${
           isFavorite
-            ? "border-burgundy bg-burgundy text-white hover:bg-burgundy-dark"
-            : "border-neutral-300 text-neutral-700 hover:border-burgundy hover:text-burgundy"
+            ? "border-burgundy bg-burgundy-soft text-burgundy hover:border-burgundy-dark"
+            : "border-line bg-white text-charcoal hover:border-burgundy hover:text-burgundy"
         }`}
       >
-        {isFavorite ? "★ Omiljeni salon" : "☆ Označi kao omiljeni"}
+        <span aria-hidden className="text-base leading-none">{isFavorite ? "♥" : "♡"}</span>
+        {isFavorite ? "Omiljeni salon" : "Dodaj u omiljene"}
       </button>
     </form>
   );
