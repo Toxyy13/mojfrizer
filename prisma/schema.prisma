@@ -63,6 +63,7 @@ model User {
   createdAppointments Appointment[]   @relation("CreatedAppointments")
   chatMessages        ChatMessage[]
   chatAsClient        ChatMessage[]   @relation("ChatClient")
+  waitlistEntries     WaitlistEntry[]
   avatar              UserAvatar?
   emailTokens         EmailToken[]
 
@@ -96,6 +97,7 @@ model Salon {
   urgentRequests UrgentRequest[]
   clientNotes  SalonClientNote[]
   workerTimeOff WorkerTimeOff[]
+  waitlist     WaitlistEntry[]
 
   @@index([city])
   @@map("salons")
@@ -161,6 +163,7 @@ model Service {
 
   appointments Appointment[]
   urgentRequests UrgentRequest[]
+  waitlist       WaitlistEntry[]
 
   @@index([salonId])
   @@map("services")
@@ -310,4 +313,22 @@ model WorkerTimeOff {
 
   @@index([salonId, workerId, startTime])
   @@map("worker_time_off")
+}
+
+// A customer waiting for a slot on a fully booked day. Emailed once when a slot frees up.
+model WaitlistEntry {
+  id         String    @id @default(cuid())
+  salonId    String
+  salon      Salon     @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  clientId   String
+  client     User      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  serviceId  String
+  service    Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  date       DateTime  @db.Date
+  notifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@unique([salonId, clientId, serviceId, date])
+  @@index([salonId, date])
+  @@map("waitlist_entries")
 }
