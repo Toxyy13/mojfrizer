@@ -3,6 +3,7 @@
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { bookingInputSchema, createAppointment, type BookingResult } from "@/lib/booking";
+import { sendBookingConfirmation } from "@/lib/manageBooking";
 import { createUrgentRequest, urgentRequestSchema, type ActionResult } from "@/lib/urgent";
 
 export async function bookOnline(slug: string, raw: unknown): Promise<BookingResult> {
@@ -13,11 +14,13 @@ export async function bookOnline(slug: string, raw: unknown): Promise<BookingRes
     if (!salon) return { ok: false, error: "Salon nije pronađen." };
     // Guests can book with just name and phone; a logged-in customer gets the booking on their account.
     const user = await getSessionUser();
-    return await createAppointment(salon.id, parsed.data, {
+    const result = await createAppointment(salon.id, parsed.data, {
       source: "ONLINE",
       createdById: user?.id ?? null,
       clientId: user?.role === "CLIENT" ? user.id : null,
     });
+    if (result.ok) await sendBookingConfirmation(result.appointmentId);
+    return result;
   } catch (error) {
     console.error(error);
     return { ok: false, error: "Došlo je do greške. Pokušajte ponovo ili nas pozovite." };

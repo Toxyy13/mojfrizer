@@ -35,6 +35,7 @@ export async function saveSalonInfo(slug: string, formData: FormData): Promise<v
     city: formData.get("city") ?? "",
     phone: formData.get("phone") ?? "",
     slotStepMinutes: formData.get("slotStepMinutes") ?? "",
+    cancelCutoffHours: formData.get("cancelCutoffHours") ?? "",
   });
   if (!parsed.success) back(slug, "salon", { error: parsed.error.issues[0]?.message ?? "Neispravni podaci" });
   const { phone: rawPhone, description, ...rest } = parsed.data;
