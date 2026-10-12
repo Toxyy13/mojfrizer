@@ -27,6 +27,8 @@ Jedna aplikacija (Next.js + TypeScript + PostgreSQL + Prisma) za sve salone. Sva
    - chat salon–mušterija: mušterija piše sa `/poruke/{slug}` (dugme na stranici salona, razgovori u `/nalog`), salon odgovara u `/admin/{slug}/poruke`; nepročitane poruke se broje, stranica se osvežava na 5 s (kasnije pravi real-time, Pusher/Supabase);
    - `/admin/{slug}` raspored za dan po frizeru, statusi, upis termina za mušteriju koja zove telefonom, pazar.
 
+„Nastavi sa Google nalogom” (`/api/auth/google`, OAuth sa PKCE): dugme na prijavi i registraciji se pojavi čim su `GOOGLE_CLIENT_ID` i `GOOGLE_CLIENT_SECRET` podešeni. Novi Google nalog postaje mušterija; ako nalog sa istom (Google-potvrđenom) email adresom već postoji, povezuje se sa njim. Podešavanje: Google Cloud Console → APIs & Services → Credentials → OAuth client ID (Web application), u „Authorized redirect URIs” upisati `https://mojfrizer.com/api/auth/google/callback` (i `http://localhost:3000/api/auth/google/callback` za razvoj), a `APP_URL` mora biti javna adresa sajta.
+
 Email podsetnik: `GET /api/cron/reminders` (zaštićen `CRON_SECRET`-om) šalje mušterijama sa nalogom mejl za termine u narednih 24h, jednom po terminu. Treba ga zvati svakih ~30 min (cron na hostingu), a slanje traži `RESEND_API_KEY` i `MAIL_FROM` (bez ključa se mejl samo ispiše u log). Gosti bez naloga nemaju email, pa nemaju ni podsetnik.
 
 Sledeće: zaboravljena lozinka, potvrda emaila, podešavanja salona (cenovnik, radno vreme, neradni dani) u adminu, SMS/Viber podsetnici, chat.

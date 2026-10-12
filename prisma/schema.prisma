@@ -41,7 +41,10 @@ model User {
   id             String   @id @default(cuid())
   // Customers sign up with phone only; salon staff use email. At least one is set.
   email          String?  @unique
-  passwordHash   String
+  // Null for accounts created through Google sign-in.
+  passwordHash   String?
+  // Google account id ("sub"), set on Google sign-in.
+  googleId       String?  @unique
   name           String
   // Normalized to +381..., used as the customer's login.
   phone          String?  @unique
