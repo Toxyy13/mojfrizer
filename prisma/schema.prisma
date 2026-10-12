@@ -129,6 +129,8 @@ model Service {
   description     String?
   category        String?
   price           Int // in para: 1500 RSD = 150000
+  // Price when booked in the same visit as another service (null = same as price).
+  comboPrice      Int?
   durationMinutes Int
   sortOrder       Int     @default(0)
   isActive        Boolean @default(true)
