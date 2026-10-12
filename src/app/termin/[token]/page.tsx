@@ -38,33 +38,35 @@ export default async function ManageBookingPage({ params }: { params: Promise<{ 
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-6 py-24">
-        <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">
-          Moj termin · {STATUS_LABEL[a.status]}
+      <main className="page max-w-3xl py-10 sm:py-16">
+        <div className="card p-5 sm:p-8">
+        <p className="flex items-center gap-2">
+          <span className="eyebrow">Moj termin</span>
+          <span className={`badge ${a.status === "BOOKED" ? "bg-burgundy-soft text-burgundy" : "bg-sand text-muted"}`}>{STATUS_LABEL[a.status]}</span>
         </p>
-        <h1 className={`mt-6 font-serif text-5xl leading-tight first-letter:uppercase md:text-6xl ${a.status === "CANCELLED" ? "text-neutral-400 line-through" : ""}`}>
+        <h1 className={`mt-4 font-serif text-4xl leading-tight first-letter:uppercase sm:text-5xl ${a.status === "CANCELLED" ? "text-muted line-through" : ""}`}>
           {appointmentWhenFormat.format(a.startTime)}
         </h1>
-        <dl className="mt-10 grid grid-cols-[8rem_1fr] gap-y-3 border-t border-neutral-200 pt-6 text-sm">
-          <dt className="text-neutral-500">Salon</dt>
+        <dl className="mt-8 grid grid-cols-[6.5rem_1fr] gap-y-3 border-t border-line pt-6 text-sm">
+          <dt className="text-muted">Salon</dt>
           <dd>
-            <Link href={`/s/${a.salon.slug}`} className="underline underline-offset-4 hover:text-burgundy">
+            <Link href={`/s/${a.salon.slug}`} className="link font-medium">
               {a.salon.name}
             </Link>
           </dd>
-          <dt className="text-neutral-500">Adresa</dt>
+          <dt className="text-muted">Adresa</dt>
           <dd>{fullAddress(a.salon)}</dd>
-          <dt className="text-neutral-500">Usluga</dt>
+          <dt className="text-muted">Usluga</dt>
           <dd>
             {a.service.name} · {formatPrice(a.price)}
           </dd>
-          <dt className="text-neutral-500">Frizer</dt>
+          <dt className="text-muted">Frizer</dt>
           <dd>{a.worker.displayName}</dd>
           {a.salon.phone && (
             <>
-              <dt className="text-neutral-500">Telefon</dt>
+              <dt className="text-muted">Telefon</dt>
               <dd>
-                <a href={`tel:${a.salon.phone.replace(/\s/g, "")}`} className="underline underline-offset-4">
+                <a href={`tel:${a.salon.phone.replace(/\s/g, "")}`} className="link">
                   {a.salon.phone}
                 </a>
               </dd>
@@ -74,13 +76,13 @@ export default async function ManageBookingPage({ params }: { params: Promise<{ 
 
         {a.status === "BOOKED" && (
           <p className="mt-8">
-            <a href={`/termin/${token}/kalendar.ics`} className="text-sm underline underline-offset-4 hover:text-burgundy">
+            <a href={`/termin/${token}/kalendar.ics`} className="btn-secondary btn-sm">
               Dodaj u kalendar telefona
             </a>
           </p>
         )}
 
-        <section className="mt-12">
+        <section className="mt-8 border-t border-line pt-8">
           {changeable ? (
             <ManageBooking
               slug={a.salon.slug}
@@ -90,16 +92,17 @@ export default async function ManageBookingPage({ params }: { params: Promise<{ 
               reschedule={rescheduleBooking.bind(null, token)}
             />
           ) : a.status === "BOOKED" ? (
-            <p className="text-sm text-neutral-600">
+            <p className="text-sm text-muted">
               Termin se može otkazati ili pomeriti preko sajta najkasnije {a.salon.cancelCutoffHours} h pre početka.
               {a.salon.phone ? ` Pozovite salon: ${a.salon.phone}.` : ""}
             </p>
           ) : (
-            <Link href={`/s/${a.salon.slug}#zakazivanje`} className="text-sm text-burgundy underline underline-offset-4">
+            <Link href={`/s/${a.salon.slug}#zakazivanje`} className="btn-primary">
               Zakaži novi termin
             </Link>
           )}
         </section>
+        </div>
       </main>
     </>
   );

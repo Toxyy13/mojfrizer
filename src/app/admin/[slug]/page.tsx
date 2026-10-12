@@ -5,14 +5,13 @@ import { formatPhone } from "@/lib/phone";
 import { Avatar } from "@/components/Avatar";
 import { avatarUrl } from "@/lib/avatar";
 import { requireSalonAccess } from "@/lib/access";
-import { unreadForSalon } from "@/lib/chat";
 import { clientFlags, clientKeyOf } from "@/lib/clients";
 import { getRevenue } from "@/lib/revenue";
 import { formatRsd } from "@/lib/money";
 import { TIME_ZONE, addDaysIso, formatDateSr, formatLocalTime, isValidDateIso, localToUtc, todayIso } from "@/lib/time";
 import { toBookingServices, toBookingWorkers, upcomingDays } from "@/lib/salonView";
 import { BookingForm } from "@/components/BookingForm";
-import { logout } from "@/app/prijava/actions";
+import { AdminShell } from "@/components/AdminShell";
 import { bookForClient, closeUrgentRequest, setAppointmentStatus, swapForUrgent } from "./actions";
 import { UrgentRequests, type UrgentRequestView } from "./UrgentRequests";
 
@@ -30,11 +29,11 @@ const STATUS_LABEL: Record<AppointmentStatus, string> = {
   NO_SHOW: "Nije došao",
 };
 
-const STATUS_STYLE: Record<AppointmentStatus, string> = {
-  BOOKED: "border-neutral-300",
-  COMPLETED: "border-forest text-neutral-500",
-  CANCELLED: "border-neutral-200 text-neutral-400 line-through",
-  NO_SHOW: "border-burgundy text-neutral-500",
+const STATUS_STYLE: Record<AppointmentStatus, { row: string; badge: string }> = {
+  BOOKED: { row: "border-l-burgundy", badge: "bg-burgundy-soft text-burgundy" },
+  COMPLETED: { row: "border-l-forest", badge: "bg-forest-soft text-forest" },
+  CANCELLED: { row: "border-l-line opacity-60", badge: "bg-sand text-muted" },
+  NO_SHOW: { row: "border-l-line opacity-75", badge: "bg-sand text-muted" },
 };
 
 export default async function AdminSalonPage({ params, searchParams }: PageProps) {
@@ -70,70 +69,40 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
 
   const statusAction = setAppointmentStatus.bind(null, slug);
   const urgentRequests = await loadUrgentRequests(salon.id, today);
-  const unreadMessages = await unreadForSalon(salon.id);
   const activeCount = appointments.filter((a) => a.status === "BOOKED").length;
   const flags = await clientFlags(salon.id, appointments.map(clientKeyOf));
 
   return (
-    <main className="mx-auto max-w-7xl px-6 pb-24">
-      <header className="flex flex-wrap items-baseline justify-between gap-4 border-b border-neutral-200 py-8">
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">Admin · {user.name}</p>
-          <h1 className="font-serif text-5xl">{salon.name}</h1>
-        </div>
-        <nav className="flex gap-6 text-sm">
-          <Link href={`/admin/${salon.slug}/poruke`} className="underline underline-offset-4 hover:text-burgundy">
-            Poruke{unreadMessages > 0 ? ` (${unreadMessages})` : ""}
-          </Link>
-          <Link href={`/admin/${salon.slug}/musterije`} className="underline underline-offset-4 hover:text-burgundy">
-            Mušterije
-          </Link>
-          {salon.ownerId === user.id && (
-            <Link href={`/admin/${salon.slug}/izvestaji`} className="underline underline-offset-4 hover:text-burgundy">
-              Izveštaji
-            </Link>
-          )}
-          {salon.ownerId === user.id && (
-            <Link href={`/admin/${salon.slug}/podesavanja`} className="underline underline-offset-4 hover:text-burgundy">
-              Podešavanja
-            </Link>
-          )}
-          <Link href={`/s/${salon.slug}`} className="underline underline-offset-4 hover:text-burgundy">
-            Javna stranica
-          </Link>
-          <form action={logout}>
-            <button className="underline underline-offset-4 hover:text-burgundy">Odjava</button>
-          </form>
-        </nav>
-      </header>
-
-      <section className="grid gap-px border-b border-neutral-200 bg-neutral-200 md:grid-cols-4" aria-label="Pregled">
-        <div className="bg-white py-8 pr-8 md:col-span-2">
-          <div className="flex items-center gap-4">
-            <Link href={`?date=${addDaysIso(dateIso, -1)}`} aria-label="Prethodni dan" className="text-2xl hover:text-burgundy">
+    <AdminShell salon={salon} user={user} active="raspored">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4" aria-label="Pregled">
+        <div className="card col-span-2 p-5">
+          <div className="flex items-center gap-2">
+            <Link href={`?date=${addDaysIso(dateIso, -1)}`} aria-label="Prethodni dan" className="btn-secondary btn-sm size-9 p-0">
               ←
             </Link>
-            <h2 className="font-serif text-3xl">{formatDateSr(dateIso)}</h2>
-            <Link href={`?date=${addDaysIso(dateIso, 1)}`} aria-label="Sledeći dan" className="text-2xl hover:text-burgundy">
+            <Link href={`?date=${addDaysIso(dateIso, 1)}`} aria-label="Sledeći dan" className="btn-secondary btn-sm size-9 p-0">
               →
             </Link>
             {dateIso !== today && (
-              <Link href="?" className="text-sm underline underline-offset-4 hover:text-burgundy">
+              <Link href="?" className="btn-ghost btn-sm">
                 Danas
               </Link>
             )}
           </div>
-          <p className="mt-2 text-sm text-neutral-500">{activeCount} zakazanih termina</p>
+          <h1 className="mt-4 font-serif text-3xl leading-tight sm:text-4xl">{formatDateSr(dateIso)}</h1>
+          <p className="mt-1 text-sm text-muted">
+            {activeCount} {activeCount === 1 ? "zakazan termin" : "zakazanih termina"}
+          </p>
         </div>
-        <div className="bg-white p-8">
-          <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">Pazar za dan</p>
-          <p className="mt-2 font-mono text-2xl">{formatRsd(dayRevenue.totalPara)}</p>
-          <p className="text-xs text-neutral-500">{dayRevenue.completedCount} završenih</p>
+        <div className="card p-5">
+          <p className="eyebrow">Pazar za dan</p>
+          <p className="mt-3 font-serif text-2xl tabular-nums sm:text-3xl">{formatRsd(dayRevenue.totalPara)}</p>
+          <p className="mt-1 text-xs text-muted">{dayRevenue.completedCount} završenih</p>
         </div>
-        <div className="bg-white p-8">
-          <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">Pazar za mesec</p>
-          <p className="mt-2 font-mono text-2xl">{formatRsd(monthRevenue.totalPara)}</p>
-          <p className="text-xs text-neutral-500">{monthRevenue.completedCount} završenih</p>
+        <div className="card bg-charcoal p-5 text-white">
+          <p className="eyebrow text-white/60">Pazar za mesec</p>
+          <p className="mt-3 font-serif text-2xl tabular-nums sm:text-3xl">{formatRsd(monthRevenue.totalPara)}</p>
+          <p className="mt-1 text-xs text-white/60">{monthRevenue.completedCount} završenih</p>
         </div>
       </section>
 
@@ -145,60 +114,63 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
         />
       )}
 
-      <section className="mt-12 grid gap-12 lg:grid-cols-3">
-        <div className={`grid min-w-0 gap-8 lg:col-span-2 ${workers.length > 1 ? "md:grid-cols-2" : ""}`}>
+      <section className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_26rem]">
+        <div className={`grid min-w-0 content-start gap-6 ${workers.length > 1 ? "md:grid-cols-2" : ""}`}>
           {workers.map((w) => {
             const list = appointments.filter((a) => a.workerId === w.id);
             return (
-              <article key={w.id} aria-label={`Termini: ${w.displayName}`}>
-                <h3 className="border-b border-charcoal pb-2 text-xs uppercase tracking-[0.2em]">{w.displayName}</h3>
-                {list.length === 0 && <p className="py-6 text-sm text-neutral-400">Nema termina.</p>}
-                <ol>
+              <article key={w.id} aria-label={`Termini: ${w.displayName}`} className="min-w-0">
+                <h2 className="flex items-center justify-between border-b border-line pb-3">
+                  <span className="font-serif text-2xl">{w.displayName}</span>
+                  <span className="text-sm text-muted">{list.filter((a) => a.status === "BOOKED").length} termina</span>
+                </h2>
+                {list.length === 0 && (
+                  <p className="mt-4 rounded-2xl border border-dashed border-line p-6 text-center text-sm text-muted">
+                    Nema termina za ovaj dan.
+                  </p>
+                )}
+                <ol className="mt-4 grid gap-2">
                   {list.map((a) => (
-                    <li key={a.id} className={`border-b border-l-2 py-4 pl-4 ${STATUS_STYLE[a.status]}`}>
-                      <div className="flex items-baseline gap-3">
-                        <span className="font-mono text-sm">
-                          {formatLocalTime(a.startTime, TIME_ZONE)}–{formatLocalTime(a.endTime, TIME_ZONE)}
-                        </span>
-                        {a.client && (
-                          <span className="self-center">
-                            <Avatar name={a.client.name} src={avatarUrl(a.client.id, a.client.avatar)} size={24} />
-                          </span>
-                        )}
-                        <Link
-                          href={`/admin/${salon.slug}/musterije/${encodeURIComponent(clientKeyOf(a))}`}
-                          className="font-medium hover:text-burgundy"
-                        >
-                          {a.guestName ?? a.client?.name ?? "Mušterija"}
-                        </Link>
-                        {(flags.get(clientKeyOf(a))?.noShows ?? 0) > 0 && (
-                          <span className="text-[10px] uppercase tracking-wider text-burgundy">
-                            {flags.get(clientKeyOf(a))?.noShows}× nije došao
-                          </span>
-                        )}
-                        {a.source === "SALON" && (
-                          <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">salon</span>
-                        )}
-                      </div>
-                      <p className="mt-1 text-sm">
-                        {a.service.name} · {formatRsd(a.price)} ·{" "}
-                        <PhoneLink phone={a.guestPhone ?? a.client?.phone ?? null} />
-                      </p>
-                      {a.note && <p className="mt-1 text-xs italic text-neutral-500">{a.note}</p>}
-                      {flags.get(clientKeyOf(a))?.note && (
-                        <p className="mt-1 text-xs text-neutral-500">Beleška: {flags.get(clientKeyOf(a))?.note}</p>
-                      )}
-                      <div className="mt-2 flex items-center gap-3 text-xs">
-                        <span className="text-neutral-500">{STATUS_LABEL[a.status]}</span>
-                        {a.status === "BOOKED" ? (
-                          <>
-                            <StatusButton action={statusAction} id={a.id} status="COMPLETED" label="Završeno" />
-                            <StatusButton action={statusAction} id={a.id} status="NO_SHOW" label="Nije došao" />
-                            <StatusButton action={statusAction} id={a.id} status="CANCELLED" label="Otkaži" />
-                          </>
-                        ) : (
-                          <StatusButton action={statusAction} id={a.id} status="BOOKED" label="Vrati na zakazano" />
-                        )}
+                    <li key={a.id} className={`card border-l-4 p-4 ${STATUS_STYLE[a.status].row}`}>
+                      <div className="flex items-start gap-3">
+                        <div className="w-14 shrink-0">
+                          <p className="font-serif text-xl leading-none tabular-nums">{formatLocalTime(a.startTime, TIME_ZONE)}</p>
+                          <p className="mt-1 text-xs text-muted tabular-nums">do {formatLocalTime(a.endTime, TIME_ZONE)}</p>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {a.client && <Avatar name={a.client.name} src={avatarUrl(a.client.id, a.client.avatar)} size={24} />}
+                            <Link
+                              href={`/admin/${salon.slug}/musterije/${encodeURIComponent(clientKeyOf(a))}`}
+                              className={`font-medium hover:text-burgundy ${a.status === "CANCELLED" ? "line-through" : ""}`}
+                            >
+                              {a.guestName ?? a.client?.name ?? "Mušterija"}
+                            </Link>
+                            {(flags.get(clientKeyOf(a))?.noShows ?? 0) > 0 && (
+                              <span className="badge bg-burgundy text-white">{flags.get(clientKeyOf(a))?.noShows}× nije došao</span>
+                            )}
+                            {a.source === "SALON" && <span className="badge bg-sand text-muted">upisao salon</span>}
+                            <span className={`badge ml-auto ${STATUS_STYLE[a.status].badge}`}>{STATUS_LABEL[a.status]}</span>
+                          </div>
+                          <p className="mt-1 text-sm text-muted">
+                            {a.service.name} · {formatRsd(a.price)} · <PhoneLink phone={a.guestPhone ?? a.client?.phone ?? null} />
+                          </p>
+                          {a.note && <p className="mt-2 rounded-lg bg-cream px-3 py-2 text-xs text-muted">„{a.note}”</p>}
+                          {flags.get(clientKeyOf(a))?.note && (
+                            <p className="mt-2 text-xs text-muted">Beleška: {flags.get(clientKeyOf(a))?.note}</p>
+                          )}
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {a.status === "BOOKED" ? (
+                              <>
+                                <StatusButton action={statusAction} id={a.id} status="COMPLETED" label="✓ Završeno" primary />
+                                <StatusButton action={statusAction} id={a.id} status="NO_SHOW" label="Nije došao" />
+                                <StatusButton action={statusAction} id={a.id} status="CANCELLED" label="Otkaži" />
+                              </>
+                            ) : (
+                              <StatusButton action={statusAction} id={a.id} status="BOOKED" label="Vrati na zakazano" />
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </li>
                   ))}
@@ -208,10 +180,12 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
           })}
         </div>
 
-        <aside className="min-w-0 border border-neutral-200 p-8 lg:sticky lg:top-6 lg:self-start" aria-labelledby="novi-termin">
-          <h2 id="novi-termin" className="font-serif text-3xl">Upiši termin za mušteriju</h2>
-          <p className="mt-2 text-sm text-neutral-500">Za mušterije koje zovu telefonom ili dođu u salon.</p>
-          <div className="mt-8">
+        <aside className="card min-w-0 p-5 sm:p-6 lg:sticky lg:top-32 lg:self-start" aria-labelledby="novi-termin">
+          <h2 id="novi-termin" className="font-serif text-2xl">
+            Upiši termin
+          </h2>
+          <p className="mt-1 text-sm text-muted">Za mušterije koje zovu telefonom ili dođu u salon.</p>
+          <div className="mt-6">
             <BookingForm
               key={dateIso}
               slug={salon.slug}
@@ -224,7 +198,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
           </div>
         </aside>
       </section>
-    </main>
+    </AdminShell>
   );
 }
 
@@ -268,9 +242,9 @@ async function loadUrgentRequests(salonId: string, todayIsoDate: string): Promis
 }
 
 function PhoneLink({ phone }: { phone: string | null }) {
-  if (!phone) return <span className="text-neutral-400">bez telefona</span>;
+  if (!phone) return <span>bez telefona</span>;
   return (
-    <a href={`tel:${phone.replace(/\s/g, "")}`} className="underline underline-offset-2">
+    <a href={`tel:${phone.replace(/\s/g, "")}`} className="link">
       {/^\+381\d+$/.test(phone) ? formatPhone(phone) : phone}
     </a>
   );
@@ -281,12 +255,13 @@ function StatusButton(props: {
   id: string;
   status: AppointmentStatus;
   label: string;
+  primary?: boolean;
 }) {
   return (
     <form action={props.action}>
       <input type="hidden" name="id" value={props.id} />
       <input type="hidden" name="status" value={props.status} />
-      <button className="border border-neutral-300 px-2 py-1 transition-colors hover:border-charcoal">{props.label}</button>
+      <button className={`btn-sm ${props.primary ? "btn-primary" : "btn-secondary"}`}>{props.label}</button>
     </form>
   );
 }

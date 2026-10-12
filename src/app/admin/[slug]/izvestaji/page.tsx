@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminShell } from "@/components/AdminShell";
 import { requireSalonOwner } from "@/lib/access";
 import { formatRsd } from "@/lib/money";
 import { getMonthReport, isValidMonthIso, shiftMonth, type ReportRow } from "@/lib/reports";
@@ -26,7 +27,7 @@ function percent(part: number, whole: number): string {
 
 export default async function ReportsPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
-  const { salon } = await requireSalonOwner(slug);
+  const { salon, user } = await requireSalonOwner(slug);
   const current = todayIso(TIME_ZONE).slice(0, 7);
   const requested = (await searchParams).mesec ?? "";
   const monthIso = isValidMonthIso(requested) ? requested : current;
@@ -37,15 +38,10 @@ export default async function ReportsPage({ params, searchParams }: PageProps) {
   const maxDay = Math.max(1, ...r.byDay.map((d) => d.revenuePara));
 
   return (
-    <main className="page pb-24">
-      <header className="flex flex-wrap items-baseline justify-between gap-4 border-b border-line py-8">
-        <div>
-          <p className="eyebrow">Izveštaji</p>
-          <h1 className="font-serif text-5xl">{salon.name}</h1>
-        </div>
-        <Link href={`/admin/${salon.slug}`} className="link text-sm">
-          ← Raspored
-        </Link>
+    <AdminShell salon={salon} user={user} active="izvestaji">
+      <div>
+      <header>
+        <h1 className="font-serif text-3xl sm:text-4xl">Izveštaji</h1>
       </header>
 
       <nav className="mt-8 flex items-center gap-4" aria-label="Mesec">
@@ -92,14 +88,15 @@ export default async function ReportsPage({ params, searchParams }: PageProps) {
         <ul className="mt-4 grid gap-1.5">
           {r.byDay.map((d) => (
             <li key={d.dateIso} className="grid grid-cols-[3.5rem_1fr_7rem] items-center gap-3 text-sm">
-              <span className="font-mono text-muted">{`${Number(d.dateIso.slice(8))}.${Number(d.dateIso.slice(5, 7))}.`}</span>
+              <span className="tabular-nums text-muted">{`${Number(d.dateIso.slice(8))}.${Number(d.dateIso.slice(5, 7))}.`}</span>
               <span className="h-3 rounded-full bg-burgundy/80" style={{ width: `${(d.revenuePara / maxDay) * 100}%` }} />
-              <span className="text-right font-mono">{formatRsd(d.revenuePara)}</span>
+              <span className="text-right tabular-nums">{formatRsd(d.revenuePara)}</span>
             </li>
           ))}
         </ul>
       </section>
-    </main>
+      </div>
+    </AdminShell>
   );
 }
 
@@ -107,7 +104,7 @@ function Stat({ label, value, hint, warn = false }: { label: string; value: stri
   return (
     <div className="bg-white p-5">
       <p className="eyebrow">{label}</p>
-      <p className={`mt-2 font-mono text-xl ${warn ? "text-burgundy" : ""}`}>{value}</p>
+      <p className={`mt-2 font-serif text-2xl tabular-nums ${warn ? "text-burgundy" : ""}`}>{value}</p>
       {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
     </div>
   );
@@ -123,9 +120,9 @@ function Breakdown({ title, rows, total }: { title: string; rows: ReportRow[]; t
           {rows.map((row) => (
             <tr key={row.label} className="border-b border-line">
               <td className="py-2.5 pr-3">{row.label}</td>
-              <td className="py-2.5 pr-3 text-right font-mono text-muted">{row.count}×</td>
-              <td className="py-2.5 pr-3 text-right font-mono">{formatRsd(row.revenuePara)}</td>
-              <td className="w-14 py-2.5 text-right font-mono text-muted">{percent(row.revenuePara, total)}</td>
+              <td className="py-2.5 pr-3 text-right tabular-nums text-muted">{row.count}×</td>
+              <td className="py-2.5 pr-3 text-right tabular-nums">{formatRsd(row.revenuePara)}</td>
+              <td className="w-14 py-2.5 text-right tabular-nums text-muted">{percent(row.revenuePara, total)}</td>
             </tr>
           ))}
         </tbody>

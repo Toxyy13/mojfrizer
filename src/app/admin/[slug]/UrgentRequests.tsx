@@ -22,20 +22,21 @@ interface UrgentRequestsProps {
   close: (formData: FormData) => Promise<void>;
 }
 
-const field = "mt-1 w-full border-b border-neutral-300 bg-transparent py-1 outline-none focus:border-burgundy";
+const field = "field py-2 text-sm";
 
 export function UrgentRequests({ requests, swap, close }: UrgentRequestsProps) {
   return (
-    <section className="mt-12 border border-burgundy p-8" aria-labelledby="hitni-zahtevi">
-      <h2 id="hitni-zahtevi" className="font-serif text-3xl text-burgundy">
+    <section className="mt-6 rounded-2xl border border-burgundy/30 bg-burgundy-soft p-5 sm:p-6" aria-labelledby="hitni-zahtevi">
+      <h2 id="hitni-zahtevi" className="flex items-center gap-2 font-serif text-2xl text-burgundy">
+        <span aria-hidden className="size-2.5 animate-pulse rounded-full bg-burgundy" />
         Hitni zahtevi ({requests.length})
       </h2>
-      <p className="mt-1 text-sm text-neutral-500">
+      <p className="mt-1 text-sm text-burgundy/80">
         Pozovite nekog od zakazanih da se pomeri, pa upišite zamenu: hitna mušterija dobija njegov termin, a on novo vreme.
       </p>
-      <ul className="mt-6 grid gap-6 md:grid-cols-2">
+      <ul className="mt-5 grid gap-3 md:grid-cols-2">
         {requests.map((r) => (
-          <li key={r.id} className="border-t border-neutral-200 pt-4">
+          <li key={r.id} className="card p-5">
             <RequestCard request={r} swap={swap} close={close} />
           </li>
         ))}
@@ -56,23 +57,23 @@ function RequestCard({
   const [state, action, pending] = useActionState<SwapState, FormData>(swap, { error: null });
   return (
     <article aria-label={`Hitan zahtev: ${request.name}`}>
-      <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">{request.dateLabel}</p>
+      <p className="eyebrow">{request.dateLabel}</p>
       <p className="mt-1 text-lg font-medium">
         {request.name} ·{" "}
-        <a href={`tel:${request.phone.replace(/\s/g, "")}`} className="underline underline-offset-2">
+        <a href={`tel:${request.phone.replace(/\s/g, "")}`} className="link">
           {request.phone}
         </a>
       </p>
-      <p className="text-sm">
+      <p className="text-sm text-muted">
         {request.serviceName} · {request.durationMinutes} min
       </p>
-      <p className="mt-2 border-l-2 border-neutral-300 pl-3 text-sm italic text-neutral-600">{request.reason}</p>
+      <p className="mt-3 rounded-lg bg-cream px-3 py-2 text-sm text-muted">„{request.reason}”</p>
 
       {request.candidates.length > 0 ? (
         <form action={action} className="mt-4 grid gap-3 text-sm">
           <input type="hidden" name="requestId" value={request.id} />
           <label>
-            <span className="text-neutral-600">Termin koji ustupa</span>
+            <span className="field-label">Termin koji ustupa</span>
             <select name="appointmentId" required className={field}>
               {request.candidates.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -83,31 +84,31 @@ function RequestCard({
           </label>
           <div className="grid grid-cols-2 gap-3">
             <label>
-              <span className="text-neutral-600">Novi dan za njega</span>
+              <span className="field-label">Novi dan za njega</span>
               <input type="date" name="newDateIso" defaultValue={request.dateIso} required className={field} />
             </label>
             <label>
-              <span className="text-neutral-600">Novo vreme</span>
+              <span className="field-label">Novo vreme</span>
               <input type="time" name="newTime" step={300} required className={field} />
             </label>
           </div>
           {state.error && (
-            <p className="text-burgundy" role="alert">
+            <p className="alert-error" role="alert">
               {state.error}
             </p>
           )}
           <button
             disabled={pending}
-            className="justify-self-start bg-burgundy px-4 py-2 text-white transition-colors hover:bg-burgundy-dark disabled:opacity-40"
+            className="btn-primary btn-sm justify-self-start"
           >
             {pending ? "Upisujem…" : "Upiši zamenu"}
           </button>
         </form>
       ) : (
-        <p className="mt-4 text-sm text-neutral-500">Tog dana nema zakazanih termina za zamenu.</p>
+        <p className="mt-4 text-sm text-muted">Tog dana nema zakazanih termina za zamenu.</p>
       )}
 
-      <div className="mt-3 flex gap-3 text-xs">
+      <div className="mt-4 flex gap-2 border-t border-line pt-4">
         <CloseButton close={close} id={request.id} status="RESOLVED" label="Rešeno drugačije" />
         <CloseButton close={close} id={request.id} status="DECLINED" label="Odbij" />
       </div>
@@ -120,7 +121,7 @@ function CloseButton(props: { close: UrgentRequestsProps["close"]; id: string; s
     <form action={props.close}>
       <input type="hidden" name="id" value={props.id} />
       <input type="hidden" name="status" value={props.status} />
-      <button className="border border-neutral-300 px-2 py-1 transition-colors hover:border-charcoal">{props.label}</button>
+      <button className="btn-secondary btn-sm">{props.label}</button>
     </form>
   );
 }
