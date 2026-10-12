@@ -95,3 +95,9 @@ export function formatDateSr(dateIso: string): string {
   const [y, m, d] = dateIso.split("-").map(Number);
   return `${WEEKDAYS_SR[isoWeekdayOf(dateIso)]}, ${d}.${m}.${y}.`;
 }
+
+/** Local calendar date (YYYY-MM-DD) of an instant in timeZone. */
+export function formatLocalDateIso(date: Date, timeZone: string): string {
+  const p = zonedParts(date, timeZone);
+  return `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
+}

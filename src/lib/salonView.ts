@@ -1,6 +1,6 @@
 import type { SalonDayOff, Service, WorkerProfile, WorkingHours } from "@prisma/client";
 import type { BookingService, BookingWorker } from "@/components/BookingForm";
-import { formatPrice } from "./money";
+import { formatServicePrice } from "./money";
 import { TIME_ZONE, addDaysIso, isoWeekdayOf, todayIso } from "./time";
 
 const SHORT_DAYS = ["", "Pon", "Uto", "Sre", "Čet", "Pet", "Sub", "Ned"];
@@ -15,7 +15,7 @@ export function toBookingServices(services: Service[]): BookingService[] {
     id: s.id,
     name: s.name,
     category: serviceCategory(s),
-    priceLabel: formatPrice(s.price),
+    priceLabel: formatServicePrice(s),
     durationMin: s.durationMinutes,
   }));
 }

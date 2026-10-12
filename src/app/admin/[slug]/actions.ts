@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { AppointmentStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireSalonAccess } from "@/lib/access";
+import { applyComboPricing } from "@/lib/comboPricing";
 import { bookingInputSchema, createAppointment, type BookingResult } from "@/lib/booking";
 
 export async function bookForClient(slug: string, raw: unknown): Promise<BookingResult> {
@@ -33,7 +34,11 @@ export async function setAppointmentStatus(slug: string, formData: FormData): Pr
   if (!ALLOWED.includes(status)) return;
   try {
     // salonId in the filter keeps one tenant from touching another tenant's appointment.
-    await db.appointment.updateMany({ where: { id, salonId: salon.id }, data: { status } });
+    await db.$transaction(async (tx) => {
+      const { count } = await tx.appointment.updateMany({ where: { id, salonId: salon.id }, data: { status } });
+      // Cancelling or restoring a service can change combo prices in the same visit.
+      if (count > 0) await applyComboPricing(tx, id);
+    });
   } catch (error) {
     // Re-activating a cancelled slot that is now taken violates the overlap constraint.
     console.error(error);
