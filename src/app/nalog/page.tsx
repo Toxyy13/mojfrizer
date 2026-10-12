@@ -12,6 +12,7 @@ import { formatPrice } from "@/lib/money";
 import { formatPhone } from "@/lib/phone";
 import { fullAddress } from "@/lib/salonAddress";
 import { logout } from "../prijava/actions";
+import { resendVerification } from "./actions";
 
 export const metadata: Metadata = { title: "Moj nalog · mojfrizer" };
 export const dynamic = "force-dynamic";
@@ -83,6 +84,7 @@ export default async function AccountPage() {
       id: true,
       name: true,
       phone: true,
+      emailVerifiedAt: true,
       avatar: { select: { updatedAt: true } },
       email: true,
       favoriteSalon: { select: { id: true, name: true, slug: true, city: true, address: true } },
@@ -139,6 +141,12 @@ export default async function AccountPage() {
             Uredi profil
           </Link>
         </p>
+        {user.email && !user.emailVerifiedAt && (
+          <form action={resendVerification} className="mt-8 border-l-2 border-burgundy pl-4 text-burgundy" role="note">
+            Potvrdite email adresu ({user.email}) linkom koji smo vam poslali, da biste dobijali podsetnike za termine.{" "}
+            <button className="underline underline-offset-4">Pošalji ponovo</button>
+          </form>
+        )}
         {!user.phone && (
           <p className="mt-8 border-l-2 border-burgundy pl-4 text-burgundy" role="note">
             Dodajte broj telefona i sliku, da vas salon može pozvati ako je potrebno.{" "}
