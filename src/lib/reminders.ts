@@ -31,7 +31,7 @@ export async function sendDueReminders(now: Date = new Date()): Promise<Reminder
       status: "BOOKED",
       reminderSentAt: null,
       startTime: { gt: from, lte: to },
-      client: { email: { not: null } },
+      client: { email: { not: null }, emailVerifiedAt: { not: null } },
     },
     select: {
       id: true,

@@ -4,7 +4,9 @@ import { Prisma, Role } from "@prisma/client";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { sendResetMail, sendVerificationMail } from "@/lib/accountMail";
 import { getSessionUser, hashPassword, startSession } from "@/lib/auth";
+import { consumeToken } from "@/lib/emailTokens";
 import { db } from "@/lib/db";
 import { safeNextPath } from "@/lib/landing";
 import { formatPhone, normalizePhone } from "@/lib/phone";
@@ -38,6 +40,8 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
       select: { id: true, email: true, name: true, role: true },
     });
     await startSession(user);
+    // A failing mail provider must not block registration; the account page can resend it.
+    await sendVerificationMail(user.id).catch((mailError: unknown) => console.error(mailError));
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       const what = String(error.meta?.target ?? "").includes("phone") ? "ovim brojem telefona" : "ovom email adresom";
@@ -94,4 +98,55 @@ export async function updateProfile(_prev: ProfileState, formData: FormData): Pr
   }
   revalidatePath("/nalog", "layout");
   return { error: null, saved: true, values: { name, phone: formatPhone(phone) } };
+}
+
+/** Always answers the same, so the form can't be used to find out which emails have accounts. */
+export async function requestPasswordReset(_prev: FormState, formData: FormData): Promise<FormState> {
+  const email = emailSchema.safeParse(String(formData.get("email") ?? ""));
+  if (!email.success) return { error: "Upišite ispravnu email adresu.", values: { email: String(formData.get("email") ?? "") } };
+  try {
+    await sendResetMail(email.data);
+  } catch (error) {
+    console.error(error);
+  }
+  return { error: null, notice: "Ako nalog sa tom adresom postoji, poslali smo vam link za novu lozinku." };
+}
+
+export async function resetPassword(_prev: FormState, formData: FormData): Promise<FormState> {
+  const token = String(formData.get("token") ?? "");
+  const password = String(formData.get("password") ?? "");
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return { error: `Lozinka mora imati bar ${MIN_PASSWORD_LENGTH} znakova.` };
+  }
+  try {
+    const used = await consumeToken(token, "RESET_PASSWORD");
+    if (!used) return { error: "Link je istekao ili je već iskorišćen. Zatražite novi." };
+    const passwordHash = await hashPassword(password);
+    await db.$transaction([
+      // Following the link proves the owner reads this mailbox, so the email counts as verified too.
+      db.user.updateMany({ where: { id: used.userId, emailVerifiedAt: null }, data: { emailVerifiedAt: new Date() } }),
+      db.user.update({ where: { id: used.userId }, data: { passwordHash } }),
+      // Any other reset links still in flight are void now.
+      db.emailToken.updateMany({
+        where: { userId: used.userId, kind: "RESET_PASSWORD", usedAt: null },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+  } catch (error) {
+    console.error(error);
+    return { error: "Čuvanje nije uspelo. Pokušajte ponovo." };
+  }
+  redirect("/prijava?lozinka=nova");
+}
+
+/** "Pošalji ponovo" on the account page. */
+export async function resendVerification(): Promise<void> {
+  const user = await getSessionUser();
+  if (!user) redirect("/prijava?next=/nalog");
+  try {
+    await sendVerificationMail(user.id);
+  } catch (error) {
+    console.error(error);
+  }
+  revalidatePath("/nalog");
 }

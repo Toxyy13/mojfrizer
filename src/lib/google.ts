@@ -99,12 +99,15 @@ export async function userForProfile(profile: GoogleProfile): Promise<SessionUse
 
   const byEmail = await db.user.findUnique({ where: { email: profile.email }, select });
   if (byEmail) {
-    await db.user.update({ where: { id: byEmail.id }, data: { googleId: profile.sub } });
+    await db.user.update({
+      where: { id: byEmail.id },
+      data: { googleId: profile.sub, emailVerifiedAt: new Date() },
+    });
     return byEmail;
   }
   try {
     return await db.user.create({
-      data: { email: profile.email, name: profile.name, googleId: profile.sub, role: Role.CLIENT },
+      data: { email: profile.email, name: profile.name, googleId: profile.sub, emailVerifiedAt: new Date(), role: Role.CLIENT },
       select,
     });
   } catch (error) {

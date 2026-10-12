@@ -45,6 +45,8 @@ model User {
   passwordHash   String?
   // Google account id ("sub"), set on Google sign-in.
   googleId       String?  @unique
+  // Set once the customer proved they own the email (link in a mail, or Google sign-in).
+  emailVerifiedAt DateTime?
   name           String
   // Normalized to +381..., used as the customer's login.
   phone          String?  @unique
@@ -62,6 +64,7 @@ model User {
   chatMessages        ChatMessage[]
   chatAsClient        ChatMessage[]   @relation("ChatClient")
   avatar              UserAvatar?
+  emailTokens         EmailToken[]
 
   @@map("users")
 }
@@ -252,4 +255,24 @@ model UserAvatar {
   updatedAt DateTime @updatedAt
 
   @@map("user_avatars")
+}
+
+enum EmailTokenKind {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
+// One-time links sent by email. Only a hash of the token is stored.
+model EmailToken {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      EmailTokenKind
+  tokenHash String         @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime       @default(now())
+
+  @@index([userId, kind, createdAt])
+  @@map("email_tokens")
 }

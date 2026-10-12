@@ -11,7 +11,7 @@ import { login } from "./actions";
 export const metadata: Metadata = { title: "Prijava · mojfrizer" };
 
 interface PageProps {
-  searchParams: Promise<{ next?: string; greska?: string }>;
+  searchParams: Promise<{ next?: string; greska?: string; lozinka?: string }>;
 }
 
 export default async function LoginPage({ searchParams }: PageProps) {
@@ -39,6 +39,11 @@ export default async function LoginPage({ searchParams }: PageProps) {
           Prijava preko Google naloga nije uspela. Pokušajte ponovo ili se prijavite emailom.
         </p>
       )}
+      {params.lozinka === "nova" && (
+        <p className="mb-6 rounded-xl bg-forest-soft px-4 py-3 text-sm text-forest" role="status">
+          Lozinka je promenjena. Prijavite se novom lozinkom.
+        </p>
+      )}
       <GoogleButton next={next} />
       <AuthForm
         action={login}
@@ -50,6 +55,11 @@ export default async function LoginPage({ searchParams }: PageProps) {
           { name: "password", label: "Lozinka", type: "password", autoComplete: "current-password" },
         ]}
       />
+      <p className="mt-4 text-center text-sm">
+        <Link href="/zaboravljena-lozinka" className="link text-muted">
+          Zaboravljena lozinka?
+        </Link>
+      </p>
     </AuthShell>
   );
 }

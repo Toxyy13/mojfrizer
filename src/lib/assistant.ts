@@ -9,7 +9,8 @@ import { TIME_ZONE, WEEKDAYS_SR, addDaysIso, formatDateSr, isValidDateIso, isoWe
 // AI assistant that answers customer questions from the platform's own data.
 // First version only answers and points to booking; it never books by itself.
 
-const DEFAULT_MODEL = "claude-opus-5-5";
+// Haiku keeps the per-salon cost negligible (Todor chose it, 2026-10-12).
+const DEFAULT_MODEL = "claude-haiku-5-5";
 const MAX_TOOL_ROUNDS = 4;
 const MAX_OUTPUT_TOKENS = 1024;
 const SLOT_LOOKAHEAD_DAYS = 30;
