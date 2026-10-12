@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import type React from "react";
 import type { BookingResult } from "@/lib/booking";
 import type { SlotsResponse } from "@/app/api/salons/[slug]/slots/route";
 
@@ -54,13 +55,22 @@ function hhmm(minute: number): string {
   return `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
 }
 
-const chip =
-  "rounded-full border px-4 py-2 text-sm transition-all duration-300 ease-out disabled:cursor-not-allowed disabled:opacity-30";
-const chipOn = "border-burgundy bg-burgundy text-white";
-const chipOff = "border-neutral-300 hover:-translate-y-0.5 hover:border-neutral-500";
-const label = "text-xs uppercase tracking-[0.2em] text-neutral-500";
-const input =
-  "mt-2 w-full border-b border-neutral-300 bg-transparent py-2 text-lg outline-none transition-colors focus:border-burgundy";
+const input = "field";
+
+function StepTitle({ n, children }: { n: number; children: React.ReactNode }) {
+  return (
+    <legend className="flex items-center gap-3 text-base font-medium">
+      <span className="grid size-7 place-items-center rounded-full bg-charcoal text-xs text-white">{n}</span>
+      {children}
+    </legend>
+  );
+}
+
+/** "Pon 13.10." -> ["Pon", "13.10."] for the two-line day chip. */
+function splitDayLabel(label: string): [string, string] {
+  const i = label.indexOf(" ");
+  return i === -1 ? [label, ""] : [label.slice(0, i), label.slice(i + 1)];
+}
 
 export function BookingForm({ slug, services, workers, days, mode, submit, initialClient, requestUrgent }: BookingFormProps) {
   const [serviceId, setServiceId] = useState<string>("");
@@ -157,15 +167,15 @@ export function BookingForm({ slug, services, workers, days, mode, submit, initi
 
   if (urgentSent) {
     return (
-      <div className="border border-neutral-200 p-8 md:p-12" role="status">
-        <p className={label}>Hitan zahtev je poslat</p>
-        <p className="mt-4 font-serif text-4xl">
+      <div className="animate-rise rounded-2xl bg-burgundy-soft p-6 sm:p-10" role="status">
+        <p className="eyebrow text-burgundy">Hitan zahtev je poslat</p>
+        <p className="mt-3 font-serif text-3xl sm:text-4xl">
           {service?.name}, {days.find((d) => d.iso === dateIso)?.label ?? dateIso}
         </p>
-        <p className="mt-2 text-neutral-600">
+        <p className="mt-2 text-muted">
           Salon će pokušati da nađe zamenu sa nekim od zakazanih mušterija i pozvaće vas na {clientPhone}.
         </p>
-        <button type="button" onClick={reset} className="mt-8 text-sm underline underline-offset-4 hover:text-burgundy">
+        <button type="button" onClick={reset} className="btn-secondary mt-8">
           Nazad na zakazivanje
         </button>
       </div>
@@ -174,13 +184,24 @@ export function BookingForm({ slug, services, workers, days, mode, submit, initi
 
   if (result?.ok) {
     return (
-      <div className="border border-neutral-200 p-8 md:p-12" role="status">
-        <p className={label}>{mode === "public" ? "Termin je zakazan" : "Termin je upisan"}</p>
-        <p className="mt-4 font-serif text-4xl">
+      <div className="animate-rise rounded-2xl bg-forest-soft p-6 sm:p-10" role="status">
+        <span aria-hidden className="grid size-12 place-items-center rounded-full bg-forest text-xl text-white">
+          ✓
+        </span>
+        <p className="eyebrow mt-6 text-forest">{mode === "public" ? "Termin je zakazan" : "Termin je upisan"}</p>
+        <p className="mt-3 font-serif text-3xl sm:text-4xl">
           {service?.name}, {days.find((d) => d.iso === dateIso)?.label ?? dateIso} u {minute !== null ? hhmm(minute) : ""}
         </p>
-        <p className="mt-2 text-neutral-600">Frizer: {result.workerName}</p>
-        <button type="button" onClick={reset} className="mt-8 text-sm underline underline-offset-4 hover:text-burgundy">
+        <p className="mt-2 text-muted">Frizer: {result.workerName}</p>
+        {mode === "public" && (
+          <p className="mt-6 text-sm text-muted">
+            Sačuvajte ovaj link, preko njega otkazujete ili pomerate termin i dodajete ga u kalendar:{" "}
+            <a href={`/termin/${result.manageToken}`} className="text-burgundy underline underline-offset-4">
+              Moj termin
+            </a>
+          </p>
+        )}
+        <button type="button" onClick={reset} className="btn-secondary mt-8">
           {mode === "public" ? "Zakaži još jedan termin" : "Upiši sledeći termin"}
         </button>
       </div>
@@ -191,61 +212,58 @@ export function BookingForm({ slug, services, workers, days, mode, submit, initi
 
   return (
     <form
-      className="grid min-w-0 gap-12"
+      className="@container grid min-w-0 gap-10"
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit();
       }}
     >
       <fieldset className="min-w-0">
-        <legend className={label}>1. Usluga</legend>
-        <div className="mt-4 grid gap-6">
+        <StepTitle n={1}>Usluga</StepTitle>
+        <div className="mt-4 grid gap-5">
           {categories.map((category) => (
-            <div key={category} className="flex flex-wrap items-center gap-2">
-              <span className="w-20 text-sm text-neutral-400">{category}</span>
-              {services
-                .filter((s) => s.category === category)
-                .map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    aria-pressed={s.id === serviceId}
-                    onClick={() => setServiceId(s.id)}
-                    className={`${chip} ${s.id === serviceId ? chipOn : chipOff}`}
-                  >
-                    {s.name}
-                  </button>
-                ))}
+            <div key={category}>
+              {categories.length > 1 && <p className="eyebrow mb-2">{category}</p>}
+              <div className="grid gap-2 @md:grid-cols-2">
+                {services
+                  .filter((s) => s.category === category)
+                  .map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      aria-pressed={s.id === serviceId}
+                      onClick={() => setServiceId(s.id)}
+                      className="group flex items-center gap-3 rounded-xl border border-line bg-white p-3.5 text-left transition-all duration-200 hover:border-charcoal aria-pressed:border-burgundy aria-pressed:bg-burgundy-soft aria-pressed:ring-1 aria-pressed:ring-burgundy"
+                    >
+                      <span
+                        aria-hidden
+                        className="grid size-5 shrink-0 place-items-center rounded-full border border-line bg-white group-aria-pressed:border-burgundy group-aria-pressed:bg-burgundy"
+                      >
+                        <span className="size-2 rounded-full bg-white opacity-0 group-aria-pressed:opacity-100" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-medium">{s.name}</span>
+                        <span className="block text-xs text-muted">
+                          {s.durationMin} min · {s.priceLabel}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+              </div>
             </div>
           ))}
         </div>
-        {service && (
-          <p className="mt-4 text-sm text-neutral-600">
-            {service.priceLabel} · {service.durationMin} min
-          </p>
-        )}
       </fieldset>
 
       {workers.length > 1 && (
         <fieldset className="min-w-0">
-          <legend className={label}>2. Frizer</legend>
+          <StepTitle n={2}>Frizer</StepTitle>
           <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              aria-pressed={workerId === ""}
-              onClick={() => setWorkerId("")}
-              className={`${chip} ${workerId === "" ? chipOn : chipOff}`}
-            >
+            <button type="button" aria-pressed={workerId === ""} onClick={() => setWorkerId("")} className="chip">
               Bilo ko
             </button>
             {workers.map((w) => (
-              <button
-                key={w.id}
-                type="button"
-                aria-pressed={w.id === workerId}
-                onClick={() => setWorkerId(w.id)}
-                className={`${chip} ${w.id === workerId ? chipOn : chipOff}`}
-              >
+              <button key={w.id} type="button" aria-pressed={w.id === workerId} onClick={() => setWorkerId(w.id)} className="chip">
                 {w.name}
               </button>
             ))}
@@ -254,34 +272,45 @@ export function BookingForm({ slug, services, workers, days, mode, submit, initi
       )}
 
       <fieldset className="min-w-0">
-        <legend className={label}>{workers.length > 1 ? "3" : "2"}. Dan</legend>
-        <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
-          {days.map((d) => (
-            <button
-              key={d.iso}
-              type="button"
-              disabled={d.closed}
-              aria-pressed={d.iso === dateIso}
-              onClick={() => setDateIso(d.iso)}
-              className={`${chip} shrink-0 ${d.iso === dateIso ? chipOn : chipOff}`}
-            >
-              {d.label}
-            </button>
-          ))}
+        <StepTitle n={workers.length > 1 ? 3 : 2}>Dan</StepTitle>
+        <div className="-mx-1 mt-4 flex snap-x gap-2 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]">
+          {days.map((d) => {
+            const [weekday, date] = splitDayLabel(d.label);
+            return (
+              <button
+                key={d.iso}
+                type="button"
+                disabled={d.closed}
+                aria-pressed={d.iso === dateIso}
+                aria-label={d.closed ? `${d.label}, zatvoreno` : d.label}
+                onClick={() => setDateIso(d.iso)}
+                className="flex w-16 shrink-0 snap-start flex-col items-center rounded-xl border border-line bg-white py-2.5 transition-all duration-200 hover:border-charcoal disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-line aria-pressed:border-burgundy aria-pressed:bg-burgundy aria-pressed:text-white"
+              >
+                <span className="text-[11px] uppercase tracking-wider opacity-70">{weekday}</span>
+                <span className="mt-0.5 text-sm font-medium tabular-nums">{date}</span>
+              </button>
+            );
+          })}
         </div>
       </fieldset>
 
       <fieldset className="min-w-0">
-        <legend className={label}>{workers.length > 1 ? "4" : "3"}. Slobodni termini</legend>
+        <StepTitle n={workers.length > 1 ? 4 : 3}>Slobodni termini</StepTitle>
         <div className="mt-4 min-h-12" aria-live="polite">
-          {!serviceId && <p className="text-sm text-neutral-500">Prvo izaberite uslugu.</p>}
-          {serviceId && slots === null && !loadError && <p className="text-sm text-neutral-500">Učitavam termine…</p>}
-          {loadError && <p className="text-sm text-burgundy">{loadError}</p>}
+          {!serviceId && <p className="rounded-xl bg-sand/60 px-4 py-3 text-sm text-muted">Prvo izaberite uslugu.</p>}
+          {serviceId && slots === null && !loadError && (
+            <div className="grid grid-cols-4 gap-2 @md:grid-cols-6" aria-label="Učitavam termine">
+              {Array.from({ length: 8 }, (_, i) => (
+                <span key={i} className="h-11 animate-pulse rounded-full bg-sand" />
+              ))}
+            </div>
+          )}
+          {loadError && <p className="alert-error">{loadError}</p>}
           {slots && slots.length === 0 && !urgent && (
             <div className="grid gap-3">
-              <p className="text-sm text-neutral-500">Nema slobodnih termina za ovaj dan. Probajte drugi dan.</p>
+              <p className="rounded-xl bg-sand/60 px-4 py-3 text-sm text-muted">Nema slobodnih termina za ovaj dan. Probajte drugi dan.</p>
               {requestUrgent && !days.find((d) => d.iso === dateIso)?.closed && (
-                <div className="border-l-2 border-burgundy pl-4">
+                <div className="rounded-xl border border-burgundy/25 p-4">
                   <p className="text-sm">Morate baš ovog dana? Pošaljite hitan zahtev i salon će probati da zameni termin sa nekim.</p>
                   <button
                     type="button"
@@ -289,7 +318,7 @@ export function BookingForm({ slug, services, workers, days, mode, submit, initi
                       setUrgent(true);
                       setResult(null);
                     }}
-                    className="mt-3 border border-burgundy px-4 py-2 text-sm text-burgundy transition-colors hover:bg-burgundy hover:text-white"
+                    className="btn btn-sm mt-3 border border-burgundy text-burgundy hover:bg-burgundy hover:text-white"
                   >
                     Hitno zakazivanje
                   </button>
@@ -298,10 +327,10 @@ export function BookingForm({ slug, services, workers, days, mode, submit, initi
             </div>
           )}
           {urgent && (
-            <div className="grid gap-2 border-l-2 border-burgundy pl-4">
+            <div className="grid gap-3 rounded-xl border border-burgundy/25 bg-burgundy-soft/50 p-4">
               <p className="text-sm font-medium text-burgundy">Hitan zahtev</p>
               <label className="block">
-                <span className="text-sm text-neutral-600">Zašto vam je hitno?</span>
+                <span className="field-label">Zašto vam je hitno?</span>
                 <textarea
                   className={`${input} resize-none`}
                   rows={2}
@@ -312,24 +341,20 @@ export function BookingForm({ slug, services, workers, days, mode, submit, initi
                   maxLength={300}
                 />
               </label>
-              <button
-                type="button"
-                onClick={() => setUrgent(false)}
-                className="justify-self-start text-xs underline underline-offset-4 text-neutral-500 hover:text-burgundy"
-              >
+              <button type="button" onClick={() => setUrgent(false)} className="link justify-self-start text-xs text-muted">
                 Odustani od hitnog zahteva
               </button>
             </div>
           )}
           {slots && slots.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-4 gap-2 @md:grid-cols-6">
               {slots.map((m) => (
                 <button
                   key={m}
                   type="button"
                   aria-pressed={m === minute}
                   onClick={() => setMinute(m)}
-                  className={`${chip} font-mono ${m === minute ? chipOn : chipOff}`}
+                  className="chip px-0 tabular-nums"
                 >
                   {hhmm(m)}
                 </button>
@@ -339,49 +364,64 @@ export function BookingForm({ slug, services, workers, days, mode, submit, initi
         </div>
       </fieldset>
 
-      <fieldset className="grid min-w-0 gap-8 md:grid-cols-2">
-        <legend className={`${label} mb-2`}>{mode === "public" ? "Vaši podaci" : "Podaci mušterije"}</legend>
+      <fieldset className="grid min-w-0 gap-4 @md:grid-cols-2">
+        <StepTitle n={workers.length > 1 ? 5 : 4}>{mode === "public" ? "Vaši podaci" : "Podaci mušterije"}</StepTitle>
         <label className="block">
-          <span className="text-sm text-neutral-600">Ime i prezime</span>
+          <span className="field-label">Ime i prezime</span>
           <input className={input} value={clientName} onChange={(e) => setClientName(e.target.value)} required autoComplete="name" />
         </label>
         <label className="block">
-          <span className="text-sm text-neutral-600">Telefon</span>
+          <span className="field-label">Telefon</span>
           <input
             className={input}
             value={clientPhone}
             onChange={(e) => setClientPhone(e.target.value)}
             required
             type="tel"
+            inputMode="tel"
             autoComplete="tel"
             placeholder="06x xxx xxxx"
           />
         </label>
-        <label className="block md:col-span-2">
-          <span className="text-sm text-neutral-600">Napomena (nije obavezno)</span>
+        <label className="block @md:col-span-2">
+          <span className="field-label">
+            Napomena <span className="font-normal text-muted">(nije obavezno)</span>
+          </span>
           <input className={input} value={note} onChange={(e) => setNote(e.target.value)} />
         </label>
       </fieldset>
 
       {result && !result.ok && (
-        <p className="border-l-2 border-burgundy pl-4 text-burgundy" role="alert">
+        <p className="alert-error" role="alert">
           {result.error}
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={pending || !serviceId || (!urgent && minute === null)}
-        className="justify-self-start bg-burgundy px-10 py-4 text-sm uppercase tracking-[0.2em] text-white transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-burgundy-dark disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        {pending
-          ? "Šaljem…"
-          : urgent
-            ? "Pošalji hitan zahtev"
-            : mode === "public"
-              ? "Zakaži termin"
-              : "Upiši termin"}
-      </button>
+      <div className="grid gap-3 rounded-2xl bg-cream p-4 @md:grid-cols-[1fr_auto] @md:items-center">
+        <p className="text-sm text-muted" aria-live="polite">
+          {service ? (
+            <>
+              <span className="font-medium text-charcoal">{service.name}</span>
+              {" · "}
+              {days.find((d) => d.iso === dateIso)?.label}
+              {minute !== null && ` u ${hhmm(minute)}`}
+              {" · "}
+              {service.priceLabel}
+            </>
+          ) : (
+            "Izaberite uslugu i vreme."
+          )}
+        </p>
+        <button type="submit" disabled={pending || !serviceId || (!urgent && minute === null)} className="btn-primary w-full px-8 @md:w-auto">
+          {pending
+            ? "Šaljem…"
+            : urgent
+              ? "Pošalji hitan zahtev"
+              : mode === "public"
+                ? "Zakaži termin"
+                : "Upiši termin"}
+        </button>
+      </div>
     </form>
   );
 }
