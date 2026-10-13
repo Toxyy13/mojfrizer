@@ -6,6 +6,8 @@ import { getSessionUser, type SessionUser } from "./auth";
 export interface SalonAccess {
   user: SessionUser;
   salon: Salon;
+  /** Set for a staff login: the only schedule that user may see and manage. Null for the owner. */
+  staffWorkerId: string | null;
 }
 
 /**
@@ -22,7 +24,13 @@ export async function requireSalonAccess(slug: string): Promise<SalonAccess> {
     },
   });
   if (!salon) redirect("/admin");
-  return { user, salon };
+  if (salon.ownerId === user.id) return { user, salon, staffWorkerId: null };
+  const worker = await db.workerProfile.findFirst({
+    where: { salonId: salon.id, userId: user.id, isActive: true },
+    select: { id: true },
+  });
+  if (!worker) redirect("/admin");
+  return { user, salon, staffWorkerId: worker.id };
 }
 
 /** Non-redirecting variant for API routes. */
@@ -35,7 +43,7 @@ export async function hasSalonAccess(salonId: string): Promise<boolean> {
   return count > 0;
 }
 
-/** Settings (prices, hours, staff) can be changed only by the salon owner. */
+/** Settings, reports, customer cards and chat belong to the owner; staff logins see only their own schedule. */
 export async function requireSalonOwner(slug: string): Promise<SalonAccess> {
   const access = await requireSalonAccess(slug);
   if (access.salon.ownerId !== access.user.id) redirect(`/admin/${slug}`);

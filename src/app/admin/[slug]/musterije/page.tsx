@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AdminShell } from "@/components/AdminShell";
-import { requireSalonAccess } from "@/lib/access";
+import { requireSalonOwner } from "@/lib/access";
 import { displayPhone, listSalonClients, shortDate } from "@/lib/clients";
 import { formatRsd } from "@/lib/money";
 
@@ -13,7 +13,7 @@ interface PageProps {
 
 export default async function ClientsPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
-  const { salon, user } = await requireSalonAccess(slug);
+  const { salon, user } = await requireSalonOwner(slug);
   const q = ((await searchParams).q ?? "").slice(0, 60);
   const clients = await listSalonClients(salon.id, q);
 

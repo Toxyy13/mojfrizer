@@ -39,7 +39,8 @@ const STATUS_STYLE: Record<AppointmentStatus, { row: string; badge: string }> = 
 
 export default async function AdminSalonPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
-  const { salon, user } = await requireSalonAccess(slug);
+  const { salon, user, staffWorkerId } = await requireSalonAccess(slug);
+  const isStaff = staffWorkerId !== null;
   const sp = await searchParams;
   const today = todayIso(TIME_ZONE);
   const dateIso = sp.date && isValidDateIso(sp.date) ? sp.date : today;
@@ -51,13 +52,13 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
   const nextMonthIso = `${m === 12 ? y + 1 : y}-${String(m === 12 ? 1 : m + 1).padStart(2, "0")}-01`;
 
   const [workers, services, combos, hours, daysOff, appointments, dayRevenue, monthRevenue] = await Promise.all([
-    db.workerProfile.findMany({ where: { salonId: salon.id, isActive: true }, orderBy: { displayName: "asc" } }),
+    db.workerProfile.findMany({ where: { salonId: salon.id, isActive: true, ...(staffWorkerId ? { id: staffWorkerId } : {}) }, orderBy: { displayName: "asc" } }),
     db.service.findMany({ where: { salonId: salon.id, isActive: true }, orderBy: { sortOrder: "asc" } }),
     db.serviceCombo.findMany({ where: { salonId: salon.id }, select: { serviceIds: true, durationMinutes: true } }),
     db.workingHours.findMany({ where: { salonId: salon.id } }),
     db.salonDayOff.findMany({ where: { salonId: salon.id, date: { gte: new Date(`${dateIso}T00:00:00Z`) } } }),
     db.appointment.findMany({
-      where: { salonId: salon.id, startTime: { gte: dayStart, lt: dayEnd } },
+      where: { salonId: salon.id, startTime: { gte: dayStart, lt: dayEnd }, ...(staffWorkerId ? { workerId: staffWorkerId } : {}) },
       include: { service: true, ...appointmentServicesInclude, client: { select: { id: true, name: true, phone: true, avatar: { select: { updatedAt: true } } } } },
       orderBy: { startTime: "asc" },
     }),
@@ -70,7 +71,8 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
   ]);
 
   const statusAction = setAppointmentStatus.bind(null, slug);
-  const urgentRequests = await loadUrgentRequests(salon.id, today);
+  // Urgent requests and revenue are salon-wide, so only the owner sees them.
+  const urgentRequests = isStaff ? [] : await loadUrgentRequests(salon.id, today);
   const activeCount = appointments.filter((a) => a.status === "BOOKED").length;
   const [flags, timeOff] = await Promise.all([
     clientFlags(salon.id, appointments.map(clientKeyOf)),
@@ -102,6 +104,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
             {activeCount} {activeCount === 1 ? "zakazan termin" : "zakazanih termina"}
           </p>
         </div>
+        {!isStaff && (<>
         <div className="card p-5">
           <p className="eyebrow">Pazar za dan</p>
           <p className="mt-3 font-serif text-2xl tabular-nums sm:text-3xl">{formatRsd(dayRevenue.totalPara)}</p>
@@ -112,6 +115,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
           <p className="mt-3 font-serif text-2xl tabular-nums sm:text-3xl">{formatRsd(monthRevenue.totalPara)}</p>
           <p className="mt-1 text-xs text-white/60">{monthRevenue.completedCount} završenih</p>
         </div>
+        </>)}
       </section>
 
       {urgentRequests.length > 0 && (
@@ -161,12 +165,18 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             {a.client && <Avatar name={a.client.name} src={avatarUrl(a.client.id, a.client.avatar)} size={24} />}
-                            <Link
-                              href={`/admin/${salon.slug}/musterije/${encodeURIComponent(clientKeyOf(a))}`}
-                              className={`font-medium hover:text-burgundy ${a.status === "CANCELLED" ? "line-through" : ""}`}
-                            >
-                              {a.guestName ?? a.client?.name ?? "Mušterija"}
-                            </Link>
+                            {isStaff ? (
+                              <span className={`font-medium ${a.status === "CANCELLED" ? "line-through" : ""}`}>
+                                {a.guestName ?? a.client?.name ?? "Mušterija"}
+                              </span>
+                            ) : (
+                              <Link
+                                href={`/admin/${salon.slug}/musterije/${encodeURIComponent(clientKeyOf(a))}`}
+                                className={`font-medium hover:text-burgundy ${a.status === "CANCELLED" ? "line-through" : ""}`}
+                              >
+                                {a.guestName ?? a.client?.name ?? "Mušterija"}
+                              </Link>
+                            )}
                             {(flags.get(clientKeyOf(a))?.noShows ?? 0) > 0 && (
                               <span className="badge bg-burgundy text-white">{flags.get(clientKeyOf(a))?.noShows}× nije došao</span>
                             )}
@@ -214,6 +224,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
               services={toBookingServices(services)}
               combos={combos}
               workers={toBookingWorkers(workers)}
+              initialWorkerId={staffWorkerId ?? undefined}
               days={upcomingDays(hours, daysOff, 21, dateIso)}
               submit={bookForClient.bind(null, salon.slug)}
             />

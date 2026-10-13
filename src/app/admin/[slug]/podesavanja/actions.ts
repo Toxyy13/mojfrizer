@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireSalonOwner } from "@/lib/access";
 import { rsdToPara } from "@/lib/money";
-import { formatPhone, normalizePhone } from "@/lib/phone";
+import { hashPassword } from "@/lib/auth";
+import { formatPhone, looksLikeEmail, normalizePhone } from "@/lib/phone";
 import {
   MAX_DAYS_OFF_RANGE,
   dayOffSchema,
@@ -181,6 +182,39 @@ export async function saveWorker(slug: string, formData: FormData): Promise<void
   }
   refresh(slug);
   back(slug, "radnici", { ok: id ? "Radnik je izmenjen." : `${displayName} je dodat/a.` });
+}
+
+/** Gives a worker their own login (email + password set by the owner); it sees only that worker's schedule. */
+export async function createWorkerLogin(slug: string, formData: FormData): Promise<void> {
+  const { salon } = await requireSalonOwner(slug);
+  const workerId = String(formData.get("workerId") ?? "");
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  const worker = await db.workerProfile.findFirst({ where: { id: workerId, salonId: salon.id } });
+  if (!worker) back(slug, "radnici", { error: "Radnik nije pronađen." });
+  if (worker.userId) back(slug, "radnici", { error: "Ovaj radnik već ima nalog." });
+  if (!looksLikeEmail(email)) back(slug, "radnici", { error: "Upišite ispravnu email adresu." });
+  if (password.length < 8) back(slug, "radnici", { error: "Lozinka mora imati bar 8 znakova." });
+  if (await db.user.findUnique({ where: { email }, select: { id: true } })) {
+    back(slug, "radnici", { error: "Ta email adresa se već koristi. Izaberite drugu." });
+  }
+  const user = await db.user.create({
+    data: { email, name: worker.displayName, passwordHash: await hashPassword(password), role: "WORKER" },
+  });
+  await db.workerProfile.update({ where: { id: worker.id }, data: { userId: user.id } });
+  refresh(slug);
+  back(slug, "radnici", { ok: `Nalog za ${worker.displayName} je napravljen (${email}).` });
+}
+
+/** Unlinks a worker's login; their past appointments stay. */
+export async function removeWorkerLogin(slug: string, formData: FormData): Promise<void> {
+  const { salon } = await requireSalonOwner(slug);
+  const worker = await db.workerProfile.findFirst({ where: { id: String(formData.get("workerId") ?? ""), salonId: salon.id } });
+  if (!worker?.userId) back(slug, "radnici", { error: "Radnik nema nalog." });
+  if (worker.userId === salon.ownerId) back(slug, "radnici", { error: "Nalog vlasnika se ne uklanja." });
+  await db.workerProfile.update({ where: { id: worker.id }, data: { userId: null } });
+  refresh(slug);
+  back(slug, "radnici", { ok: "Nalog radnika je uklonjen." });
 }
 
 export async function toggleWorker(slug: string, formData: FormData): Promise<void> {

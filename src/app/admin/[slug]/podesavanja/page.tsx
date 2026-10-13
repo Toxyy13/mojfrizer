@@ -7,6 +7,8 @@ import { TIME_ZONE, WEEKDAYS_SR, formatLocalDateIso, formatLocalTime, minutesToH
 import {
   addDaysOff,
   addWorkerTimeOff,
+  createWorkerLogin,
+  removeWorkerLogin,
   removeWorkerTimeOff,
   removeDayOff,
   removeServiceCombo,
@@ -44,7 +46,11 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
       where: { salonId: salon.id, date: { gte: new Date(`${today}T00:00:00Z`) } },
       orderBy: { date: "asc" },
     }),
-    db.workerProfile.findMany({ where: { salonId: salon.id }, orderBy: [{ isActive: "desc" }, { displayName: "asc" }] }),
+    db.workerProfile.findMany({
+      where: { salonId: salon.id },
+      include: { user: { select: { email: true } } },
+      orderBy: [{ isActive: "desc" }, { displayName: "asc" }],
+    }),
     db.workerTimeOff.findMany({
       where: { salonId: salon.id, endTime: { gt: new Date() } },
       include: { worker: { select: { displayName: true } } },
@@ -200,11 +206,12 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
         </ul>
       </Section>
 
-      <Section id="radnici" title="Radnici" hint="Mušterije mogu da izaberu frizera pri zakazivanju. Neaktivan radnik ne prima nove termine.">
+      <Section id="radnici" title="Radnici" hint="Mušterije mogu da izaberu frizera pri zakazivanju. Svaki radnik može imati svoj nalog koji vidi samo njegov raspored. Neaktivan radnik ne prima nove termine.">
         <ul className="divide-y divide-line border-y border-line">
           {workers.map((w) => (
             <li key={w.id} className="py-4">
               <WorkerForm slug={salon.slug} worker={w} />
+              <WorkerLogin slug={salon.slug} worker={w} isOwner={w.userId === salon.ownerId} />
               <form action={toggleWorker.bind(null, salon.slug)} className="mt-2">
                 <input type="hidden" name="id" value={w.id} />
                 <input type="hidden" name="isActive" value={String(!w.isActive)} />
@@ -431,6 +438,41 @@ function DayHoursRow({ day, ranges }: { day: number; ranges: WorkingHours[] }) {
         <input type="time" name={`breakTo-${day}`} defaultValue={hasBreak ? minutesToHHMM(ranges[1].opensAt) : ""} className={INPUT} />
       </label>
     </fieldset>
+  );
+}
+
+function WorkerLogin({
+  slug,
+  worker,
+  isOwner,
+}: {
+  slug: string;
+  worker: WorkerProfile & { user: { email: string | null } | null };
+  isOwner: boolean;
+}) {
+  if (isOwner) return <p className="mt-2 text-sm text-muted">Ovo je nalog vlasnika salona.</p>;
+  if (worker.userId) {
+    return (
+      <form action={removeWorkerLogin.bind(null, slug)} className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+        <input type="hidden" name="workerId" value={worker.id} />
+        <span className="text-muted">Nalog: {worker.user?.email ?? "bez emaila"} (vidi samo svoj raspored)</span>
+        <button className={LINK_BUTTON}>Ukloni nalog</button>
+      </form>
+    );
+  }
+  return (
+    <form action={createWorkerLogin.bind(null, slug)} className="mt-3 grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+      <input type="hidden" name="workerId" value={worker.id} />
+      <label className="block">
+        <span className={LABEL}>Email za nalog radnika</span>
+        <input name="email" type="email" required autoComplete="off" className={INPUT} />
+      </label>
+      <label className="block">
+        <span className={LABEL}>Lozinka (bar 8 znakova)</span>
+        <input name="password" type="password" required minLength={8} autoComplete="new-password" className={INPUT} />
+      </label>
+      <button className={BUTTON}>Napravi nalog</button>
+    </form>
   );
 }
 

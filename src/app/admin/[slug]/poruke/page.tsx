@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AdminShell } from "@/components/AdminShell";
-import { requireSalonAccess } from "@/lib/access";
+import { requireSalonOwner } from "@/lib/access";
 import { db } from "@/lib/db";
 import { formatPhone } from "@/lib/phone";
 import { Avatar } from "@/components/Avatar";
@@ -15,7 +15,7 @@ interface PageProps {
 
 export default async function AdminInbox({ params }: PageProps) {
   const { slug } = await params;
-  const { salon, user } = await requireSalonAccess(slug);
+  const { salon, user } = await requireSalonOwner(slug);
 
   const [latest, unread] = await Promise.all([
     db.chatMessage.findMany({

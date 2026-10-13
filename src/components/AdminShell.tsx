@@ -15,14 +15,16 @@ interface AdminShellProps {
 
 /** Top bar and tabs shared by every salon admin page. */
 export async function AdminShell({ salon, user, active, children }: AdminShellProps) {
-  const unread = await unreadForSalon(salon.id);
+  const isOwner = salon.ownerId === user.id;
   const tabs: Array<{ id: AdminTab; label: string; href: string; badge?: number }> = [
     { id: "raspored", label: "Raspored", href: `/admin/${salon.slug}` },
-    { id: "poruke", label: "Poruke", href: `/admin/${salon.slug}/poruke`, badge: unread },
   ];
-  tabs.push({ id: "musterije", label: "Mušterije", href: `/admin/${salon.slug}/musterije` });
-  tabs.push({ id: "qr", label: "QR kod", href: `/admin/${salon.slug}/qr` });
-  if (salon.ownerId === user.id) {
+  // Staff logins see only their own schedule.
+  if (isOwner) {
+    const unread = await unreadForSalon(salon.id);
+    tabs.push({ id: "poruke", label: "Poruke", href: `/admin/${salon.slug}/poruke`, badge: unread });
+    tabs.push({ id: "musterije", label: "Mušterije", href: `/admin/${salon.slug}/musterije` });
+    tabs.push({ id: "qr", label: "QR kod", href: `/admin/${salon.slug}/qr` });
     tabs.push({ id: "izvestaji", label: "Izveštaji", href: `/admin/${salon.slug}/izvestaji` });
     tabs.push({ id: "podesavanja", label: "Podešavanja", href: `/admin/${salon.slug}/podesavanja` });
   }
@@ -34,8 +36,8 @@ export async function AdminShell({ salon, user, active, children }: AdminShellPr
           <Logo href={`/admin/${salon.slug}`} className="text-[22px]" />
           <span aria-hidden className="h-6 w-px bg-line" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium leading-tight">{salon.name}</p>
-            <p className="truncate text-xs text-muted">{user.name}</p>
+            <p className="truncate text-sm font-medium leading-tight">{isOwner ? salon.name : `${salon.name} / ${user.name}`}</p>
+            <p className="truncate text-xs text-muted">{isOwner ? user.name : "Radnik"}</p>
           </div>
           <Link href={`/s/${salon.slug}`} className="btn-ghost btn-sm hidden sm:inline-flex">
             Javna stranica ↗

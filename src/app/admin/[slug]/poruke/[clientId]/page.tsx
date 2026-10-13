@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Avatar } from "@/components/Avatar";
 import { avatarUrl } from "@/lib/avatar";
 import { ChatThread } from "@/components/ChatThread";
-import { requireSalonAccess } from "@/lib/access";
+import { requireSalonOwner } from "@/lib/access";
 import { loadConversation, markRead } from "@/lib/chat";
 import { db } from "@/lib/db";
 import { formatPhone } from "@/lib/phone";
@@ -18,7 +18,7 @@ interface PageProps {
 
 export default async function AdminConversation({ params }: PageProps) {
   const { slug, clientId } = await params;
-  const { salon, user } = await requireSalonAccess(slug);
+  const { salon, user } = await requireSalonOwner(slug);
 
   // The conversation must belong to this salon; otherwise another tenant's customer could be opened by id.
   const messages = await loadConversation(salon.id, clientId);
