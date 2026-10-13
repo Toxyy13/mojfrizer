@@ -118,6 +118,7 @@ model Salon {
   serviceCombos  ServiceCombo[]
   clientNotes  SalonClientNote[]
   workerTimeOff WorkerTimeOff[]
+  workerBreaks WorkerBreak[]
   waitlist     WaitlistEntry[]
   reviews      Review[]
   assistantUses AssistantUse[]
@@ -164,6 +165,7 @@ model WorkerProfile {
 
   appointments Appointment[]
   timeOff      WorkerTimeOff[]
+  breaks       WorkerBreak[]
   urgentRequests UrgentRequest[]
 
   @@unique([salonId, userId])
@@ -354,6 +356,25 @@ model WorkerTimeOff {
 
   @@index([salonId, workerId, startTime])
   @@map("worker_time_off")
+}
+
+// A short break inside a working day (lunch, coffee): repeats on chosen weekdays, or applies to one date only.
+// Exactly one of weekdays (ISO 1=Mon..7=Sun) or date is set. Times are minutes from local midnight.
+model WorkerBreak {
+  id          String        @id @default(cuid())
+  salonId     String
+  salon       Salon         @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  workerId    String
+  worker      WorkerProfile @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  label       String?
+  startMinute Int
+  endMinute   Int
+  weekdays    Int[]
+  date        DateTime?     @db.Date
+  createdAt   DateTime      @default(now())
+
+  @@index([salonId, workerId])
+  @@map("worker_breaks")
 }
 
 // A customer waiting for a slot on a fully booked day. Emailed once when a slot frees up.

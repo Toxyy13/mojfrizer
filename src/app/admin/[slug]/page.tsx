@@ -12,6 +12,7 @@ import { TIME_ZONE, addDaysIso, formatDateSr, formatLocalTime, isValidDateIso, l
 import { toBookingServices, toBookingWorkers, upcomingDays } from "@/lib/salonView";
 import { BookingForm } from "@/components/BookingForm";
 import { AdminShell } from "@/components/AdminShell";
+import { breakIntervalsForDay } from "@/lib/breaks";
 import { bookForClient, closeUrgentRequest, setAppointmentStatus, swapForUrgent } from "./actions";
 import { UrgentRequests, type UrgentRequestView } from "./UrgentRequests";
 import { appointmentServicesInclude, resolveVisit, servicesLabel, visitItemPrices } from "@/lib/visit";
@@ -74,13 +75,15 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
   // Urgent requests and revenue are salon-wide, so only the owner sees them.
   const urgentRequests = isStaff ? [] : await loadUrgentRequests(salon.id, slug, today);
   const activeCount = appointments.filter((a) => a.status === "BOOKED").length;
-  const [flags, timeOff] = await Promise.all([
+  const [flags, timeOff, breakRules] = await Promise.all([
     clientFlags(salon.id, appointments.map(clientKeyOf)),
     db.workerTimeOff.findMany({
       where: { salonId: salon.id, startTime: { lt: dayEnd }, endTime: { gt: dayStart } },
       orderBy: { startTime: "asc" },
     }),
+    db.workerBreak.findMany({ where: { salonId: salon.id }, orderBy: { startMinute: "asc" } }),
   ]);
+  const dayBreaks = breakIntervalsForDay(breakRules, dateIso);
 
   return (
     <AdminShell salon={salon} user={user} active="raspored">
@@ -147,6 +150,14 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
                             t.endTime >= dayEnd ? "24:00" : formatLocalTime(t.endTime, TIME_ZONE)
                           }`}
                       {t.reason ? ` · ${t.reason}` : ""}
+                    </p>
+                  ))}
+                {dayBreaks
+                  .filter((b) => b.workerId === w.id)
+                  .map((b) => (
+                    <p key={`b${b.id}`} className="mt-4 rounded-2xl border border-dashed border-line bg-sand px-4 py-3 text-sm text-muted">
+                      Pauza {formatLocalTime(b.startTime, TIME_ZONE)}–{formatLocalTime(b.endTime, TIME_ZONE)}
+                      {b.label ? ` · ${b.label}` : ""}
                     </p>
                   ))}
                 {list.length === 0 && (

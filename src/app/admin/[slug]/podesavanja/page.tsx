@@ -6,9 +6,11 @@ import { formatServicePrice } from "@/lib/money";
 import { TIME_ZONE, WEEKDAYS_SR, formatLocalDateIso, formatLocalTime, minutesToHHMM, todayIso } from "@/lib/time";
 import {
   addDaysOff,
+  addWorkerBreak,
   addWorkerTimeOff,
   createWorkerLogin,
   removeWorkerLogin,
+  removeWorkerBreak,
   removeWorkerTimeOff,
   removeDayOff,
   removeServiceCombo,
@@ -40,7 +42,7 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
   const sp = await searchParams;
   const today = todayIso(TIME_ZONE);
 
-  const [services, hours, daysOff, workers, timeOff, combos] = await Promise.all([
+  const [services, hours, daysOff, workers, timeOff, combos, breaks] = await Promise.all([
     db.service.findMany({ where: { salonId: salon.id }, orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }, { name: "asc" }] }),
     db.workingHours.findMany({ where: { salonId: salon.id }, orderBy: [{ dayOfWeek: "asc" }, { opensAt: "asc" }] }),
     db.salonDayOff.findMany({
@@ -58,6 +60,11 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
       orderBy: { startTime: "asc" },
     }),
     db.serviceCombo.findMany({ where: { salonId: salon.id }, orderBy: { createdAt: "asc" } }),
+    db.workerBreak.findMany({
+      where: { salonId: salon.id, OR: [{ date: null }, { date: { gte: new Date(`${today}T00:00:00Z`) } }] },
+      include: { worker: { select: { displayName: true } } },
+      orderBy: [{ startMinute: "asc" }],
+    }),
   ]);
   const serviceName = new Map(services.map((s) => [s.id, s.name]));
   const activeServices = services.filter((s) => s.isActive);
@@ -73,6 +80,7 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
           ["#radno-vreme", "Radno vreme"],
           ["#neradni-dani", "Neradni dani"],
           ["#radnici", "Radnici"],
+          ["#pauze", "Pauze radnika"],
           ["#odsustva", "Odsustva radnika"],
           ["#salon", "Podaci o salonu"],
           ["#vidljivost", "Javni ili privatni salon"],
@@ -228,6 +236,76 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
             <WorkerForm slug={salon.slug} worker={null} />
           </div>
         </div>
+      </Section>
+
+      <Section
+        id="pauze"
+        title="Pauze radnika"
+        hint="Ručak, kafa ili druga pauza usred radnog dana. Mušterije ne mogu da zakažu termin koji bi pao u pauzu. Važi i za vas kao vlasnika."
+      >
+        <form action={addWorkerBreak.bind(null, salon.slug)} className="grid gap-4 md:grid-cols-3">
+          <label>
+            <span className={LABEL}>Radnik</span>
+            <select name="workerId" required className={INPUT}>
+              {workers
+                .filter((w) => w.isActive)
+                .map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.displayName}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label>
+            <span className={LABEL}>Od</span>
+            <input type="time" name="fromTime" required className={INPUT} />
+          </label>
+          <label>
+            <span className={LABEL}>Do</span>
+            <input type="time" name="toTime" required className={INPUT} />
+          </label>
+          <fieldset className="md:col-span-3">
+            <legend className={LABEL}>Ponavlja se svake nedelje</legend>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {WEEKDAYS_SR.slice(1).map((name, i) => (
+                <label key={name} className="flex items-center gap-2 rounded-full border border-line px-3 py-1.5 text-sm">
+                  <input type="checkbox" name="weekdays" value={i + 1} />
+                  {name.slice(0, 3)}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <label>
+            <span className={LABEL}>ili samo za jedan datum</span>
+            <input type="date" name="date" min={today} className={INPUT} />
+          </label>
+          <label className="md:col-span-2">
+            <span className={LABEL}>Naziv (opciono)</span>
+            <input name="label" maxLength={60} placeholder="npr. Ručak" className={INPUT} />
+          </label>
+          <div className="md:col-span-3">
+            <button className={BUTTON}>Dodaj pauzu</button>
+          </div>
+        </form>
+        <ul className="mt-6 divide-y divide-line border-y border-line">
+          {breaks.length === 0 && <li className="py-4 text-sm text-muted">Nema pauza.</li>}
+          {breaks.map((b) => (
+            <li key={b.id} className="flex flex-wrap items-baseline gap-x-4 py-3 text-sm">
+              <span className="font-medium">{b.worker.displayName}</span>
+              <span className="tabular-nums">
+                {minutesToHHMM(b.startMinute)}–{minutesToHHMM(b.endMinute)}
+              </span>
+              <span className="text-muted">
+                {b.date ? shortDateIso(b.date.toISOString().slice(0, 10)) : b.weekdays.map((d) => WEEKDAYS_SR[d]?.slice(0, 3)).join(", ")}
+                {b.label ? ` · ${b.label}` : ""}
+              </span>
+              <form action={removeWorkerBreak.bind(null, salon.slug)} className="ml-auto">
+                <input type="hidden" name="id" value={b.id} />
+                <button className={LINK_BUTTON}>Ukloni</button>
+              </form>
+            </li>
+          ))}
+        </ul>
       </Section>
 
       <Section
