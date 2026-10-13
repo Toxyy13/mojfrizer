@@ -3,6 +3,8 @@ import { FavoriteButton } from "@/components/FavoriteButton";
 import { SiteFooter } from "@/components/SiteFooter";
 import { HeroSpotlight } from "@/components/HeroSpotlight";
 import { Marquee } from "@/components/Marquee";
+import { AvatarPrompt } from "@/components/AvatarPrompt";
+import { shouldShowAvatarPrompt } from "@/lib/avatarPrompt";
 import { SiteHeader } from "@/components/SiteHeader";
 import { AssistantWidget } from "@/components/AssistantWidget";
 import { PUBLIC_SALONS, canViewSalon } from "@/lib/salonVisibility";
@@ -80,7 +82,7 @@ export default async function HomePage({ searchParams }: HomeProps) {
     user
       ? db.user.findUnique({
           where: { id: user.id },
-          select: { favoriteSalonId: true, favoriteSalon: { select: { id: true, name: true, slug: true, city: true, address: true, isActive: true } } },
+          select: { avatar: { select: { userId: true } }, favoriteSalonId: true, favoriteSalon: { select: { id: true, name: true, slug: true, city: true, address: true, isActive: true } } },
         })
       : null,
   ]);
@@ -88,11 +90,13 @@ export default async function HomePage({ searchParams }: HomeProps) {
   const favorite = me?.favoriteSalon?.isActive && (await canViewSalon(me.favoriteSalon.id, user)) ? me.favoriteSalon : null;
   const ratings = await getSalonRatings(salons.map((s) => s.id));
 
+  const showAvatarPrompt = user ? await shouldShowAvatarPrompt(user.role, !!me?.avatar) : false;
   const returnTo = q ? `/?q=${encodeURIComponent(q)}` : "/";
   return (
     <>
       <SiteHeader />
       <main id="sadrzaj" tabIndex={-1}>
+        {showAvatarPrompt && <AvatarPrompt className="page mt-4" />}
         <HeroSpotlight className="relative isolate overflow-hidden">
           {/* Soft moving color fields behind the wordmark. */}
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">

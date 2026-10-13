@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import type { AppointmentStatus, BookingSource } from "@prisma/client";
 import { Avatar } from "@/components/Avatar";
+import { AvatarPrompt } from "@/components/AvatarPrompt";
+import { shouldShowAvatarPrompt } from "@/lib/avatarPrompt";
 import { avatarUrl } from "@/lib/avatar";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -214,6 +216,8 @@ export default async function AccountPage() {
             <button className="btn-secondary btn-sm">Pošalji ponovo</button>
           </form>
         )}
+
+        {(await shouldShowAvatarPrompt(session.role, !!user.avatar)) && <AvatarPrompt className="mt-6" />}
 
         {!user.phone && (
           <p className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-burgundy-soft px-5 py-4 text-sm text-burgundy" role="note">
