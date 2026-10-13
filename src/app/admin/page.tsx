@@ -9,8 +9,9 @@ export const dynamic = "force-dynamic";
 export default async function AdminHome() {
   const user = await getSessionUser();
   if (!user) redirect("/prijava");
+  if (user.role === "DEVELOPER") redirect("/razvoj");
   const salons = await db.salon.findMany({
-    where: { OR: [{ ownerId: user.id }, { workers: { some: { userId: user.id, isActive: true } } }] },
+    where: { isActive: true, OR: [{ ownerId: user.id }, { workers: { some: { userId: user.id, isActive: true } } }] },
     select: { name: true, slug: true },
   });
   if (salons.length === 1) redirect(`/admin/${salons[0].slug}`);

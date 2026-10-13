@@ -14,6 +14,7 @@ enum Role {
   ADMIN // salon owner / manager
   WORKER // hairdresser working in a salon
   CLIENT // customer
+  DEVELOPER // platform operator (the seller of the product): creates salons, sees platform statistics
 }
 
 enum AppointmentStatus {
@@ -106,6 +107,7 @@ model Salon {
   workerTimeOff WorkerTimeOff[]
   waitlist     WaitlistEntry[]
   reviews      Review[]
+  assistantUses AssistantUse[]
 
   @@index([city])
   @@map("salons")
@@ -397,4 +399,17 @@ model Review {
 
   @@index([salonId, createdAt])
   @@map("reviews")
+}
+
+// One answered question of the AI assistant, for the developer's usage statistics. No question text is stored.
+model AssistantUse {
+  id        String   @id @default(cuid())
+  // Null when asked on the platform home page, outside any salon.
+  salonId   String?
+  salon     Salon?   @relation(fields: [salonId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([salonId, createdAt])
+  @@index([createdAt])
+  @@map("assistant_uses")
 }

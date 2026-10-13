@@ -10,6 +10,7 @@ export function safeNextPath(value: FormDataEntryValue | string | null | undefin
 
 /** Where a user goes right after login: staff to the salon panel, customers to their favorite salon. */
 export async function landingPathFor(user: SessionUser): Promise<string> {
+  if (user.role === "DEVELOPER") return "/razvoj";
   if (user.role !== "CLIENT") return "/admin";
   const found = await db.user.findUnique({
     where: { id: user.id },

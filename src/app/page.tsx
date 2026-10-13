@@ -220,8 +220,18 @@ export default async function HomePage({ searchParams }: HomeProps) {
           </ol>
         </section>
 
+        <section className="page mt-28">
+          <div className="flex flex-col gap-4 border-y border-line py-8 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="eyebrow">Za salone</p>
+              <p className="mt-2 font-serif text-2xl sm:text-3xl">Imate frizerski salon?</p>
+            </div>
+            <Link href="/dodaj-salon" className="btn-secondary shrink-0">Dodaj svoj salon</Link>
+          </div>
+        </section>
+
         {!user && (
-          <section className="page reveal-scale mt-28">
+          <section className="page reveal-scale mt-16">
             <div className="flex flex-col gap-6 rounded-[2rem] bg-charcoal p-8 text-white sm:p-12 md:flex-row md:items-center md:justify-between">
               <div className="max-w-lg">
                 <h2 className="font-serif text-4xl font-bold leading-none sm:text-6xl">Omiljeni salon uvek pri ruci.</h2>

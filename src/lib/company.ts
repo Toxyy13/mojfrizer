@@ -7,6 +7,7 @@ export const COMPANY = {
   pib: "[PIB]",
   registryNumber: "[Matični broj]",
   email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "[email za kontakt]",
+  phone: process.env.NEXT_PUBLIC_CONTACT_PHONE || "[telefon za kontakt]",
   website: "mojfrizer.com",
 } as const;
 

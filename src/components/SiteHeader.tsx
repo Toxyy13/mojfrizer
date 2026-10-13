@@ -15,14 +15,14 @@ export async function SiteHeader() {
             Saloni
           </Link>
           {user ? (
-            <Link href={user.role === "CLIENT" ? "/nalog" : "/admin"} className="btn-secondary btn-sm">
+            <Link href={user.role === "CLIENT" ? "/nalog" : user.role === "DEVELOPER" ? "/razvoj" : "/admin"} className="btn-secondary btn-sm">
               <span
                 aria-hidden
                 className="grid size-6 place-items-center rounded-full bg-burgundy text-[11px] font-semibold text-white"
               >
                 {firstName.charAt(0).toUpperCase()}
               </span>
-              {user.role === "CLIENT" ? "Moj nalog" : "Moj salon"}
+              {user.role === "CLIENT" ? "Moj nalog" : user.role === "DEVELOPER" ? "Razvoj" : "Moj salon"}
             </Link>
           ) : (
             <>

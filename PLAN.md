@@ -38,7 +38,7 @@ Mušterije salona (`/admin/{slug}/musterije`): spisak svih mušterija (gosti i n
 
 Izveštaji (`/admin/{slug}/izvestaji`, samo vlasnik): za izabrani mesec prihod i poređenje sa prošlim, završeni/otkazani/nedolasci, broj i nove mušterije, udeo online zakazivanja, prosečan račun, prihod po usluzi, frizeru i danu.
 
-Otvaranje salona (`/registracija-salona`): vlasnik sam otvori salon (naziv, grad, adresa, telefon + svoj nalog, ili postojeći nalog ako je prijavljen). Dobija adresu `/s/{slug}` (iz naziva, npr. `studio-djurdja`), radno vreme pon–pet 9–17 i sub 9–14 i sebe kao prvog frizera, pa ide pravo na Podešavanja. U pretrazi se pojavljuje kad unese bar jednu uslugu. Naplata i probni period još nisu napravljeni.
+Saloni (od 2026-10-13): vlasnici salona više ne prave naloge sami, `/registracija-salona` je ukinuta. Naloge salona pravi samo vlasnik platforme (uloga `DEVELOPER`, nalog iz `SEED_DEVELOPER_EMAIL`/`SEED_DEVELOPER_PASSWORD`) u panelu `/razvoj`: pregled svih salona sa statistikom korišćenja (termini, mušterije, frizeri, poruke, pitanja asistentu) i rastom prometa mesec za mesec, novi salon (vlasnički nalog + privremena lozinka koja se prikaže jednom), isključivanje/uključivanje salona i slanje linka za novu lozinku vlasniku. Pristup se proverava na serveru u svakoj stranici i akciji (`requireDeveloper`, uloga se čita iz baze, ne iz kolačića); svi ostali dobijaju 404. Novi salon dobija adresu `/s/{slug}`, radno vreme pon–pet 9–17 i sub 9–14 i vlasnika kao prvog frizera; vlasnik unosi cenovnik u Podešavanjima. Naplata i probni period još nisu napravljeni.
 
 Odsustva radnika (Podešavanja → Odsustva radnika): odmor, bolovanje ili deo dana za jednog frizera dok salon radi. Ti termini se ne nude za zakazivanje, a raspored ih prikazuje.
 

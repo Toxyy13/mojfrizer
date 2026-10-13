@@ -20,6 +20,8 @@ export async function requireSalonAccess(slug: string): Promise<SalonAccess> {
   const salon = await db.salon.findFirst({
     where: {
       slug,
+      // A suspended salon is closed for its staff too.
+      isActive: true,
       OR: [{ ownerId: user.id }, { workers: { some: { userId: user.id, isActive: true } } }],
     },
   });
@@ -38,7 +40,7 @@ export async function hasSalonAccess(salonId: string): Promise<boolean> {
   const user = await getSessionUser();
   if (!user) return false;
   const count = await db.salon.count({
-    where: { id: salonId, OR: [{ ownerId: user.id }, { workers: { some: { userId: user.id, isActive: true } } }] },
+    where: { id: salonId, isActive: true, OR: [{ ownerId: user.id }, { workers: { some: { userId: user.id, isActive: true } } }] },
   });
   return count > 0;
 }
