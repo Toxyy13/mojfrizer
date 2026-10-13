@@ -2,10 +2,11 @@ import { compare } from "bcryptjs";
 import { describe, expect, it, vi } from "vitest";
 import { ensureDeveloper } from "./seedDeveloper";
 
-function fakeDb(existing: { id: string; role: string } | null) {
+function fakeDb(existing: { id: string; role: string } | null, others: unknown[] = []) {
   return {
     user: {
       findUnique: vi.fn(async () => existing),
+      findMany: vi.fn(async () => others),
       create: vi.fn(async () => ({})),
       update: vi.fn(async () => ({})),
     },
@@ -42,6 +43,13 @@ describe("ensureDeveloper", () => {
     expect(await ensureDeveloper(db as never, env)).toBe("unchanged");
     expect(db.user.create).not.toHaveBeenCalled();
     expect(db.user.update).not.toHaveBeenCalled();
+  });
+
+  it("moves the role when the developer email changes: the old account is demoted", async () => {
+    const db = fakeDb(null, [{ id: "old", ownedSalons: [], workerProfiles: [] }, { id: "old2", ownedSalons: [{ id: "s" }], workerProfiles: [] }]);
+    expect(await ensureDeveloper(db as never, env)).toBe("created");
+    const roles = (db.user.update.mock.calls as unknown as Array<[{ data: { role: string } }]>).map((c) => c[0].data.role);
+    expect(roles).toEqual(["CLIENT", "ADMIN"]);
   });
 
   it("rejects a short password", async () => {
