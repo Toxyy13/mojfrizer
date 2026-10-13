@@ -12,6 +12,10 @@ export interface UrgentRequestView {
   dateIso: string;
   dateLabel: string;
   reason: string;
+  // Chat flow: preferred hairdresser, time wish, and the conversation link (null for a request without an account).
+  workerName: string | null;
+  timeWish: string | null;
+  chatHref: string | null;
   // Extra the customer was told they pay for an urgent visit, formatted (empty = none).
   surchargeLabel: string;
   totalLabel: string;
@@ -62,13 +66,28 @@ function RequestCard({
     <article aria-label={`Hitan zahtev: ${request.name}`}>
       <p className="eyebrow">{request.dateLabel}</p>
       <p className="mt-1 text-lg font-medium">
-        {request.name} ·{" "}
-        <a href={`tel:${request.phone.replace(/\s/g, "")}`} className="link">
-          {request.phone}
-        </a>
+        {request.name}
+        {request.phone && (
+          <>
+            {" · "}
+            <a href={`tel:${request.phone.replace(/\s/g, "")}`} className="link">
+              {request.phone}
+            </a>
+          </>
+        )}
+        {request.chatHref && (
+          <>
+            {" · "}
+            <a href={request.chatHref} className="link">
+              Otvori chat
+            </a>
+          </>
+        )}
       </p>
       <p className="text-sm text-muted">
         {request.serviceName} · {request.durationMinutes} min
+        {request.workerName && ` · ${request.workerName}`}
+        {request.timeWish && ` · ${request.timeWish}`}
       </p>
       {request.surchargeLabel && (
         <p className="mt-1 text-sm font-medium text-burgundy">

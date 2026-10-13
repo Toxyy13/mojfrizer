@@ -8,6 +8,7 @@ import { TIME_ZONE, WEEKDAYS_SR, minutesToHHMM, todayIso, isoWeekdayOf, zonedPar
 import { serviceCategory, toBookingServices, toBookingWorkers, upcomingDays } from "@/lib/salonView";
 import { MapEmbed } from "@/components/MapEmbed";
 import { BookingForm } from "@/components/BookingForm";
+import { UrgentBookingCard } from "@/components/UrgentBookingCard";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { AssistantWidget } from "@/components/AssistantWidget";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -17,7 +18,7 @@ import { getSessionUser } from "@/lib/auth";
 import { canViewSalon } from "@/lib/salonVisibility";
 import { formatRating, getSalonRating, ratingCountLabel } from "@/lib/reviews";
 import { formatPhone } from "@/lib/phone";
-import { bookOnline, joinSalonWaitlist, requestUrgent } from "./actions";
+import { bookOnline, joinSalonWaitlist, requestUrgent, startUrgentBooking } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -101,6 +102,9 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
           <div className="mt-8 flex flex-wrap items-center gap-2">
             <a href="#zakazivanje" className="btn-primary px-8">
               Zakaži termin
+            </a>
+            <a href="#hitno" className="btn-secondary border-burgundy text-burgundy">
+              Hitna rezervacija
             </a>
             <Link href={`/poruke/${salon.slug}`} className="btn-secondary">
               Pošalji poruku
@@ -233,7 +237,16 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
                 {salon.phone ? ` na ${salon.phone}` : ""} i zakazaćemo umesto vas.
               </p>
             </div>
-            <div className="min-w-0">
+            <div className="grid min-w-0 gap-8">
+              <UrgentBookingCard
+                slug={salon.slug}
+                services={toBookingServices(salon.services)}
+                workers={toBookingWorkers(salon.workers)}
+                days={upcomingDays(salon.workingHours, salon.daysOff, 14)}
+                surcharge={salon.urgentSurcharge}
+                viewer={!session ? "guest" : session.role === "CLIENT" ? "client" : "other"}
+                start={startUrgentBooking.bind(null, salon.slug)}
+              />
               <BookingForm
                 slug={salon.slug}
                 mode="public"
@@ -254,7 +267,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
         </section>
       </main>
       <SiteFooter />
-      <StickyBookBar targetId="zakazivanje" label="Zakaži termin" hint={openNow.label} />
+      <StickyBookBar targetId="zakazivanje" label="Zakaži termin" hint={openNow.label} secondaryHref="#hitno" secondaryLabel="Hitno" />
       <AssistantWidget slug={salon.slug} salonName={salon.name} />
     </>
   );

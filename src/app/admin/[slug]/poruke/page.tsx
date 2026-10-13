@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AdminShell } from "@/components/AdminShell";
-import { requireSalonOwner } from "@/lib/access";
+import { requireSalonAccess } from "@/lib/access";
+import { urgentClientIdsForStaff } from "@/lib/urgentChat";
 import { db } from "@/lib/db";
 import { formatPhone } from "@/lib/phone";
 import { Avatar } from "@/components/Avatar";
@@ -15,11 +16,14 @@ interface PageProps {
 
 export default async function AdminInbox({ params }: PageProps) {
   const { slug } = await params;
-  const { salon, user } = await requireSalonOwner(slug);
+  const { salon, user, staffWorkerId } = await requireSalonAccess(slug);
+  // Staff logins only see customers with an open urgent request for them or for anyone.
+  const staffClientIds = staffWorkerId ? await urgentClientIdsForStaff(salon.id, staffWorkerId) : null;
+  const scope = staffClientIds ? { clientId: { in: staffClientIds } } : {};
 
   const [latest, unread] = await Promise.all([
     db.chatMessage.findMany({
-      where: { salonId: salon.id },
+      where: { salonId: salon.id, ...scope },
       orderBy: { createdAt: "desc" },
       distinct: ["clientId"],
       take: 100,
@@ -27,7 +31,7 @@ export default async function AdminInbox({ params }: PageProps) {
     }),
     db.chatMessage.groupBy({
       by: ["clientId"],
-      where: { salonId: salon.id, fromSalon: false, readAt: null },
+      where: { salonId: salon.id, fromSalon: false, readAt: null, ...scope },
       _count: { _all: true },
     }),
   ]);
@@ -38,9 +42,9 @@ export default async function AdminInbox({ params }: PageProps) {
       <ChatRefresh />
       <div className="mx-auto max-w-3xl">
         <h1 className="font-serif text-3xl sm:text-4xl">Poruke</h1>
-        <p className="mt-1 text-sm text-muted">Mušterije pišu sa stranice salona. Nove poruke se pojavljuju same.</p>
+        <p className="mt-1 text-sm text-muted">{staffClientIds ? "Hitne rezervacije upućene vama ili „Bilo ko”. Nove poruke se pojavljuju same." : "Mušterije pišu sa stranice salona. Nove poruke se pojavljuju same."}</p>
         <ul className="card mt-6 divide-y divide-line overflow-hidden">
-          {latest.length === 0 && <li className="p-8 text-center text-muted">Još niko nije pisao salonu.</li>}
+          {latest.length === 0 && <li className="p-8 text-center text-muted">{staffClientIds ? "Nema otvorenih hitnih rezervacija za vas." : "Još niko nije pisao salonu."}</li>}
           {latest.map((c) => {
             const count = unreadBy.get(c.client.id) ?? 0;
             return (

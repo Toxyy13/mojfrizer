@@ -24,6 +24,7 @@ export async function createUrgentRequest(
   salonId: string,
   input: UrgentRequestInput,
   clientId: string | null,
+  extra: { workerId?: string | null; timeWish?: string | null } = {},
 ): Promise<ActionResult> {
   if (input.dateIso < todayIso(TIME_ZONE)) return { ok: false, error: "Izabrani dan je prošao." };
   const visit = await resolveVisit(salonId, input.serviceIds);
@@ -36,6 +37,8 @@ export async function createUrgentRequest(
       serviceId: visit.services[0].id,
       serviceIds: visit.services.map((s) => s.id),
       clientId,
+      workerId: extra.workerId ?? null,
+      timeWish: extra.timeWish ?? null,
       guestName: input.clientName,
       guestPhone: input.clientPhone,
       date: new Date(`${input.dateIso}T00:00:00Z`),
