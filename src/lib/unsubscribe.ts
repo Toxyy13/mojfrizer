@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { appUrl } from "./appUrl";
-import { db } from "./db";
+// Trusted internal code (tokens, mail, cron, login): runs with RLS bypass, see src/lib/rls.ts.
+import { systemDb as db } from "./db";
 
 // One-click unsubscribe links for optional emails (reminders, waitlist). The link carries the user id and an
 // HMAC of it, so it works without logging in and can't be guessed for other people.

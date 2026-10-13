@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
-import { db } from "./db";
+import { db, systemDb } from "./db";
 import { PUBLIC_SALONS, canViewSalon } from "./salonVisibility";
 import { getSessionUser } from "./auth";
 import { getAvailableSlots } from "./booking";
@@ -270,8 +270,8 @@ export async function answerQuestion(request: AssistantRequest): Promise<Assista
 /** Counts one answered question for the developer's usage statistics. Never fails the answer. */
 export async function recordAssistantUse(slug: string | null | undefined): Promise<void> {
   try {
-    const salon = slug ? await db.salon.findUnique({ where: { slug }, select: { id: true } }) : null;
-    await db.assistantUse.create({ data: { salonId: salon?.id ?? null } });
+    const salon = slug ? await systemDb.salon.findUnique({ where: { slug }, select: { id: true } }) : null;
+    await systemDb.assistantUse.create({ data: { salonId: salon?.id ?? null } });
   } catch (error) {
     console.error("assistant usage log failed", error);
   }

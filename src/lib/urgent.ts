@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { db } from "./db";
+import { db, systemDb } from "./db";
 import { applyComboPricing } from "./comboPricing";
 import { TIME_ZONE, isValidDateIso, localToUtc, todayIso } from "./time";
 import { MAX_SERVICES_PER_VISIT, resolveVisit, visitItemPrices } from "./visit";
@@ -28,8 +28,9 @@ export async function createUrgentRequest(
   if (input.dateIso < todayIso(TIME_ZONE)) return { ok: false, error: "Izabrani dan je prošao." };
   const visit = await resolveVisit(salonId, input.serviceIds);
   if (!visit) return { ok: false, error: "Usluga nije pronađena." };
-  const salon = await db.salon.findUnique({ where: { id: salonId }, select: { urgentSurcharge: true } });
-  await db.urgentRequest.create({
+  // Guests can file a request but not read it back: system access (RLS), after the caller's checks.
+  const salon = await systemDb.salon.findUnique({ where: { id: salonId }, select: { urgentSurcharge: true } });
+  await systemDb.urgentRequest.create({
     data: {
       salonId,
       serviceId: visit.services[0].id,

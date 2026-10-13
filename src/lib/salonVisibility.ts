@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { SalonVisibility } from "@prisma/client";
-import { db } from "./db";
+import { db, systemDb } from "./db";
 import { getSessionUser, type SessionUser } from "./auth";
 
 // Public/private salons. Every place that opens a salon for a visitor (page, slots, booking, chat, favorites,
@@ -60,8 +60,9 @@ export function newQrToken(): string {
 
 /** Connects a customer to a salon (scanned its QR) and makes it their favorite. */
 export async function connectCustomerToSalon(userId: string, salonId: string): Promise<void> {
-  await db.$transaction([
-    db.salonMembership.upsert({ where: { userId_salonId: { userId, salonId } }, create: { userId, salonId }, update: {} }),
-    db.user.update({ where: { id: userId }, data: { favoriteSalonId: salonId } }),
+  // The QR token was checked by the caller; joining a (possibly private) salon is system work.
+  await systemDb.$transaction([
+    systemDb.salonMembership.upsert({ where: { userId_salonId: { userId, salonId } }, create: { userId, salonId }, update: {} }),
+    systemDb.user.update({ where: { id: userId }, data: { favoriteSalonId: salonId } }),
   ]);
 }

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import type { AppointmentStatus } from "@prisma/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ManageBooking } from "@/components/ManageBooking";
-import { db } from "@/lib/db";
+import { systemDb as db } from "@/lib/db";
 import { appointmentWhenFormat, canChangeOnline, loadManagedAppointment } from "@/lib/manageBooking";
 import { formatPrice } from "@/lib/money";
 import { servicesLabel } from "@/lib/visit";

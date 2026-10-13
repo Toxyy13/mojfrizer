@@ -1,11 +1,12 @@
 import { cookies } from "next/headers";
-import { SignJWT, jwtVerify } from "jose";
+import { SignJWT } from "jose";
 import bcrypt from "bcryptjs";
 import type { Role } from "@prisma/client";
-import { db } from "./db";
+import { systemDb } from "./db";
 import { looksLikeEmail, normalizePhone } from "./phone";
+import { SESSION_COOKIE, currentSessionClaims, secretKey } from "./sessionToken";
 
-const COOKIE_NAME = "mf_session";
+const COOKIE_NAME = SESSION_COOKIE;
 const SESSION_DAYS = 7;
 
 export interface SessionUser {
@@ -16,19 +17,14 @@ export interface SessionUser {
   role: Role;
 }
 
-function secretKey(): Uint8Array {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret || secret.length < 32) throw new Error("AUTH_SECRET must be set (min 32 chars)");
-  return new TextEncoder().encode(secret);
-}
-
 /** Looks up a user by email (salon staff) or phone (customers) and checks the password. */
 export async function verifyCredentials(login: string, password: string): Promise<SessionUser | null> {
   const trimmed = login.trim();
   const phone = looksLikeEmail(trimmed) ? null : normalizePhone(trimmed);
   if (!phone && !looksLikeEmail(trimmed)) return null;
   const where = phone ? { phone } : { email: trimmed.toLowerCase() };
-  const user = await db.user.findUnique({
+  // Login happens before anyone is identified: trusted lookup that bypasses RLS (see rls.ts).
+  const user = await systemDb.user.findUnique({
     where,
     select: { id: true, email: true, name: true, role: true, passwordHash: true },
   });
@@ -61,18 +57,7 @@ export async function signOut(): Promise<void> {
 }
 
 export async function getSessionUser(): Promise<SessionUser | null> {
-  const store = await cookies();
-  const token = store.get(COOKIE_NAME)?.value;
-  if (!token) return null;
-  try {
-    const { payload } = await jwtVerify(token, secretKey());
-    if (typeof payload.sub !== "string") return null;
-    const role = payload.role === "ADMIN" || payload.role === "WORKER" || payload.role === "DEVELOPER" ? payload.role : "CLIENT";
-    const email = typeof payload.email === "string" ? payload.email : null;
-    return { id: payload.sub, email, name: String(payload.name), role };
-  } catch {
-    return null;
-  }
+  return currentSessionClaims();
 }
 
 export async function hashPassword(password: string): Promise<string> {

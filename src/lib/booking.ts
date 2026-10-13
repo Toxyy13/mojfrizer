@@ -1,6 +1,7 @@
 import { Prisma, type BookingSource } from "@prisma/client";
 import { z } from "zod";
 import { db } from "./db";
+import { runAsSystem } from "./rls";
 import { TIME_ZONE, isValidDateIso, isoWeekdayOf, localToUtc } from "./time";
 import { applyComboPricing } from "./comboPricing";
 import { MAX_SERVICES_PER_VISIT, resolveVisit, visitItemPrices } from "./visit";
@@ -31,7 +32,12 @@ async function slotDuration(query: SlotQuery): Promise<number | null> {
 }
 
 /** Free start times for a visit on a day: opening hours minus days off minus busy workers. */
-export async function getAvailableSlots(query: SlotQuery): Promise<Slot[]> {
+export function getAvailableSlots(query: SlotQuery): Promise<Slot[]> {
+  // Visitors have no right to read other people's bookings, but the calendar needs them: system access (RLS).
+  return runAsSystem(() => computeAvailableSlots(query));
+}
+
+async function computeAvailableSlots(query: SlotQuery): Promise<Slot[]> {
   if (!isValidDateIso(query.dateIso)) return [];
   const [salon, durationMinutes, hours, dayOff] = await Promise.all([
     db.salon.findFirst({ where: { id: query.salonId, isActive: true } }),
@@ -117,11 +123,12 @@ export interface BookingActor {
  * Creates an appointment after re-checking availability inside a serializable transaction.
  * The DB exclusion constraint "appointments_no_overlap" is the final guard against races.
  */
-export async function createAppointment(
-  salonId: string,
-  input: BookingInput,
-  actor: BookingActor,
-): Promise<BookingResult> {
+export function createAppointment(salonId: string, input: BookingInput, actor: BookingActor): Promise<BookingResult> {
+  // Guests book without an account and cannot read the row they create: system access (RLS), after the caller's checks.
+  return runAsSystem(() => insertAppointment(salonId, input, actor));
+}
+
+async function insertAppointment(salonId: string, input: BookingInput, actor: BookingActor): Promise<BookingResult> {
   const visit = await resolveVisit(salonId, input.serviceIds);
   if (!visit) return { ok: false, error: "Usluga nije pronađena." };
   const itemPrices = visitItemPrices(visit.services);

@@ -1,5 +1,6 @@
 import { appUrl } from "./appUrl";
-import { db } from "./db";
+// Trusted internal code (tokens, mail, cron, login): runs with RLS bypass, see src/lib/rls.ts.
+import { systemDb as db } from "./db";
 import { issueToken } from "./emailTokens";
 import { sendMail } from "./mail";
 

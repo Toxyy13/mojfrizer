@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { sendResetMail, sendVerificationMail } from "@/lib/accountMail";
 import { getSessionUser, hashPassword, startSession } from "@/lib/auth";
 import { consumeToken } from "@/lib/emailTokens";
-import { db } from "@/lib/db";
+import { db, systemDb } from "@/lib/db";
 import { TERMS_VERSION } from "@/lib/company";
 import { safeNextPath } from "@/lib/landing";
 import { canViewSalon } from "@/lib/salonVisibility";
@@ -38,7 +38,8 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
   }
 
   try {
-    const user = await db.user.create({
+    // Registration creates the account before anyone is logged in: system access (RLS).
+    const user = await systemDb.user.create({
       data: { name, email: email.data, phone, passwordHash: await hashPassword(password), role: Role.CLIENT, termsAcceptedAt: new Date(), termsVersion: TERMS_VERSION },
       select: { id: true, email: true, name: true, role: true },
     });
@@ -126,12 +127,12 @@ export async function resetPassword(_prev: FormState, formData: FormData): Promi
     const used = await consumeToken(token, "RESET_PASSWORD");
     if (!used) return { error: "Link je istekao ili je već iskorišćen. Zatražite novi." };
     const passwordHash = await hashPassword(password);
-    await db.$transaction([
+    await systemDb.$transaction([
       // Following the link proves the owner reads this mailbox, so the email counts as verified too.
-      db.user.updateMany({ where: { id: used.userId, emailVerifiedAt: null }, data: { emailVerifiedAt: new Date() } }),
-      db.user.update({ where: { id: used.userId }, data: { passwordHash } }),
+      systemDb.user.updateMany({ where: { id: used.userId, emailVerifiedAt: null }, data: { emailVerifiedAt: new Date() } }),
+      systemDb.user.update({ where: { id: used.userId }, data: { passwordHash } }),
       // Any other reset links still in flight are void now.
-      db.emailToken.updateMany({
+      systemDb.emailToken.updateMany({
         where: { userId: used.userId, kind: "RESET_PASSWORD", usedAt: null },
         data: { usedAt: new Date() },
       }),

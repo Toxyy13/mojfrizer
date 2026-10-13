@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthShell } from "@/components/AuthShell";
-import { db } from "@/lib/db";
+import { systemDb } from "@/lib/db";
 import { consumeToken } from "@/lib/emailTokens";
 
 export const metadata: Metadata = { title: "Potvrda emaila · mojfrizer" };
@@ -19,7 +19,7 @@ export default async function VerifyEmailPage({ searchParams }: PageProps) {
     try {
       const used = await consumeToken(token, "VERIFY_EMAIL");
       if (used) {
-        await db.user.updateMany({ where: { id: used.userId, emailVerifiedAt: null }, data: { emailVerifiedAt: new Date() } });
+        await systemDb.user.updateMany({ where: { id: used.userId, emailVerifiedAt: null }, data: { emailVerifiedAt: new Date() } });
         ok = true;
       }
     } catch (error) {

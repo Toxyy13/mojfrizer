@@ -4,7 +4,7 @@ const salonFindFirst = vi.fn();
 const getSessionUser = vi.fn();
 const connect = vi.fn();
 
-vi.mock("@/lib/db", () => ({ db: { salon: { findFirst: salonFindFirst } } }));
+vi.mock("@/lib/db", () => ({ db: { salon: { findFirst: salonFindFirst } }, systemDb: { salon: { findFirst: salonFindFirst } } }));
 vi.mock("@/lib/auth", () => ({ getSessionUser }));
 vi.mock("@/lib/salonVisibility", () => ({ connectCustomerToSalon: connect }));
 
