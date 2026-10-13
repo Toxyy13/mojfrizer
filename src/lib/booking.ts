@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "./db";
 import { runAsSystem } from "./rls";
 import { TIME_ZONE, isValidDateIso, isoWeekdayOf, localToUtc } from "./time";
+import { breakIntervalsForDay } from "./breaks";
 import { applyComboPricing } from "./comboPricing";
 import { MAX_SERVICES_PER_VISIT, resolveVisit, visitItemPrices } from "./visit";
 
@@ -68,11 +69,13 @@ async function computeAvailableSlots(query: SlotQuery): Promise<Slot[]> {
   };
   const select = { workerId: true, startTime: true, endTime: true } as const;
   // A worker is busy during their appointments and their time off (vacation, sick leave, blocked time).
-  const [appointments, timeOff] = await Promise.all([
+  const [appointments, timeOff, breakRules] = await Promise.all([
     db.appointment.findMany({ where: { ...workerFilter, status: { in: [...ACTIVE_STATUSES] } }, select }),
     db.workerTimeOff.findMany({ where: workerFilter, select }),
+    db.workerBreak.findMany({ where: { salonId: salon.id, workerId: { in: workers.map((w) => w.id) } } }),
   ]);
-  const busy = [...appointments, ...timeOff];
+  // Breaks (lunch, coffee) block a worker like time off does, so a visit can't run across one.
+  const busy = [...appointments, ...timeOff, ...breakIntervalsForDay(breakRules, query.dateIso)];
 
   const earliest = Date.now() + (query.enforceLeadTime ? ONLINE_LEAD_MINUTES * 60_000 : 0);
   const slots: Slot[] = [];

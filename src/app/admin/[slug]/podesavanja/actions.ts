@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, systemDb } from "@/lib/db";
 import { requireSalonOwner } from "@/lib/access";
+import { appointmentsInBreak } from "@/lib/breaks";
 import { rsdToPara } from "@/lib/money";
 import { hashPassword } from "@/lib/auth";
 import { formatPhone, looksLikeEmail, normalizePhone } from "@/lib/phone";
@@ -15,7 +16,7 @@ import {
   readServiceForm,
   salonInfoSchema,
 } from "@/lib/salonSettings";
-import { TIME_ZONE, WEEKDAYS_SR, addDaysIso, isValidDateIso, localToUtc } from "@/lib/time";
+import { TIME_ZONE, WEEKDAYS_SR, addDaysIso, formatLocalDateIso, formatLocalTime, isValidDateIso, localToUtc } from "@/lib/time";
 import { MAX_SERVICES_PER_VISIT } from "@/lib/visit";
 
 // Each action redirects back with ?ok= or ?greska= so the page can show the outcome without client JS.
@@ -305,6 +306,61 @@ export async function removeWorkerTimeOff(slug: string, formData: FormData): Pro
   await db.workerTimeOff.deleteMany({ where: { id: String(formData.get("id") ?? ""), salonId: salon.id } });
   refresh(slug);
   back(slug, "odsustva", { ok: "Odsustvo je uklonjeno." });
+}
+
+/** Adds a break for one hairdresser: repeating on chosen weekdays, or on a single date. Only the owner decides breaks. */
+export async function addWorkerBreak(slug: string, formData: FormData): Promise<void> {
+  const { salon } = await requireSalonOwner(slug);
+  const workerId = String(formData.get("workerId") ?? "");
+  const startMinute = hhmmToMinutes(String(formData.get("fromTime") ?? ""));
+  const endMinute = hhmmToMinutes(String(formData.get("toTime") ?? ""));
+  const label = String(formData.get("label") ?? "").trim().slice(0, 60) || null;
+  const date = String(formData.get("date") ?? "").trim();
+
+  const worker = await db.workerProfile.findFirst({ where: { id: workerId, salonId: salon.id }, select: { id: true } });
+  if (!worker) back(slug, "pauze", { error: "Izaberite radnika." });
+  if (startMinute === null || endMinute === null || startMinute >= endMinute) {
+    back(slug, "pauze", { error: "Početak pauze mora biti pre kraja." });
+  }
+  const weekdays = [...new Set(formData.getAll("weekdays").map(Number))].filter((d) => Number.isInteger(d) && d >= 1 && d <= 7);
+  if (date) {
+    if (!isValidDateIso(date)) back(slug, "pauze", { error: "Proverite datum pauze." });
+  } else if (weekdays.length === 0) {
+    back(slug, "pauze", { error: "Izaberite dane u nedelji ili jedan datum." });
+  }
+
+  const rule = {
+    workerId,
+    startMinute,
+    endMinute,
+    weekdays: date ? [] : weekdays.sort(),
+    date: date ? new Date(`${date}T00:00:00Z`) : null,
+  };
+  await db.workerBreak.create({ data: { ...rule, salonId: salon.id, label } });
+  refresh(slug);
+
+  // Visits already booked inside the new break stay; the owner is told which ones to move.
+  const upcoming = await db.appointment.findMany({
+    where: { salonId: salon.id, workerId, status: "BOOKED", endTime: { gt: new Date() } },
+    select: { startTime: true, endTime: true, guestName: true, client: { select: { name: true } } },
+    orderBy: { startTime: "asc" },
+  });
+  const clashes = appointmentsInBreak(rule, upcoming);
+  if (clashes.length === 0) back(slug, "pauze", { ok: "Pauza je dodata." });
+  const list = clashes
+    .slice(0, 5)
+    .map((a) => `${formatLocalDateIso(a.startTime, TIME_ZONE).split("-").reverse().join(".")}. ${formatLocalTime(a.startTime, TIME_ZONE)} ${a.guestName ?? a.client?.name ?? "mušterija"}`)
+    .join("; ");
+  back(slug, "pauze", {
+    ok: `Pauza je dodata. Pažnja: ${clashes.length} već zakazanih termina pada u pauzu (${list}${clashes.length > 5 ? "…" : ""}). Termini nisu otkazani, prebacite ih ručno.`,
+  });
+}
+
+export async function removeWorkerBreak(slug: string, formData: FormData): Promise<void> {
+  const { salon } = await requireSalonOwner(slug);
+  await db.workerBreak.deleteMany({ where: { id: String(formData.get("id") ?? ""), salonId: salon.id } });
+  refresh(slug);
+  back(slug, "pauze", { ok: "Pauza je uklonjena." });
 }
 
 /** Saves how long a set of services takes together, e.g. šišanje + pranje = 30 min. */
