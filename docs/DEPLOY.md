@@ -31,7 +31,17 @@ Vercel Hobby dozvoljava cron samo jednom dnevno, pa poziv radi GitHub Actions (`
 ## 5. Google prijava (opciono)
 Google Cloud Console → Credentials → OAuth client ID (Web). Redirect URI: `${APP_URL}/api/auth/google/callback`. `GOOGLE_CLIENT_ID` i `GOOGLE_CLIENT_SECRET` u Vercel; dugme se pojavi samo kad su upisani.
 
-## 6. Domen
+## 6. Praćenje grešaka (Sentry, besplatno)
+Greške servera idu na vaš Sentry nalog; saloni i mušterije ništa ne vide. U Sentry-ju se šalju samo tip greške, tehnički opis i naziv stranice. Imena, mejlovi, telefoni, tekst poruka, lozinke i tajni linkovi se uklanjaju pre slanja (`src/lib/sentryScrub.ts`). Nema browser SDK-a, pa ništa ne ide iz pregledača posetilaca. Bez `SENTRY_DSN` sve ostaje isključeno.
+1. Nalog na sentry.io (Developer plan je besplatan). Region EU ako ponudi.
+2. Create Project → platforma **Next.js** → naziv `mojfrizer`. Preskoči „wizard” koji traži izmene koda, već je ugrađeno.
+3. Settings → Projects → mojfrizer → Client Keys (DSN) → kopiraj **DSN** (počinje sa `https://`).
+4. Vercel → Settings → Environment Variables → `SENTRY_DSN` = taj DSN (Production). Opciono `SENTRY_PROJECT_URL` = adresa vašeg projekta u Sentry-ju (dugme „Otvori Sentry” u `/razvoj`). Novi deploy.
+5. U `/razvoj` → „Praćenje grešaka” pritisni „Pošalji probnu grešku”; za par sekundi je u Sentry → Issues.
+6. Sentry → Alerts: ostavi podrazumevano pravilo „nova greška → mejl”.
+Opciono `SENTRY_TRACES_SAMPLE_RATE` (0 do 1, podrazumevano 0 = bez tracing-a).
+
+## 7. Domen
 Kad se kupi mojfrizer.com: Vercel → Domains → dodaj `mojfrizer.com` i `*.mojfrizer.com` (poddomeni salona), pa postavi `APP_URL` i `ROOT_DOMAIN`.
 
 ## Lokalna provera produkcijskog builda

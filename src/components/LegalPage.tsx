@@ -8,14 +8,16 @@ interface LegalPageProps {
   eyebrow: string;
   title: string;
   intro?: ReactNode;
+  /** The page shows the visitor's own data (e.g. delete account): keep the personalised header and render per request. */
+  personal?: boolean;
   children: ReactNode;
 }
 
 /** Long-form text page (terms, privacy, cookies…) with readable typography and links to the other legal pages. */
-export function LegalPage({ eyebrow, title, intro, children }: LegalPageProps) {
+export function LegalPage({ eyebrow, title, intro, personal = false, children }: LegalPageProps) {
   return (
     <>
-      <SiteHeader />
+      <SiteHeader generic={!personal} />
       <main id="sadrzaj" tabIndex={-1} className="page grid gap-10 py-10 outline-none sm:py-16 lg:grid-cols-[1fr_16rem]">
         <article className="min-w-0 max-w-3xl">
           <p className="eyebrow">{eyebrow}</p>

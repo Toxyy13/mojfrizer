@@ -150,6 +150,11 @@ export default function PrivacyPage() {
             <td>SAD</td>
           </tr>
           <tr>
+            <td>Functional Software, Inc. (Sentry)</td>
+            <td>Praćenje grešaka servera: tip greške, tehnički opis i naziv stranice. Bez imena, mejlova, telefona, poruka i lozinki; ne šalje se iz vašeg pregledača</td>
+            <td>SAD / EU, prema regionu naloga</td>
+          </tr>
+          <tr>
             <td>Anthropic PBC</td>
             <td>AI asistent (samo tekst pitanja)</td>
             <td>SAD</td>

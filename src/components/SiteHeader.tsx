@@ -2,9 +2,13 @@ import Link from "next/link";
 import { getSessionUser } from "@/lib/auth";
 import { Logo } from "./Logo";
 
-/** Sticky top bar shared by all customer-facing pages. */
-export async function SiteHeader() {
-  const user = await getSessionUser();
+/**
+ * Sticky top bar shared by all customer-facing pages.
+ * `generic` skips the session lookup, so a page that is otherwise the same for everyone (terms, privacy…) can be
+ * prerendered and served from the CDN. A logged-in visitor who clicks "Prijava" is sent straight to their own page.
+ */
+export async function SiteHeader({ generic = false }: { generic?: boolean }) {
+  const user = generic ? null : await getSessionUser();
   const firstName = user?.name.split(" ")[0] ?? "";
   return (
     <header className="sticky top-0 z-40 border-b border-line/70 bg-cream/85 backdrop-blur-md">

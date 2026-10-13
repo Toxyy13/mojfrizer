@@ -6,11 +6,15 @@ import { requireDeveloper } from "@/lib/developer";
 import { formatRsd } from "@/lib/money";
 import { getPlatformStats } from "@/lib/platformStats";
 import { GrowthLabel } from "./GrowthLabel";
+import { sendSentryTestError } from "./actions";
 
 export const metadata: Metadata = { title: "Platforma · mojfrizer" };
 export const dynamic = "force-dynamic";
 
-export default async function DeveloperHome() {
+export default async function DeveloperHome({ searchParams }: { searchParams: Promise<{ sentry?: string }> }) {
+  const sentrySent = (await searchParams).sentry === "poslato";
+  const sentryOn = !!process.env.SENTRY_DSN;
+  const sentryUrl = /^https:\/\//.test(process.env.SENTRY_PROJECT_URL ?? "") ? process.env.SENTRY_PROJECT_URL : null;
   const user = await requireDeveloper();
   const stats = await getPlatformStats();
   const tiles = [
@@ -40,6 +44,29 @@ export default async function DeveloperHome() {
       <section className="mt-12" aria-labelledby="rast">
         <h2 id="rast" className="eyebrow">Promet svih salona, 12 meseci</h2>
         <div className="card mt-4 p-5"><MonthBars points={stats.series} label="Promet svih salona po mesecima" /></div>
+      </section>
+
+      <section className="mt-12" aria-labelledby="greske">
+        <h2 id="greske" className="eyebrow">Praćenje grešaka (Sentry)</h2>
+        <div className="card mt-4 flex flex-wrap items-center justify-between gap-4 p-5">
+          <div>
+            <p className="font-medium">{sentryOn ? "Uključeno" : "Isključeno"}</p>
+            <p className="mt-1 text-sm text-muted">
+              {sentryOn
+                ? "Greške servera idu na vaš Sentry nalog, bez imena, mejlova, telefona i poruka. Saloni i mušterije ovo ne vide."
+                : "Upišite SENTRY_DSN u Vercel (Settings → Environment Variables) i napravite novi deploy. Uputstvo je u docs/DEPLOY.md."}
+            </p>
+            {sentrySent && <p className="mt-2 text-sm">Probna greška je poslata. Pojaviće se u Sentry-ju za nekoliko sekundi.</p>}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {sentryUrl && <a href={sentryUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary btn-sm">Otvori Sentry</a>}
+            {sentryOn && (
+              <form action={sendSentryTestError}>
+                <button className="btn-secondary btn-sm">Pošalji probnu grešku</button>
+              </form>
+            )}
+          </div>
+        </div>
       </section>
 
       <section className="mt-12" aria-labelledby="saloni">

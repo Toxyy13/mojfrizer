@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -13,7 +14,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StickyBookBar } from "@/components/StickyBookBar";
 import { getSessionUser } from "@/lib/auth";
-import { canViewSalon, findViewableSalon } from "@/lib/salonVisibility";
+import { canViewSalon } from "@/lib/salonVisibility";
 import { formatRating, getSalonRating, ratingCountLabel } from "@/lib/reviews";
 import { formatPhone } from "@/lib/phone";
 import { bookOnline, joinSalonWaitlist, requestUrgent } from "./actions";
@@ -26,7 +27,8 @@ interface PageProps {
   searchParams?: Promise<{ usluga?: string; frizer?: string }>;
 }
 
-async function loadSalon(slug: string) {
+// cache(): the page and generateMetadata share one query per request (never across requests or visitors).
+const loadSalon = cache(async (slug: string) => {
   return db.salon.findFirst({
     where: { slug, isActive: true },
     include: {
@@ -37,14 +39,15 @@ async function loadSalon(slug: string) {
       serviceCombos: { select: { serviceIds: true, durationMinutes: true } },
     },
   });
-}
+});
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  // findViewableSalon hides private salons from visitors who aren't connected to them (no meta tags leak).
-  const viewable = await findViewableSalon(slug);
-  const salon = viewable ? await db.salon.findUnique({ where: { id: viewable.id }, select: { name: true, city: true } }) : null;
-  return salon ? { title: `${salon.name} · zakažite termin`, description: `${salon.name}, ${salon.city}` } : {};
+  const salon = await loadSalon(slug);
+  // Private salons stay hidden from visitors who aren't connected to them (no meta tags leak).
+  return salon && (await canViewSalon(salon.id, await getSessionUser()))
+    ? { title: `${salon.name} · zakažite termin`, description: `${salon.name}, ${salon.city}` }
+    : {};
 }
 
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 7];
