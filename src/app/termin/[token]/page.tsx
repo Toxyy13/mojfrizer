@@ -7,6 +7,7 @@ import { ManageBooking } from "@/components/ManageBooking";
 import { db } from "@/lib/db";
 import { appointmentWhenFormat, canChangeOnline, loadManagedAppointment } from "@/lib/manageBooking";
 import { formatPrice } from "@/lib/money";
+import { servicesLabel } from "@/lib/visit";
 import { fullAddress } from "@/lib/salonAddress";
 import { upcomingDays } from "@/lib/salonView";
 import { TIME_ZONE, todayIso } from "@/lib/time";
@@ -59,7 +60,7 @@ export default async function ManageBookingPage({ params }: { params: Promise<{ 
           <dd>{fullAddress(a.salon)}</dd>
           <dt className="text-muted">Usluga</dt>
           <dd>
-            {a.service.name} · {formatPrice(a.price)}
+            {servicesLabel(a)} · {formatPrice(a.price)}
           </dd>
           <dt className="text-muted">Frizer</dt>
           <dd>{a.worker.displayName}</dd>
@@ -125,7 +126,7 @@ export default async function ManageBookingPage({ params }: { params: Promise<{ 
           {changeable ? (
             <ManageBooking
               slug={a.salon.slug}
-              serviceId={a.serviceId}
+              token={token}
               days={upcomingDays(hours, daysOff, 21)}
               cancel={cancelBooking.bind(null, token)}
               reschedule={rescheduleBooking.bind(null, token)}

@@ -17,6 +17,8 @@ export function toBookingServices(services: Service[]): BookingService[] {
     category: serviceCategory(s),
     priceLabel: formatServicePrice(s),
     durationMin: s.durationMinutes,
+    price: s.price,
+    comboPrice: s.comboPrice,
   }));
 }
 

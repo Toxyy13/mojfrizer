@@ -21,7 +21,14 @@ const SERVICES: SeedService[] = [
   { name: "Pranje kose", category: "Pranje", priceRsd: 150, durationMinutes: 15 },
   { name: "Brijanje", category: "Brijanje", priceRsd: 150, durationMinutes: 15 },
   // 200 RSD on its own, free together with another service.
-  { name: "Fazoniranje brade", category: "Brijanje", priceRsd: 200, comboPriceRsd: 0, durationMinutes: 10 },
+  { name: "Fazoniranje brade", category: "Brijanje", priceRsd: 200, comboPriceRsd: 0, durationMinutes: 15 },
+];
+
+// Durations the owner set for services booked together; other sets take the sum.
+const COMBOS: Array<{ names: string[]; durationMinutes: number }> = [
+  { names: ["Muško šišanje", "Pranje kose"], durationMinutes: 30 },
+  { names: ["Muško šišanje", "Pranje kose", "Fazoniranje brade"], durationMinutes: 45 },
+  { names: ["Muško šišanje", "Pranje kose", "Brijanje"], durationMinutes: 45 },
 ];
 
 const rsdToPara = (rsd: number): number => rsd * 100;
@@ -106,6 +113,17 @@ async function main(): Promise<void> {
     include: { services: { orderBy: { sortOrder: "asc" } }, workers: true },
   });
 
+  await prisma.serviceCombo.createMany({
+    data: COMBOS.map((combo) => ({
+      salonId: salon.id,
+      serviceIds: salon.services
+        .filter((service) => combo.names.includes(service.name))
+        .map((service) => service.id)
+        .sort(),
+      durationMinutes: combo.durationMinutes,
+    })),
+  });
+
   if (!withDemoData) {
     console.log(`Seeded ${salon.name}: ${salon.services.length} services, no demo data.`);
     return;
@@ -134,8 +152,7 @@ async function main(): Promise<void> {
   const washStart = belgradeTime(1, 12);
 
   // One online booking by the client, one booked by the salon for a phone customer.
-  await prisma.appointment.createMany({
-    data: [
+  const demoAppointments = [
       {
         salonId: salon.id,
         workerId: worker.id,
@@ -160,8 +177,12 @@ async function main(): Promise<void> {
         price: wash.price,
         note: "Zvala telefonom.",
       },
-    ],
-  });
+  ];
+  for (const data of demoAppointments) {
+    await prisma.appointment.create({
+      data: { ...data, services: { create: [{ serviceId: data.serviceId, price: data.price, sortOrder: 0 }] } },
+    });
+  }
 
   console.log(`Seeded ${salon.name}: ${salon.services.length} services, 2 appointments.`);
 }

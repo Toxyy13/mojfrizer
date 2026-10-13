@@ -9,8 +9,10 @@ import {
   addWorkerTimeOff,
   removeWorkerTimeOff,
   removeDayOff,
+  removeServiceCombo,
   saveSalonInfo,
   saveService,
+  saveServiceCombo,
   saveWorker,
   saveWorkingHours,
   toggleService,
@@ -35,7 +37,7 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
   const sp = await searchParams;
   const today = todayIso(TIME_ZONE);
 
-  const [services, hours, daysOff, workers, timeOff] = await Promise.all([
+  const [services, hours, daysOff, workers, timeOff, combos] = await Promise.all([
     db.service.findMany({ where: { salonId: salon.id }, orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }, { name: "asc" }] }),
     db.workingHours.findMany({ where: { salonId: salon.id }, orderBy: [{ dayOfWeek: "asc" }, { opensAt: "asc" }] }),
     db.salonDayOff.findMany({
@@ -48,7 +50,10 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
       include: { worker: { select: { displayName: true } } },
       orderBy: { startTime: "asc" },
     }),
+    db.serviceCombo.findMany({ where: { salonId: salon.id }, orderBy: { createdAt: "asc" } }),
   ]);
+  const serviceName = new Map(services.map((s) => [s.id, s.name]));
+  const activeServices = services.filter((s) => s.isActive);
 
   return (
     <AdminShell salon={salon} user={user} active="podesavanja">
@@ -57,6 +62,7 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
         <h1 className="eyebrow mb-2 hidden px-3 lg:block">Podešavanja</h1>
         {[
           ["#usluge", "Cenovnik"],
+          ["#kombinacije", "Više usluga"],
           ["#radno-vreme", "Radno vreme"],
           ["#neradni-dani", "Neradni dani"],
           ["#radnici", "Radnici"],
@@ -103,6 +109,49 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
             <ServiceForm slug={salon.slug} service={null} nextSortOrder={services.length} />
           </div>
         </div>
+      </Section>
+
+      <Section
+        id="kombinacije"
+        title="Više usluga u jednom terminu"
+        hint="Mušterija može da izabere više usluga odjednom. Ako ovde nema te kombinacije, termin traje koliko i zbir usluga."
+      >
+        {combos.length > 0 && (
+          <ul className="divide-y divide-line border-y border-line">
+            {combos.map((c) => (
+              <li key={c.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-2 py-3">
+                <span className="min-w-0 flex-1">{c.serviceIds.map((id) => serviceName.get(id) ?? "obrisana usluga").join(" + ")}</span>
+                <span className="text-sm font-medium tabular-nums">{c.durationMinutes} min</span>
+                <form action={removeServiceCombo.bind(null, salon.slug)}>
+                  <input type="hidden" name="id" value={c.id} />
+                  <button className={LINK_BUTTON}>Obriši</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form action={saveServiceCombo.bind(null, salon.slug)} className="mt-6 rounded-2xl bg-cream p-5">
+          <h3 className="font-serif text-2xl">Nova kombinacija</h3>
+          <fieldset className="mt-4 min-w-0">
+            <legend className={LABEL}>Usluge (bar dve)</legend>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {activeServices.map((s) => (
+                <label key={s.id} className="flex cursor-pointer items-center gap-2 rounded-full border border-line bg-white px-3 py-2 text-sm has-[:checked]:border-burgundy has-[:checked]:bg-burgundy-soft">
+                  <input type="checkbox" name="serviceIds" value={s.id} className="accent-burgundy" />
+                  {s.name}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <div className="mt-4 flex flex-wrap items-end gap-4">
+            <label>
+              <span className={LABEL}>Ukupno traje (min)</span>
+              <input name="durationMinutes" type="number" min={5} max={480} step={5} defaultValue={30} required className={`${INPUT} w-32`} />
+            </label>
+            <button className={BUTTON}>Sačuvaj kombinaciju</button>
+          </div>
+          <p className="mt-3 text-xs text-muted">Ista kombinacija se ne duplira: novo trajanje zamenjuje staro.</p>
+        </form>
       </Section>
 
       <Section id="radno-vreme" title="Radno vreme" hint="Pauza je opciona. Termini se ne mogu zakazati van radnog vremena.">

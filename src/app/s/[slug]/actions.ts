@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { bookingInputSchema, createAppointment, type BookingResult } from "@/lib/booking";
@@ -7,6 +8,9 @@ import { isBlockedOnline } from "@/lib/clients";
 import { sendBookingConfirmation } from "@/lib/manageBooking";
 import { joinWaitlist, type WaitlistResult } from "@/lib/waitlist";
 import { createUrgentRequest, urgentRequestSchema, type ActionResult } from "@/lib/urgent";
+import { MAX_SERVICES_PER_VISIT } from "@/lib/visit";
+
+const waitlistServicesSchema = z.array(z.string().min(1)).min(1).max(MAX_SERVICES_PER_VISIT);
 
 export async function bookOnline(slug: string, raw: unknown): Promise<BookingResult> {
   try {
@@ -47,13 +51,15 @@ export async function requestUrgent(slug: string, raw: unknown): Promise<ActionR
   }
 }
 
-export async function joinSalonWaitlist(slug: string, serviceId: string, dateIso: string): Promise<WaitlistResult> {
+export async function joinSalonWaitlist(slug: string, serviceIds: unknown, dateIso: string): Promise<WaitlistResult> {
   try {
+    const ids = waitlistServicesSchema.safeParse(serviceIds);
+    if (!ids.success) return { ok: false, error: "Izaberite uslugu." };
     const user = await getSessionUser();
     if (!user) return { ok: false, error: "login" };
     const salon = await db.salon.findFirst({ where: { slug, isActive: true }, select: { id: true } });
     if (!salon) return { ok: false, error: "Salon nije pronađen." };
-    return await joinWaitlist(salon.id, user.id, serviceId, dateIso);
+    return await joinWaitlist(salon.id, user.id, ids.data, dateIso);
   } catch (error) {
     console.error(error);
     return { ok: false, error: "Došlo je do greške. Pokušajte ponovo." };
