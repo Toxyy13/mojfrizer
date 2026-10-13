@@ -14,6 +14,19 @@ export type DeveloperSeedResult = "skipped" | "created" | "promoted" | "unchange
 
 type Db = Pick<PrismaClient, "user">;
 
+/** Other developer accounts become salon admins if they run a salon, plain customers otherwise. */
+async function demoteOtherDevelopers(db: Db, email: string): Promise<number> {
+  const others = await db.user.findMany({
+    where: { role: Role.DEVELOPER, email: { not: email } },
+    select: { id: true, ownedSalons: { select: { id: true }, take: 1 }, workerProfiles: { select: { id: true }, take: 1 } },
+  });
+  for (const other of others) {
+    const runsSalon = other.ownedSalons.length > 0 || other.workerProfiles.length > 0;
+    await db.user.update({ where: { id: other.id }, data: { role: runsSalon ? Role.ADMIN : Role.CLIENT } });
+  }
+  return others.length;
+}
+
 export async function ensureDeveloper(db: Db, env: DeveloperSeedEnv): Promise<DeveloperSeedResult> {
   const email = env.SEED_DEVELOPER_EMAIL?.trim().toLowerCase();
   const password = env.SEED_DEVELOPER_PASSWORD;
@@ -23,8 +36,11 @@ export async function ensureDeveloper(db: Db, env: DeveloperSeedEnv): Promise<De
   }
   if (password.length < 8) throw new Error("SEED_DEVELOPER_PASSWORD must be at least 8 characters");
 
+  // There is one platform developer: if the configured email changed, the old account loses the role.
+  const demoted = await demoteOtherDevelopers(db, email);
+
   const existing = await db.user.findUnique({ where: { email }, select: { id: true, role: true } });
-  if (existing?.role === Role.DEVELOPER) return "unchanged";
+  if (existing?.role === Role.DEVELOPER) return demoted > 0 ? "promoted" : "unchanged";
   const passwordHash = await hash(password, 10);
   if (existing) {
     // An account that existed before gets the seeded password too, so nobody who registered this email first keeps access.
