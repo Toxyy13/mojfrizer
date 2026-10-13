@@ -15,7 +15,7 @@
   --color-burgundy-dark: #4f1522;
   --color-burgundy-soft: #f5e9eb;
   --color-charcoal: #1f1d1b;
-  --color-muted: #6f6a64;
+  --color-muted: #625d57;
   --color-forest: #1b3a2b;
   --color-forest-soft: #e6efe9;
   --font-serif: var(--font-display), "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
@@ -46,6 +46,10 @@
   :focus-visible {
     outline: 2px solid var(--color-burgundy);
     outline-offset: 2px;
+  }
+  /* <main> is focus target of the skip link; no ring needed around the whole page. */
+  main:focus {
+    outline: none;
   }
   button:not(:disabled),
   [role="button"]:not(:disabled) {
@@ -89,7 +93,7 @@
 }
 
 @utility field {
-  @apply mt-1.5 block w-full rounded-xl border border-line bg-white px-4 py-3 text-base text-charcoal transition-colors outline-none placeholder:text-neutral-400 focus:border-burgundy focus:ring-4 focus:ring-burgundy/10;
+  @apply mt-1.5 block w-full rounded-xl border border-line bg-white px-4 py-3 text-base text-charcoal transition-colors outline-none placeholder:text-muted focus:border-burgundy focus:ring-4 focus:ring-burgundy/10;
 }
 
 @utility field-label {

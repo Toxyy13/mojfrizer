@@ -61,7 +61,7 @@ export async function AdminShell({ salon, user, active, children }: AdminShellPr
           </Link>
         </nav>
       </header>
-      <main className="page py-8 sm:py-10">{children}</main>
+      <main id="sadrzaj" tabIndex={-1} className="page py-8 sm:py-10">{children}</main>
     </div>
   );
 }

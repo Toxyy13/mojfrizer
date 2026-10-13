@@ -187,7 +187,7 @@ export default async function AccountPage() {
   return (
     <>
       <SiteHeader />
-      <main className="page py-10 sm:py-16">
+      <main id="sadrzaj" tabIndex={-1} className="page py-10 sm:py-16">
         <header className="animate-rise flex flex-wrap items-center gap-5">
           <Avatar name={user.name} src={avatarUrl(user.id, user.avatar)} size={72} />
           <div className="min-w-0 flex-1">
@@ -289,6 +289,10 @@ export default async function AccountPage() {
                 })}
               </ul>
             </section>
+
+            <Link href="/brisanje-podataka" className="btn-ghost w-full">
+              Moji podaci i brisanje naloga
+            </Link>
 
             <form action={logout}>
               <button className="btn-ghost w-full">Odjavi se</button>

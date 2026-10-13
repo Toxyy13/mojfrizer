@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { isGoogleConfigured } from "@/lib/google";
 
 interface GoogleButtonProps {
@@ -23,6 +24,17 @@ export function GoogleButton({ next }: GoogleButtonProps) {
         </svg>
         Nastavi sa Google nalogom
       </a>
+      <p className="mt-2 text-xs text-muted">
+        Nastavkom potvrđujete da imate najmanje 15 godina i prihvatate{" "}
+        <Link href="/uslovi" className="link">
+          Uslove
+        </Link>{" "}
+        i{" "}
+        <Link href="/privatnost" className="link">
+          Politiku privatnosti
+        </Link>
+        .
+      </p>
       <p className="mt-6 flex items-center gap-3 text-xs text-muted before:h-px before:flex-1 before:bg-line after:h-px after:flex-1 after:bg-line">ili emailom</p>
     </div>
   );

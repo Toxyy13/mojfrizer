@@ -467,6 +467,13 @@ export function BookingForm({
         </label>
       </fieldset>
 
+      <p className="text-xs text-muted">
+        Ime i telefon koristimo samo za ovaj termin, da vas salon prepozna i pozove ako je potrebno.{" "}
+        <a href="/privatnost" target="_blank" className="link">
+          Politika privatnosti
+        </a>
+      </p>
+
       {result && !result.ok && (
         <p className="alert-error" role="alert">
           {result.error}

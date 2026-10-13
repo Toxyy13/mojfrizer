@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { COMPANY, LEGAL_LINKS, isPlaceholder } from "@/lib/company";
 import { Logo } from "./Logo";
 
 export function SiteFooter() {
@@ -16,10 +17,28 @@ export function SiteFooter() {
           <Link href="/nalog" className="hover:text-charcoal">
             Moj nalog
           </Link>
+          <Link href="/registracija-salona" className="hover:text-charcoal">
+            Otvorite salon
+          </Link>
           <Link href="/admin" className="hover:text-charcoal">
-            Za salone
+            Prijava salona
           </Link>
         </nav>
+      </div>
+      <div className="page flex flex-col gap-3 border-t border-line py-6 text-xs text-muted">
+        <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label="Pravne informacije">
+          {LEGAL_LINKS.map((l) => (
+            <Link key={l.href} href={l.href} className="hover:text-charcoal">
+              {l.label}
+            </Link>
+          ))}
+        </nav>
+        <p>
+          © {new Date().getFullYear()} mojfrizer.com
+          {![COMPANY.name, COMPANY.pib, COMPANY.registryNumber, COMPANY.address].some(isPlaceholder) &&
+            ` · ${COMPANY.name} · PIB ${COMPANY.pib} · MB ${COMPANY.registryNumber} · ${COMPANY.address}`}
+          {!isPlaceholder(COMPANY.email) && ` · ${COMPANY.email}`}
+        </p>
       </div>
     </footer>
   );

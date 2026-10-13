@@ -14,7 +14,7 @@ export function AuthShell({ eyebrow, title, intro, children, footer }: AuthShell
   return (
     <>
       <SiteHeader />
-      <main className="page grid min-h-[calc(100dvh-4rem)] items-start gap-10 py-10 sm:py-16 lg:grid-cols-[1fr_28rem] lg:items-center">
+      <main id="sadrzaj" tabIndex={-1} className="page grid min-h-[calc(100dvh-4rem)] items-start gap-10 py-10 sm:py-16 lg:grid-cols-[1fr_28rem] lg:items-center">
         <aside className="hidden lg:block">
           <p className="eyebrow">mojfrizer.com</p>
           <p className="mt-6 max-w-md font-serif text-6xl leading-[1.02] tracking-tight">

@@ -31,7 +31,7 @@ export default async function CustomerChatPage({ params }: PageProps) {
   return (
     <>
       <SiteHeader />
-      <main className="page max-w-2xl py-8 sm:py-12">
+      <main id="sadrzaj" tabIndex={-1} className="page max-w-2xl py-8 sm:py-12">
         <header className="flex items-center gap-4">
           <Link href={`/s/${salon.slug}`} className="btn-ghost size-11 shrink-0 p-0 text-lg" aria-label="Nazad na salon">
             ←

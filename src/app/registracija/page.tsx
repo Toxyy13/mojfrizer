@@ -5,6 +5,7 @@ import { GoogleButton } from "@/components/GoogleButton";
 import { AuthForm } from "@/components/AuthForm";
 import { AuthShell } from "@/components/AuthShell";
 import { getSessionUser } from "@/lib/auth";
+import { TermsLabel } from "@/components/TermsConsent";
 import { safeNextPath } from "@/lib/landing";
 import { register } from "../nalog/actions";
 
@@ -50,6 +51,7 @@ export default async function RegisterPage({ searchParams }: PageProps) {
           { name: "email", label: "Email adresa", type: "email", autoComplete: "email", hint: "Na nju stiže podsetnik za termin." },
           { name: "phone", label: "Broj telefona (nije obavezno)", type: "tel", autoComplete: "tel", hint: "Npr. 064 123 4567", optional: true },
           { name: "password", label: "Lozinka", type: "password", autoComplete: "new-password", hint: "Bar 8 znakova" },
+          { name: "terms", label: "Uslovi", type: "checkbox", autoComplete: "off", content: <TermsLabel /> },
         ]}
       />
     </AuthShell>

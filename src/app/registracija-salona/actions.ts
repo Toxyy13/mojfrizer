@@ -7,6 +7,7 @@ import { sendVerificationMail } from "@/lib/accountMail";
 import { getSessionUser, hashPassword, startSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatPhone, normalizePhone } from "@/lib/phone";
+import { TERMS_VERSION } from "@/lib/company";
 import { createSalon } from "@/lib/salonOnboarding";
 import type { FormState } from "../prijava/actions";
 
@@ -42,6 +43,7 @@ export async function registerSalon(_prev: FormState, formData: FormData): Promi
   let slug: string;
   try {
     if (!session) {
+      if (formData.get("terms") !== "on") return { error: "Potvrdite da imate najmanje 15 godina i da prihvatate uslove.", values };
       const owner = ownerSchema.safeParse({ ...values, password: read("password") });
       if (!owner.success) return { error: owner.error.issues[0]?.message ?? "Neispravni podaci", values };
       const user = await db.user.create({
@@ -50,6 +52,8 @@ export async function registerSalon(_prev: FormState, formData: FormData): Promi
           email: owner.data.email,
           passwordHash: await hashPassword(owner.data.password),
           role: Role.ADMIN,
+          termsAcceptedAt: new Date(),
+          termsVersion: TERMS_VERSION,
         },
         select: { id: true, email: true, name: true, role: true },
       });

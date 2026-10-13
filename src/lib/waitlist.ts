@@ -2,6 +2,7 @@ import { appUrl } from "./appUrl";
 import { db } from "./db";
 import { getAvailableSlots } from "./booking";
 import { sendMail } from "./mail";
+import { unsubscribePostUrl, unsubscribeUrl } from "./unsubscribe";
 import { TIME_ZONE, formatDateSr, isValidDateIso, todayIso } from "./time";
 import { resolveVisit } from "./visit";
 
@@ -43,7 +44,7 @@ export async function notifyWaitlist(salonId: string, dateIso: string): Promise<
     const entries = await db.waitlistEntry.findMany({
       where: { salonId, date: new Date(`${dateIso}T00:00:00Z`), notifiedAt: null },
       include: {
-        client: { select: { name: true, email: true } },
+        client: { select: { name: true, email: true, emailOptOut: true } },
         service: { select: { name: true } },
         salon: { select: { name: true, slug: true } },
       },
@@ -51,7 +52,7 @@ export async function notifyWaitlist(salonId: string, dateIso: string): Promise<
     });
     const baseUrl = appUrl();
     for (const e of entries) {
-      if (!e.client.email) continue;
+      if (!e.client.email || e.client.emailOptOut) continue;
       const serviceIds = e.serviceIds.length > 0 ? e.serviceIds : [e.serviceId];
       const slots = await getAvailableSlots({ salonId, serviceIds, dateIso, enforceLeadTime: true });
       if (slots.length === 0) continue;
@@ -69,6 +70,7 @@ export async function notifyWaitlist(salonId: string, dateIso: string): Promise<
           "",
           "mojfrizer.com",
         ].join("\n"),
+        unsubscribe: { pageUrl: unsubscribeUrl(e.clientId), postUrl: unsubscribePostUrl(e.clientId) },
       }).catch((error: unknown) => console.error(error));
     }
   } catch (error) {
