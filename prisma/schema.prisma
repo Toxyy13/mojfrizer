@@ -17,6 +17,12 @@ enum Role {
   DEVELOPER // platform operator (the seller of the product): creates salons, sees platform statistics
 }
 
+// PUBLIC: anyone can find and open the salon. PRIVATE: only people connected to it (staff, developer, or customers who scanned its QR).
+enum SalonVisibility {
+  PUBLIC
+  PRIVATE
+}
+
 enum AppointmentStatus {
   BOOKED
   COMPLETED
@@ -63,6 +69,7 @@ model User {
   createdAt      DateTime @default(now())
 
   ownedSalons         Salon[]         @relation("SalonOwner")
+  salonMemberships    SalonMembership[]
   workerProfiles      WorkerProfile[]
   clientAppointments  Appointment[]   @relation("ClientAppointments")
   urgentRequests      UrgentRequest[]
@@ -92,6 +99,9 @@ model Salon {
   // Extra charge per visit for an urgent appointment, in para (0 = none). Set by the owner.
   urgentSurcharge Int @default(0)
   isActive    Boolean  @default(true)
+  visibility  SalonVisibility @default(PUBLIC)
+  // Secret in the QR poster link (/q/{token}); the owner can replace it, which invalidates printed posters.
+  qrToken     String   @unique @default(dbgenerated("replace(((gen_random_uuid())::text || (gen_random_uuid())::text), '-'::text, ''::text)"))
   ownerId     String
   owner       User     @relation("SalonOwner", fields: [ownerId], references: [id])
   createdAt   DateTime @default(now())
@@ -103,6 +113,7 @@ model Salon {
   appointments Appointment[]
   chatMessages ChatMessage[]
   favoritedBy  User[]          @relation("FavoriteSalon")
+  members      SalonMembership[]
   urgentRequests UrgentRequest[]
   serviceCombos  ServiceCombo[]
   clientNotes  SalonClientNote[]
@@ -418,4 +429,17 @@ model AssistantUse {
   @@index([salonId, createdAt])
   @@index([createdAt])
   @@map("assistant_uses")
+}
+
+// A customer who scanned a salon's QR code: lets them open that salon even when it is private.
+model SalonMembership {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  salonId   String
+  salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, salonId])
+  @@index([salonId])
+  @@map("salon_memberships")
 }

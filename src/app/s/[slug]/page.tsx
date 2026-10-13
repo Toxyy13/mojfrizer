@@ -13,6 +13,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StickyBookBar } from "@/components/StickyBookBar";
 import { getSessionUser } from "@/lib/auth";
+import { canViewSalon, findViewableSalon } from "@/lib/salonVisibility";
 import { formatRating, getSalonRating, ratingCountLabel } from "@/lib/reviews";
 import { formatPhone } from "@/lib/phone";
 import { bookOnline, joinSalonWaitlist, requestUrgent } from "./actions";
@@ -40,7 +41,9 @@ async function loadSalon(slug: string) {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const salon = await db.salon.findFirst({ where: { slug, isActive: true }, select: { name: true, city: true } });
+  // findViewableSalon hides private salons from visitors who aren't connected to them (no meta tags leak).
+  const viewable = await findViewableSalon(slug);
+  const salon = viewable ? await db.salon.findUnique({ where: { id: viewable.id }, select: { name: true, city: true } }) : null;
   return salon ? { title: `${salon.name} · zakažite termin`, description: `${salon.name}, ${salon.city}` } : {};
 }
 
@@ -50,13 +53,13 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
   const preselect = (await searchParams) ?? {};
   const salon = await loadSalon(slug);
-  if (!salon) notFound();
+  const session = await getSessionUser();
+  if (!salon || !(await canViewSalon(salon.id, session))) notFound();
 
   const [rating, reviews] = await Promise.all([
     getSalonRating(salon.id),
     db.review.findMany({ where: { salonId: salon.id }, orderBy: { createdAt: "desc" }, take: 6 }),
   ]);
-  const session = await getSessionUser();
   const customer = session
     ? await db.user.findUnique({ where: { id: session.id }, select: { name: true, phone: true, favoriteSalonId: true } })
     : null;

@@ -13,6 +13,7 @@ import {
   removeDayOff,
   removeServiceCombo,
   saveSalonInfo,
+  saveVisibility,
   saveService,
   saveServiceCombo,
   saveWorker,
@@ -74,6 +75,7 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
           ["#radnici", "Radnici"],
           ["#odsustva", "Odsustva radnika"],
           ["#salon", "Podaci o salonu"],
+          ["#vidljivost", "Javni ili privatni salon"],
         ].map(([href, label]) => (
           <a key={href} href={href} className="btn-ghost btn-sm shrink-0 justify-start">
             {label}
@@ -346,6 +348,37 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
           </label>
           <div className="md:col-span-2">
             <button className={BUTTON}>Sačuvaj podatke</button>
+          </div>
+        </form>
+      </Section>
+
+      <Section
+        id="vidljivost"
+        title="Javni ili privatni salon"
+        hint="Odlučuje ko sme da vidi i otvori vaš salon na platformi."
+      >
+        <form action={saveVisibility.bind(null, salon.slug)} className="grid gap-3">
+          <label className="card flex cursor-pointer items-start gap-3 p-4">
+            <input type="radio" name="visibility" value="PUBLIC" defaultChecked={salon.visibility === "PUBLIC"} className="mt-1" />
+            <span>
+              <span className="block font-medium">Javni salon</span>
+              <span className="block text-sm text-muted">
+                Svako ga može pronaći u pretrazi i otvoriti, i zakazati termin. Preporučeno za većinu salona.
+              </span>
+            </span>
+          </label>
+          <label className="card flex cursor-pointer items-start gap-3 p-4">
+            <input type="radio" name="visibility" value="PRIVATE" defaultChecked={salon.visibility === "PRIVATE"} className="mt-1" />
+            <span>
+              <span className="block font-medium">Privatni salon</span>
+              <span className="block text-sm text-muted">
+                Ne pojavljuje se u pretrazi ni na spisku salona. Vide ga samo ulogovane mušterije koje su skenirale
+                vaš QR kod (stranica „QR kod”) i vaše osoblje. Ostali dobijaju poruku da stranica ne postoji.
+              </span>
+            </span>
+          </label>
+          <div>
+            <button className={BUTTON}>Sačuvaj</button>
           </div>
         </form>
       </Section>

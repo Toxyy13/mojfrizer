@@ -10,6 +10,7 @@ import { consumeToken } from "@/lib/emailTokens";
 import { db } from "@/lib/db";
 import { TERMS_VERSION } from "@/lib/company";
 import { safeNextPath } from "@/lib/landing";
+import { canViewSalon } from "@/lib/salonVisibility";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import type { FormState } from "../prijava/actions";
 
@@ -65,7 +66,7 @@ export async function setFavoriteSalon(formData: FormData): Promise<void> {
   try {
     if (salonId) {
       const salon = await db.salon.findFirst({ where: { id: salonId, isActive: true }, select: { id: true } });
-      if (!salon) return;
+      if (!salon || !(await canViewSalon(salon.id, user))) return;
     }
     await db.user.update({ where: { id: user.id }, data: { favoriteSalonId: salonId || null } });
   } catch (error) {
