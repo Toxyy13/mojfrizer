@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
-import type { AppointmentStatus } from "@prisma/client";
+import type { AppointmentStatus, BookingSource } from "@prisma/client";
 import { Avatar } from "@/components/Avatar";
 import { avatarUrl } from "@/lib/avatar";
 import { FavoriteButton } from "@/components/FavoriteButton";
@@ -45,6 +45,7 @@ interface BookingRow {
   startTime: Date;
   endTime: Date;
   status: AppointmentStatus;
+  source: BookingSource;
   price: number;
   manageToken: string;
   review: { id: string } | null;
@@ -149,6 +150,7 @@ export default async function AccountPage() {
           startTime: true,
           endTime: true,
           status: true,
+          source: true,
           price: true,
           manageToken: true,
           review: { select: { id: true } },

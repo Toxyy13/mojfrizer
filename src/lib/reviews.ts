@@ -9,8 +9,9 @@ export interface SalonRating {
   count: number;
 }
 
-export function canReview(a: { status: string; startTime: Date }, now = new Date()): boolean {
-  return a.status === "COMPLETED" && now.getTime() - a.startTime.getTime() <= REVIEW_WINDOW_DAYS * 86_400_000;
+/** Only visits the customer booked online themselves count; bookings entered by the salon cannot be rated. */
+export function canReview(a: { status: string; startTime: Date; source: string }, now = new Date()): boolean {
+  return a.source === "ONLINE" && a.status === "COMPLETED" && now.getTime() - a.startTime.getTime() <= REVIEW_WINDOW_DAYS * 86_400_000;
 }
 
 /** "Milica Petrović" -> "Milica P." */
@@ -32,6 +33,7 @@ export async function submitReview(token: string, rating: number, comment: strin
       salonId: true,
       status: true,
       startTime: true,
+      source: true,
       clientId: true,
       guestName: true,
       client: { select: { name: true } },
@@ -40,7 +42,14 @@ export async function submitReview(token: string, rating: number, comment: strin
   });
   if (!a) return { ok: false, error: "Termin nije pronađen." };
   if (a.review) return { ok: false, error: "Već ste ocenili ovaj dolazak." };
-  if (!canReview(a)) return { ok: false, error: "Ocena je moguća do 30 dana posle završenog termina." };
+  if (!canReview(a)) return { ok: false, error: "Ocena je moguća do 30 dana posle završenog termina koji ste sami zakazali." };
+  // The salon's own owner and staff cannot rate their salon, even through a booking made online.
+  if (a.clientId) {
+    const isStaff = await systemDb.salon.count({
+      where: { id: a.salonId, OR: [{ ownerId: a.clientId }, { workers: { some: { userId: a.clientId } } }] },
+    });
+    if (isStaff > 0) return { ok: false, error: "Zaposleni u salonu ne mogu da ocenjuju svoj salon." };
+  }
   await systemDb.review.create({
     data: {
       salonId: a.salonId,
