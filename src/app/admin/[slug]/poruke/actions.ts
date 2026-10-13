@@ -1,13 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireSalonAccess } from "@/lib/access";
+import { requireSalonOwner } from "@/lib/access";
 import { addMessage, messageSchema } from "@/lib/chat";
 import { db } from "@/lib/db";
 
 /** Salon staff answer a customer. */
 export async function sendToClient(slug: string, clientId: string, formData: FormData): Promise<void> {
-  const { salon, user } = await requireSalonAccess(slug);
+  const { salon, user } = await requireSalonOwner(slug);
   const parsed = messageSchema.safeParse({ text: String(formData.get("text") ?? "") });
   if (!parsed.success) return;
   try {

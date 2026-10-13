@@ -3,7 +3,7 @@ import { AdminShell } from "@/components/AdminShell";
 import { notFound } from "next/navigation";
 import type { AppointmentStatus } from "@prisma/client";
 import { db } from "@/lib/db";
-import { requireSalonAccess } from "@/lib/access";
+import { requireSalonOwner } from "@/lib/access";
 import { appointmentIdsForClient, displayPhone, isValidClientKey, listSalonClients, shortDate } from "@/lib/clients";
 import { formatRsd } from "@/lib/money";
 import { TIME_ZONE, formatLocalTime } from "@/lib/time";
@@ -27,7 +27,7 @@ const STATUS_LABEL: Record<AppointmentStatus, string> = {
 export default async function ClientPage({ params, searchParams }: PageProps) {
   const { slug, key: rawKey } = await params;
   const key = decodeURIComponent(rawKey);
-  const { salon, user } = await requireSalonAccess(slug);
+  const { salon, user } = await requireSalonOwner(slug);
   if (!isValidClientKey(key)) notFound();
   const [client] = await listSalonClients(salon.id, "", key);
   if (!client) notFound();
