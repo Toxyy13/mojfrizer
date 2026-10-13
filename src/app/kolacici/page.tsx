@@ -54,6 +54,10 @@ export default function CookiesPage() {
         link „Uputstva do salona”. Mapu možete jednokratno prikazati i bez dozvole.
       </p>
 
+      <p>
+        Praćenje grešaka (Sentry) radi samo na našem serveru i ne postavlja kolačiće ni skripte u vašem pregledaču.
+      </p>
+
       <h2>Vaš izbor</h2>
       <ConsentSettings />
       <p>

@@ -25,3 +25,10 @@ Kada te korisnik zamoli da generišeš bazu, obavezno napravi sledeće modele i 
 - `Service` (id, name, price, duration, salonId)
 - `Appointment` (id, clientId, workerId, serviceId, salonId, startTime, endTime, status)
 - `ChatMessage` (id, text, senderId, salonId, createdAt)
+
+## 5. KEŠIRANJE I PREUZIMANJA
+- Sve stranice sa podacima o prijavljenom korisniku, salonu ili terminu su `force-dynamic` i idu sa `Cache-Control: private, no-store`. Ništa lično ni privatno se ne kešira na CDN-u ni deli između korisnika.
+- Statične stranice (uslovi, privatnost, kolačići, povraćaj, licence, o nama) su prerenderovane i služe se sa CDN-a. Zato koriste `SiteHeader generic` (bez čitanja sesije). Stranica koja prikazuje lične podatke mora imati `<LegalPage personal>`.
+- Slobodni termini (`/api/salons/[slug]/slots`) su uvek `no-store`: zavise od svakog novog termina i od toga ko pita (privatni saloni, režim osoblja).
+- Javna stranica salona i početna zavise od sesije (prijava, omiljeni, privatni saloni), pa se ne mogu keširati javno. Upiti se dele samo unutar jednog zahteva (`react cache`).
+- Preuzimanja: `.ics` termina (`/termin/[token]/kalendar.ics`, `private, no-store`, tajni link), izvoz podataka (`/api/account/export`, `private, no-store`), QR plakat (`/admin/[slug]/qr/slika?format=png|svg&v=<otisak tokena>`, generiše se na zahtev, `private, max-age=1 godina, immutable` jer se `v` menja kad se token obnovi). Slika profila: `?v=` je vreme izmene, pa je `immutable`.

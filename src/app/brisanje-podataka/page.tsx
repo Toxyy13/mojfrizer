@@ -21,6 +21,7 @@ export default async function DataPage() {
     <LegalPage
       eyebrow="Vaša prava"
       title="Moji podaci i brisanje"
+      personal
       intro="Svoje podatke možete preuzeti, ispraviti i trajno obrisati, bez obrazloženja i bez čekanja."
     >
       {user ? (

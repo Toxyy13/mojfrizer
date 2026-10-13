@@ -1,7 +1,7 @@
-import QRCode from "qrcode";
 import { AdminShell } from "@/components/AdminShell";
 import { requireSalonOwner } from "@/lib/access";
 import { appUrl } from "@/lib/appUrl";
+import { qrVersion } from "@/lib/qrVersion";
 import { fullAddress } from "@/lib/salonAddress";
 import { PrintButton } from "./PrintButton";
 import { regenerateQrToken } from "./actions";
@@ -15,9 +15,9 @@ export default async function SalonQrPage({ params, searchParams }: { params: Pr
   const { salon, user } = await requireSalonOwner(slug);
   // The poster opens /q/{token}: it connects a logged-in customer to the salon and makes it their favorite.
   const url = `${appUrl()}/q/${salon.qrToken}`;
-  const svg = await QRCode.toString(url, { type: "svg", margin: 0, errorCorrectionLevel: "M", color: { dark: "#1f1d1b", light: "#ffffff" } });
-  const svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-  const pngDataUrl = await QRCode.toDataURL(url, { width: 1200, margin: 2, errorCorrectionLevel: "M" });
+  // Images come from ./slika (generated on request, cached by token version) instead of being inlined in the page.
+  const imageBase = `/admin/${salon.slug}/qr/slika?v=${qrVersion(salon.qrToken)}`;
+  const svgUrl = `${imageBase}&format=svg`;
 
   return (
     <AdminShell salon={salon} user={user} active="qr">
@@ -27,10 +27,10 @@ export default async function SalonQrPage({ params, searchParams }: { params: Pr
 
       <div className="mt-8 flex flex-wrap gap-3 print:hidden">
         <PrintButton />
-        <a href={pngDataUrl} download={`qr-${salon.slug}.png`} className="btn-secondary">
+        <a href={`${imageBase}&format=png&preuzmi=1`} download className="btn-secondary">
           Preuzmi sliku (PNG)
         </a>
-        <a href={svgDataUrl} download={`qr-${salon.slug}.svg`} className="btn-secondary">
+        <a href={`${imageBase}&format=svg&preuzmi=1`} download className="btn-secondary">
           Preuzmi za štampariju (SVG)
         </a>
       </div>
@@ -44,8 +44,8 @@ export default async function SalonQrPage({ params, searchParams }: { params: Pr
       <article className="card mx-auto mt-10 grid max-w-md justify-items-center gap-6 p-10 text-center print:mt-0 print:border-0">
         <p className="eyebrow">Zakažite online, 0–24h</p>
         <h2 className="font-serif text-4xl leading-tight">{salon.name}</h2>
-        {/* eslint-disable-next-line @next/next/no-img-element -- generated data URL, nothing to optimize */}
-        <img src={svgDataUrl} alt={`QR kod za ${url}`} className="aspect-square w-64" />
+        {/* eslint-disable-next-line @next/next/no-img-element -- generated image, nothing to optimize */}
+        <img src={svgUrl} alt={`QR kod za ${url}`} className="aspect-square w-64" />
         <p className="text-sm">
           Skenirajte kamerom telefona
           <span className="mt-1 block font-mono text-xs text-muted">{appUrl().replace(/^https?:\/\//, "")}</span>

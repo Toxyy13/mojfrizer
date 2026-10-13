@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { Prisma, Role } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import * as Sentry from "@sentry/nextjs";
 import { z } from "zod";
 import { sendResetMail, sendVerificationMail } from "@/lib/accountMail";
 import { hashPassword } from "@/lib/auth";
@@ -102,4 +103,13 @@ export async function sendOwnerResetLink(formData: FormData): Promise<void> {
   if (!salon) redirect("/razvoj");
   if (salon.owner.email) await sendResetMail(salon.owner.email);
   redirect(`/razvoj/saloni/${salon.slug}?ok=${encodeURIComponent("Link za novu lozinku je poslat vlasniku.")}`);
+}
+
+/** Sends one harmless test error so the developer can check that Sentry receives events (/razvoj → Praćenje grešaka). */
+export async function sendSentryTestError(): Promise<void> {
+  await requireDeveloper();
+  if (!process.env.SENTRY_DSN) return;
+  Sentry.captureException(new Error("mojfrizer: probna greška iz /razvoj"));
+  await Sentry.flush(2000);
+  redirect("/razvoj?sentry=poslato");
 }
