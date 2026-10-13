@@ -67,7 +67,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   try {
     const { payload } = await jwtVerify(token, secretKey());
     if (typeof payload.sub !== "string") return null;
-    const role = payload.role === "ADMIN" || payload.role === "WORKER" ? payload.role : "CLIENT";
+    const role = payload.role === "ADMIN" || payload.role === "WORKER" || payload.role === "DEVELOPER" ? payload.role : "CLIENT";
     const email = typeof payload.email === "string" ? payload.email : null;
     return { id: payload.sub, email, name: String(payload.name), role };
   } catch {

@@ -1,12 +1,12 @@
 import { Prisma, Role } from "@prisma/client";
 import { db } from "./db";
 
-// Self-service salon sign-up: the owner creates the salon, then fills in prices and hours in Podešavanja.
+// Salon creation. Only the platform developer creates salons (src/app/razvoj); the owner then fills in prices and hours in Podešavanja.
 
 // Path segments and subdomains a salon slug must not take.
 const RESERVED_SLUGS = new Set([
   "admin", "api", "app", "www", "mail", "s", "prijava", "registracija", "registracija-salona", "nalog", "poruke",
-  "termin", "zaboravljena-lozinka", "nova-lozinka", "potvrda-emaila", "mojfrizer", "podrska", "blog", "pomoc",
+  "razvoj", "termin", "zaboravljena-lozinka", "nova-lozinka", "potvrda-emaila", "mojfrizer", "podrska", "blog", "pomoc",
 ]);
 
 const TRANSLIT: Record<string, string> = { š: "s", đ: "dj", č: "c", ć: "c", ž: "z" };

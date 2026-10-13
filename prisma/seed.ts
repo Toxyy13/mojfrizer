@@ -2,6 +2,7 @@
 // Values marked PLACEHOLDER must be replaced with the salon's real data.
 import { PrismaClient, Role, BookingSource } from "@prisma/client";
 import { hash } from "bcryptjs";
+import { ensureDeveloper } from "./seedDeveloper";
 
 const prisma = new PrismaClient();
 
@@ -62,6 +63,7 @@ function ownerPassword(): string {
 }
 
 async function main(): Promise<void> {
+  console.log(`Developer account: ${await ensureDeveloper(prisma, process.env)}`);
   const ownerEmail = process.env.SEED_OWNER_EMAIL || "olgica@mojfrizer.com";
   const existingOwner = await prisma.user.findUnique({ where: { email: ownerEmail }, select: { id: true } });
   // Only hash (and require) a password when the owner account is actually created.

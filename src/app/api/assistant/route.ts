@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { answerQuestion, assistantRequestSchema } from "@/lib/assistant";
+import { answerQuestion, assistantRequestSchema, recordAssistantUse } from "@/lib/assistant";
 
 // Simple per-instance limit so one visitor can't run up the AI bill.
 const WINDOW_MS = 10 * 60_000;
@@ -30,6 +30,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Assistant
 
     const result = await answerQuestion(parsed.data);
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+    await recordAssistantUse(parsed.data.slug);
     return NextResponse.json({ reply: result.reply });
   } catch (error) {
     console.error(error);

@@ -261,3 +261,13 @@ export async function answerQuestion(request: AssistantRequest): Promise<Assista
     return { ok: false, status: 502, error: "Asistent trenutno ne radi. Pozovite salon ili pošaljite poruku." };
   }
 }
+
+/** Counts one answered question for the developer's usage statistics. Never fails the answer. */
+export async function recordAssistantUse(slug: string | null | undefined): Promise<void> {
+  try {
+    const salon = slug ? await db.salon.findUnique({ where: { slug }, select: { id: true } }) : null;
+    await db.assistantUse.create({ data: { salonId: salon?.id ?? null } });
+  } catch (error) {
+    console.error("assistant usage log failed", error);
+  }
+}
