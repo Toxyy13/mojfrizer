@@ -39,15 +39,16 @@ export async function saveSalonInfo(slug: string, formData: FormData): Promise<v
     phone: formData.get("phone") ?? "",
     slotStepMinutes: formData.get("slotStepMinutes") ?? "",
     cancelCutoffHours: formData.get("cancelCutoffHours") ?? "",
+    urgentSurchargeRsd: formData.get("urgentSurchargeRsd") || 0,
   });
   if (!parsed.success) back(slug, "salon", { error: parsed.error.issues[0]?.message ?? "Neispravni podaci" });
-  const { phone: rawPhone, description, ...rest } = parsed.data;
+  const { phone: rawPhone, description, urgentSurchargeRsd, ...rest } = parsed.data;
   const phone = rawPhone ? normalizePhone(rawPhone) : null;
   if (rawPhone && !phone) back(slug, "salon", { error: "Broj telefona nije ispravan, npr. 018 123 456." });
   try {
     await db.salon.update({
       where: { id: salon.id },
-      data: { ...rest, description: description || null, phone: phone ? formatPhone(phone) : null },
+      data: { ...rest, urgentSurcharge: rsdToPara(urgentSurchargeRsd), description: description || null, phone: phone ? formatPhone(phone) : null },
     });
   } catch (error) {
     console.error(error);

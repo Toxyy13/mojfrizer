@@ -12,6 +12,9 @@ export interface UrgentRequestView {
   dateIso: string;
   dateLabel: string;
   reason: string;
+  // Extra the customer was told they pay for an urgent visit, formatted (empty = none).
+  surchargeLabel: string;
+  totalLabel: string;
   // Booked appointments that day which could give up their slot.
   candidates: Array<{ id: string; label: string }>;
 }
@@ -67,6 +70,11 @@ function RequestCard({
       <p className="text-sm text-muted">
         {request.serviceName} · {request.durationMinutes} min
       </p>
+      {request.surchargeLabel && (
+        <p className="mt-1 text-sm font-medium text-burgundy">
+          Hitna doplata {request.surchargeLabel} · ukupno {request.totalLabel}
+        </p>
+      )}
       <p className="mt-3 rounded-lg bg-cream px-3 py-2 text-sm text-muted">„{request.reason}”</p>
 
       {request.candidates.length > 0 ? (

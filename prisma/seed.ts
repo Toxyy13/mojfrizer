@@ -94,6 +94,7 @@ async function main(): Promise<void> {
       address: "Nikole Pašića 27, 18000 Niš",
       phone: "+381 60 000 0000", // PLACEHOLDER
       ownerId: owner.id,
+      urgentSurcharge: 20000, // urgent appointments cost 200 RSD more
       // Mon-Sat 09-19, Sunday closed.
       workingHours: {
         create: [1, 2, 3, 4, 5, 6].map((dayOfWeek) => ({ dayOfWeek, opensAt: hm(9), closesAt: hm(19) })),

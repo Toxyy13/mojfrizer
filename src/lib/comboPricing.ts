@@ -55,6 +55,8 @@ export async function applyComboPricing(tx: Prisma.TransactionClient, appointmen
       if (price !== item.price) await tx.appointmentService.update({ where: { id: item.id }, data: { price } });
       total += price;
     }
+    // An urgent surcharge is part of the appointment's price but not of any service's.
+    total += appt.urgentSurcharge;
     if (appt.services.length > 0 && total !== appt.price) {
       await tx.appointment.update({ where: { id: appt.id }, data: { price: total } });
     }

@@ -86,6 +86,7 @@ export const salonInfoSchema = z.object({
   phone: z.string().trim().max(30),
   slotStepMinutes: z.coerce.number().int().refine((v) => [5, 10, 15, 20, 30, 60].includes(v), "Neispravan korak"),
   cancelCutoffHours: z.coerce.number().int().min(0).max(72),
+  urgentSurchargeRsd: z.coerce.number().min(0, "Doplata ne može biti negativna").max(100000, "Doplata je prevelika"),
 });
 
 export const dayOffSchema = z.object({

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import type React from "react";
 import type { BookingResult } from "@/lib/booking";
 import type { SlotsResponse } from "@/app/api/salons/[slug]/slots/route";
-import { formatPrice } from "@/lib/money";
+import { formatPrice, formatRsd } from "@/lib/money";
 
 export interface BookingService {
   id: string;
@@ -59,6 +59,8 @@ interface BookingFormProps {
   initialClient?: { name: string; phone: string };
   // When set, a fully booked day offers an urgent request the salon reviews by hand.
   requestUrgent?: (values: UrgentFormValues) => Promise<UrgentResult>;
+  // Extra charge for an urgent appointment, in para (0 = none); shown before the request is sent.
+  urgentSurcharge?: number;
   // When set, a fully booked day lets a logged-in customer wait for a freed slot (error "login" = not logged in).
   joinWaitlist?: (serviceIds: string[], dateIso: string) => Promise<UrgentResult>;
   /** Preselects services and a hairdresser, e.g. for "book again". Ignored when not offered. */
@@ -112,6 +114,7 @@ export function BookingForm({
   submit,
   initialClient,
   requestUrgent,
+  urgentSurcharge = 0,
   joinWaitlist,
   initialServiceIds,
   initialWorkerId,
@@ -235,6 +238,11 @@ export function BookingForm({
         <p className="mt-2 text-muted">
           Salon će pokušati da nađe zamenu sa nekim od zakazanih mušterija i pozvaće vas na {clientPhone}.
         </p>
+        {urgentSurcharge > 0 && (
+          <p className="mt-2 text-sm text-muted">
+            Hitan termin je skuplji za {formatRsd(urgentSurcharge)} po poseti, na cenu usluga.
+          </p>
+        )}
         <button type="button" onClick={reset} className="btn-secondary mt-8">
           Nazad na zakazivanje
         </button>
@@ -405,6 +413,13 @@ export function BookingForm({
           {urgent && (
             <div className="grid gap-3 rounded-xl border border-burgundy/25 bg-burgundy-soft/50 p-4">
               <p className="text-sm font-medium text-burgundy">Hitan zahtev</p>
+              <p className="text-sm text-burgundy/90">
+                {urgentSurcharge > 0
+                  ? `Hitni termini su skuplji: na cenu izabranih usluga dodaje se ${formatRsd(urgentSurcharge)} po poseti${
+                      hasService ? ` (ukupno ${formatRsd(summary.price + urgentSurcharge)})` : ""
+                    }. Salon vas poziva da potvrdi termin.`
+                  : "Salon vas poziva da potvrdi termin."}
+              </p>
               <label className="block">
                 <span className="field-label">Zašto vam je hitno?</span>
                 <textarea

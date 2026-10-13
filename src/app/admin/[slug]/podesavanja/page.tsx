@@ -328,6 +328,22 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
               ))}
             </select>
           </label>
+          <label className="md:col-span-2">
+            <span className={LABEL}>Doplata za hitne termine (RSD)</span>
+            <input
+              name="urgentSurchargeRsd"
+              type="number"
+              min={0}
+              max={100000}
+              step={10}
+              defaultValue={salon.urgentSurcharge / 100}
+              className={INPUT}
+            />
+            <span className="mt-1 block text-xs text-muted">
+              Hitan termin je skuplji za ovaj iznos po poseti, na cenu izabranih usluga. Mušterija to vidi pre slanja
+              zahteva. 0 = bez doplate.
+            </span>
+          </label>
           <div className="md:col-span-2">
             <button className={BUTTON}>Sačuvaj podatke</button>
           </div>

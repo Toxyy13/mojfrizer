@@ -89,6 +89,8 @@ model Salon {
   slotStepMinutes Int  @default(15)
   // Customers can cancel or move a booking online until this many hours before it starts.
   cancelCutoffHours Int @default(2)
+  // Extra charge per visit for an urgent appointment, in para (0 = none). Set by the owner.
+  urgentSurcharge Int @default(0)
   isActive    Boolean  @default(true)
   ownerId     String
   owner       User     @relation("SalonOwner", fields: [ownerId], references: [id])
@@ -208,6 +210,8 @@ model Appointment {
   manageToken String @unique @default(dbgenerated("replace((gen_random_uuid())::text, '-'::text, ''::text)"))
   // Price snapshot at booking time, in para. Revenue is summed from this.
   price     Int
+  // Part of `price` that is an urgent-appointment surcharge, in para.
+  urgentSurcharge Int @default(0)
   note      String?
   createdAt DateTime          @default(now())
   urgentRequest UrgentRequest?
@@ -235,6 +239,8 @@ model UrgentRequest {
   guestPhone    String
   date          DateTime            @db.Date
   reason        String
+  // Surcharge the customer was shown when sending the request, in para.
+  surcharge     Int                 @default(0)
   status        UrgentRequestStatus @default(PENDING)
   // Appointment created for this customer when the owner arranged a swap.
   appointmentId String?             @unique
