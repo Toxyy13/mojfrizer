@@ -148,7 +148,7 @@ async function insertAppointment(salonId: string, input: BookingInput, actor: Bo
 
   for (const workerId of slot.workerIds) {
     try {
-      const created = await db.$transaction(
+      const created = await withSerializationRetry(() => db.$transaction(
         async (tx) => {
           const overlap = await tx.appointment.count({
             where: {
@@ -182,7 +182,7 @@ async function insertAppointment(salonId: string, input: BookingInput, actor: Bo
           });
         },
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-      );
+      ));
       if (created) {
         // Separate step so a pricing update never makes the slot look taken.
         await db.$transaction((tx) => applyComboPricing(tx, created.id));
@@ -199,6 +199,21 @@ async function insertAppointment(salonId: string, input: BookingInput, actor: Bo
     }
   }
   return { ok: false, error: "Termin je upravo zauzet. Izaberite drugi." };
+}
+
+/**
+ * Serializable transactions can be aborted (P2034) just because another one ran at the same moment, even for
+ * another salon. Trying again re-checks the overlap, so a real double booking still ends as "taken".
+ */
+export async function withSerializationRetry<T>(run: () => Promise<T>, attempts = 4): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await run();
+    } catch (error) {
+      const serialization = error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034";
+      if (!serialization || attempt >= attempts) throw error;
+    }
+  }
 }
 
 function isConflictError(error: unknown): boolean {
