@@ -218,6 +218,8 @@ model Appointment {
   status    AppointmentStatus @default(BOOKED)
   // Set when the email reminder has been sent, so it goes out only once.
   reminderSentAt DateTime?
+  // Set when the "rate your visit" email has been sent, so it goes out only once.
+  reviewRequestSentAt DateTime?
   // Secret for the customer's "manage booking" link (cancel, move, add to calendar). Works for guests too.
   manageToken String @unique @default(dbgenerated("replace((gen_random_uuid())::text, '-'::text, ''::text)"))
   // Price snapshot at booking time, in para. Revenue is summed from this.

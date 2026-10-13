@@ -26,13 +26,13 @@ export default async function UnsubscribePage({ searchParams }: PageProps) {
       {!valid && <p className="alert-error">Link nije ispravan. Mejlove možete isključiti i u svom nalogu, na stranici „Moji podaci”.</p>}
       {valid && potvrda && (
         <p className="text-sm">
-          Gotovo. Više vam ne šaljemo podsetnike za termine ni obaveštenja sa liste čekanja. Mejlove o nalogu (potvrda emaila, nova
+          Gotovo. Više vam ne šaljemo podsetnike za termine ni obaveštenja sa liste čekanja ni zamolbe za ocenu. Mejlove o nalogu (potvrda emaila, nova
           lozinka) i dalje šaljemo kada ih sami zatražite. Možete ih ponovo uključiti u nalogu.
         </p>
       )}
       {valid && !potvrda && (
         <form action={confirm} className="grid gap-4">
-          <p className="text-sm">Da li želite da prestanete da dobijate podsetnike za termine i obaveštenja sa liste čekanja?</p>
+          <p className="text-sm">Da li želite da prestanete da dobijate podsetnike za termine, obaveštenja sa liste čekanja i zamolbe za ocenu?</p>
           <button className="btn-primary w-full">Da, odjavi me</button>
           <Link href="/" className="btn-ghost w-full">
             Ne, ostavi kako jeste

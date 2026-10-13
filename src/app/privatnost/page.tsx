@@ -83,8 +83,8 @@ export default function PrivacyPage() {
             <td>Dok salon ne obriše belešku ili ne prestane da koristi platformu</td>
           </tr>
           <tr>
-            <td>Email adresa za podsetnike i obaveštenja sa liste čekanja</td>
-            <td>Podsetnik pre termina</td>
+            <td>Email adresa za podsetnike, obaveštenja sa liste čekanja i jednu zamolbu za ocenu posle posete</td>
+            <td>Podsetnik pre termina i zamolba za ocenu</td>
             <td>Izvršenje ugovora; možete se odjaviti jednim klikom</td>
             <td>Dok postoji nalog</td>
           </tr>

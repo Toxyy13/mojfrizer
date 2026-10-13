@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { sendDueReminders } from "@/lib/reminders";
+import { sendReviewRequests } from "@/lib/reviewRequests";
 import { purgeExpiredData } from "@/lib/retention";
 
 export const dynamic = "force-dynamic";
@@ -18,12 +19,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (!isAuthorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const reminders = await sendDueReminders();
+    const reviewRequests = await sendReviewRequests().catch((error: unknown) => {
+      console.error(error);
+      return null;
+    });
     // Same schedule also enforces the data retention periods from the privacy policy.
     const purged = await purgeExpiredData().catch((error: unknown) => {
       console.error(error);
       return null;
     });
-    return NextResponse.json({ ...reminders, purged });
+    return NextResponse.json({ ...reminders, reviewRequests, purged });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Reminder run failed" }, { status: 500 });

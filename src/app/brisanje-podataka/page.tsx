@@ -37,7 +37,7 @@ export default async function DataPage() {
           <h2>Mejlovi</h2>
           <form action={setEmailOptOut} className="card flex flex-wrap items-center justify-between gap-3 p-5">
             <p className="text-sm">
-              Podsetnici za termine i obaveštenja sa liste čekanja: <strong>{user.emailOptOut ? "isključeni" : "uključeni"}</strong>.
+              Podsetnici za termine, obaveštenja sa liste čekanja i zamolbe za ocenu: <strong>{user.emailOptOut ? "isključeni" : "uključeni"}</strong>.
               Svaki takav mejl ima i link za odjavu.
             </p>
             <input type="hidden" name="optOut" value={user.emailOptOut ? "0" : "1"} />
