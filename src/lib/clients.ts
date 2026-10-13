@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { db } from "./db";
+import { db, systemDb } from "./db";
 import { formatPhone, normalizePhone } from "./phone";
 import { TIME_ZONE, formatLocalDateIso } from "./time";
 
@@ -152,7 +152,8 @@ export async function isBlockedOnline(
 ): Promise<boolean> {
   const keys = [clientKeyOf({ ...who, id: "none" })];
   if (who.clientId) keys.push(`u:${who.clientId}`);
-  const count = await db.salonClientNote.count({ where: { salonId, clientKey: { in: keys }, blockedOnline: true } });
+  // Asked on behalf of a visitor, who may not read the salon's private notes: system access (RLS). Answers only yes or no.
+  const count = await systemDb.salonClientNote.count({ where: { salonId, clientKey: { in: keys }, blockedOnline: true } });
   return count > 0;
 }
 

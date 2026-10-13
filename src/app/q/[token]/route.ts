@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { systemDb } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { appUrl } from "@/lib/appUrl";
 import { connectCustomerToSalon } from "@/lib/salonVisibility";
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return response;
   };
   try {
-    const salon = token.length >= 32 ? await db.salon.findFirst({ where: { qrToken: token, isActive: true }, select: { id: true, slug: true } }) : null;
+    const salon = token.length >= 32 ? await systemDb.salon.findFirst({ where: { qrToken: token, isActive: true }, select: { id: true, slug: true } }) : null;
     if (!salon) return new NextResponse("Salon nije pronađen.", { status: 404, headers: { "Cache-Control": "no-store" } });
     const user = await getSessionUser();
     if (!user) return send(`/registracija?next=${encodeURIComponent(`/q/${token}`)}`);

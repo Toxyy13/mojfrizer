@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { systemDb } from "@/lib/db";
 import { getAvailableSlots, type Slot } from "@/lib/booking";
 import { hasSalonAccess } from "@/lib/access";
 import { findViewableSalon } from "@/lib/salonVisibility";
@@ -33,7 +33,8 @@ export async function GET(
     // Moving an existing booking ("token" from the manage link) keeps that booking's length.
     const token = search.get("token");
     if (token) {
-      const appointment = await db.appointment.findFirst({
+      // The secret booking token is the credential here, and a visitor may not read bookings otherwise: system access (RLS).
+      const appointment = await systemDb.appointment.findFirst({
         where: { manageToken: token, salonId: salon.id },
         select: { startTime: true, endTime: true },
       });

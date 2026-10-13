@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { db, systemDb } from "./db";
 
 // Reviews come only from completed visits, through the customer's private booking link.
 
@@ -24,7 +24,8 @@ export type ReviewResult = { ok: true } | { ok: false; error: string };
 
 export async function submitReview(token: string, rating: number, comment: string): Promise<ReviewResult> {
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) return { ok: false, error: "Izaberite ocenu od 1 do 5." };
-  const a = await db.appointment.findUnique({
+  // The booking link is the credential: system access (RLS).
+  const a = await systemDb.appointment.findUnique({
     where: { manageToken: token },
     select: {
       id: true,
@@ -40,7 +41,7 @@ export async function submitReview(token: string, rating: number, comment: strin
   if (!a) return { ok: false, error: "Termin nije pronađen." };
   if (a.review) return { ok: false, error: "Već ste ocenili ovaj dolazak." };
   if (!canReview(a)) return { ok: false, error: "Ocena je moguća do 30 dana posle završenog termina." };
-  await db.review.create({
+  await systemDb.review.create({
     data: {
       salonId: a.salonId,
       appointmentId: a.id,

@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { appUrl } from "./appUrl";
-import { db } from "./db";
+// Everything here is reached through the booking's secret link (or by the booking flow), so it runs with RLS bypass.
+import { systemDb as db } from "./db";
 import { getAvailableSlots } from "./booking";
 import { applyComboPricing } from "./comboPricing";
 import { sendMail } from "./mail";

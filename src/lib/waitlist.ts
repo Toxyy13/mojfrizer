@@ -1,5 +1,5 @@
 import { appUrl } from "./appUrl";
-import { db } from "./db";
+import { db, systemDb } from "./db";
 import { getAvailableSlots } from "./booking";
 import { sendMail } from "./mail";
 import { unsubscribePostUrl, unsubscribeUrl } from "./unsubscribe";
@@ -41,7 +41,8 @@ export async function joinWaitlist(
  */
 export async function notifyWaitlist(salonId: string, dateIso: string): Promise<void> {
   try {
-    const entries = await db.waitlistEntry.findMany({
+    // Runs after a cancellation or from cron, on behalf of other people: system access (RLS).
+    const entries = await systemDb.waitlistEntry.findMany({
       where: { salonId, date: new Date(`${dateIso}T00:00:00Z`), notifiedAt: null },
       include: {
         client: { select: { name: true, email: true, emailOptOut: true } },
@@ -56,7 +57,7 @@ export async function notifyWaitlist(salonId: string, dateIso: string): Promise<
       const serviceIds = e.serviceIds.length > 0 ? e.serviceIds : [e.serviceId];
       const slots = await getAvailableSlots({ salonId, serviceIds, dateIso, enforceLeadTime: true });
       if (slots.length === 0) continue;
-      const claim = await db.waitlistEntry.updateMany({ where: { id: e.id, notifiedAt: null }, data: { notifiedAt: new Date() } });
+      const claim = await systemDb.waitlistEntry.updateMany({ where: { id: e.id, notifiedAt: null }, data: { notifiedAt: new Date() } });
       if (claim.count === 0) continue;
       await sendMail({
         to: e.client.email,

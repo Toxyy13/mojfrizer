@@ -1,4 +1,5 @@
-import { db } from "./db";
+// Trusted internal code (tokens, mail, cron, login): runs with RLS bypass, see src/lib/rls.ts.
+import { systemDb as db } from "./db";
 import { DELETED_NAME } from "./accountDeletion";
 
 // Retention periods promised in the privacy policy (src/app/privatnost/page.tsx).

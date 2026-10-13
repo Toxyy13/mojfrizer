@@ -3,7 +3,8 @@ import { decodeJwt } from "jose";
 import { Prisma, Role } from "@prisma/client";
 import { appUrl } from "./appUrl";
 import { TERMS_VERSION } from "./company";
-import { db } from "./db";
+// Trusted internal code (tokens, mail, cron, login): runs with RLS bypass, see src/lib/rls.ts.
+import { systemDb as db } from "./db";
 import type { SessionUser } from "./auth";
 
 // Endpoints can be overridden in local tests; production uses Google's.

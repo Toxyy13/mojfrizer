@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
+import { db, systemDb } from "@/lib/db";
 import { requireSalonOwner } from "@/lib/access";
 import { rsdToPara } from "@/lib/money";
 import { hashPassword } from "@/lib/auth";
@@ -211,10 +211,11 @@ export async function createWorkerLogin(slug: string, formData: FormData): Promi
   if (worker.userId) back(slug, "radnici", { error: "Ovaj radnik već ima nalog." });
   if (!looksLikeEmail(email)) back(slug, "radnici", { error: "Upišite ispravnu email adresu." });
   if (password.length < 8) back(slug, "radnici", { error: "Lozinka mora imati bar 8 znakova." });
-  if (await db.user.findUnique({ where: { email }, select: { id: true } })) {
+  // Creating a login account (and checking that the email is free) is system work: staff cannot see other users.
+  if (await systemDb.user.findUnique({ where: { email }, select: { id: true } })) {
     back(slug, "radnici", { error: "Ta email adresa se već koristi. Izaberite drugu." });
   }
-  const user = await db.user.create({
+  const user = await systemDb.user.create({
     data: { email, name: worker.displayName, passwordHash: await hashPassword(password), role: "WORKER" },
   });
   await db.workerProfile.update({ where: { id: worker.id }, data: { userId: user.id } });

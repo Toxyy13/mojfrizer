@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { EmailTokenKind } from "@prisma/client";
-import { db } from "./db";
+// Trusted internal code (tokens, mail, cron, login): runs with RLS bypass, see src/lib/rls.ts.
+import { systemDb as db } from "./db";
 
 const LIFETIME_MS: Record<EmailTokenKind, number> = {
   VERIFY_EMAIL: 48 * 3_600_000,

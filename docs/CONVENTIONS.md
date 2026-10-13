@@ -15,3 +15,7 @@ Nemoj generisati celu aplikaciju odjednom jer će kod biti polovičan. Radi uvek
 2. **Drugi korak:** Kreiraj Server Actions/API rute za logiku zakazivanja i proveru preklapanja termina.
 3. **Treći korak:** Napravi čist backend servis za računanje pazara i analitiku.
 4. **Četvrti korak:** Kreiraj frontend komponente prateći striktno `DESIGN.md`.
+
+## Baza i tenant izolacija
+- Svaka nova tabela dobija RLS i politike u istoj migraciji (vidi `docs/ARCHITECTURE.md`, odeljak „Row Level Security”); test `rls.test.ts` pada ako tabela nema uključen RLS.
+- Kod koji u ime posetioca čita ili piše tuđe redove (tajni linkovi, zakazivanje, prijava, cron) koristi `systemDb` ili `runAsSystem`, i to tek posle provere ovlašćenja.

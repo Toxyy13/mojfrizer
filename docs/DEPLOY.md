@@ -41,7 +41,14 @@ Greške servera idu na vaš Sentry nalog; saloni i mušterije ništa ne vide. U 
 6. Sentry → Alerts: ostavi podrazumevano pravilo „nova greška → mejl”.
 Opciono `SENTRY_TRACES_SAMPLE_RATE` (0 do 1, podrazumevano 0 = bez tracing-a).
 
-## 7. Domen
+## 7. Row Level Security (zaštita redova u bazi)
+Migracija `row_level_security` se primeni sama pri sledećem deploy-u i **ne menja ništa dok se ne uključi prekidač**. Ako Neon odbije da napravi ulogu `mojfrizer_app`, migracija ne pada, samo upozori u logu builda; RLS se tada ne može uključiti dok se uloga ne napravi.
+1. Posle deploy-a sa migracijom proveri da uloga postoji: Neon → SQL Editor → `select rolname, rolbypassrls from pg_roles where rolname = 'mojfrizer_app';` (jedan red, `rolbypassrls = f`).
+2. Vercel → Settings → Environment Variables → `RLS_ENFORCE` = `1` (Production). Novi deploy. Ne treba druga baza ni druga lozinka: aplikacija se u svakom upitu prebaci na ograničenu ulogu.
+3. Provera: prijava, zakazivanje kao gost, chat, `/razvoj`. Ako nešto odjednom izgleda prazno ili baca grešku, obriši `RLS_ENFORCE` i uradi redeploy: sve se vraća kako je bilo (podaci se ne diraju).
+Detalji i pravila za novi kod: `docs/ARCHITECTURE.md`, odeljak „Row Level Security”.
+
+## 8. Domen
 Kad se kupi mojfrizer.com: Vercel → Domains → dodaj `mojfrizer.com` i `*.mojfrizer.com` (poddomeni salona), pa postavi `APP_URL` i `ROOT_DOMAIN`.
 
 ## Lokalna provera produkcijskog builda
