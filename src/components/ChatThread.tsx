@@ -50,7 +50,7 @@ export function ChatThread({ messages, viewerIsSalon, send, emptyHint }: ChatThr
             rows={1}
             maxLength={MAX_MESSAGE_LENGTH}
             placeholder="Napišite poruku…"
-            className="block max-h-40 w-full resize-none bg-transparent px-3 py-2.5 text-base outline-none placeholder:text-neutral-400"
+            className="block max-h-40 w-full resize-none bg-transparent px-3 py-2.5 text-base outline-none placeholder:text-muted"
           />
         </label>
         <button className="btn-primary shrink-0 px-5">

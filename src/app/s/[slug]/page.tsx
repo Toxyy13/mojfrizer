@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { formatPrice, formatServicePrice } from "@/lib/money";
 import { TIME_ZONE, WEEKDAYS_SR, minutesToHHMM, todayIso, isoWeekdayOf, zonedParts } from "@/lib/time";
 import { serviceCategory, toBookingServices, toBookingWorkers, upcomingDays } from "@/lib/salonView";
+import { MapEmbed } from "@/components/MapEmbed";
 import { BookingForm } from "@/components/BookingForm";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { AssistantWidget } from "@/components/AssistantWidget";
@@ -72,7 +73,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
   return (
     <>
       <SiteHeader />
-      <main className="pb-24 md:pb-0">
+      <main id="sadrzaj" tabIndex={-1} className="pb-24 md:pb-0">
         <section className="page pt-10 pb-10 sm:pt-16">
           <div className="animate-rise">
             <div className="flex flex-wrap items-center gap-2">
@@ -115,13 +116,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
 
         <section className="page reveal grid gap-3 md:grid-cols-3" aria-label="Informacije">
           <article className="card overflow-hidden md:col-span-2">
-            <iframe
-              title={`Mapa: ${fullAddress}`}
-              src={mapEmbedUrl}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              className="h-56 w-full border-0 grayscale-[0.3] sm:h-64"
-            />
+            <MapEmbed address={fullAddress} src={mapEmbedUrl} />
             <div className="flex flex-wrap items-end justify-between gap-4 p-5 sm:p-6">
               <div>
                 <h2 className="eyebrow">Adresa</h2>

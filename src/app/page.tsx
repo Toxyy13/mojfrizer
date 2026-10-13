@@ -22,7 +22,7 @@ const STEPS: Array<{ title: string; text: string }> = [
   { title: "Dođite na vreme", text: "Sa nalogom vam podsetnik stiže na email dan pre termina." },
 ];
 
-const TICKER = ["Zakazivanje za par sekundi", "Bez poziva", "Podsetnik na email", "Radi na telefonu", "Besplatno za mušterije", "Lista čekanja za pune dane"];
+const TICKER = ["Zakazivanje u par klikova", "Bez poziva", "Podsetnik na email", "Radi na telefonu", "Besplatno za mušterije", "Lista čekanja za pune dane"];
 
 /** Splits a word into letters, each animating in with a stagger and reacting to hover. */
 function WordmarkLine({ text, start, accentLast = false }: { text: string; start: number; accentLast?: boolean }) {
@@ -82,7 +82,7 @@ export default async function HomePage({ searchParams }: HomeProps) {
   return (
     <>
       <SiteHeader />
-      <main>
+      <main id="sadrzaj" tabIndex={-1}>
         <HeroSpotlight className="relative isolate overflow-hidden">
           {/* Soft moving color fields behind the wordmark. */}
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
@@ -91,7 +91,7 @@ export default async function HomePage({ searchParams }: HomeProps) {
           </div>
 
           <div className="page pt-10 pb-14 sm:pt-16 sm:pb-24">
-            <p className="eyebrow animate-fade-up">Frizerski saloni širom Srbije</p>
+            <p className="eyebrow animate-fade-up">Online zakazivanje kod frizera</p>
 
             <h1 className="parallax-slow mt-4 select-none font-serif font-extrabold uppercase leading-[0.82] tracking-[-0.05em] text-charcoal" aria-label="Moj frizer">
               <span aria-hidden className="block whitespace-nowrap text-[min(27vw,23rem)]">
@@ -104,7 +104,7 @@ export default async function HomePage({ searchParams }: HomeProps) {
 
             <div className="mt-10 grid items-end gap-8 md:grid-cols-[1.1fr_1fr]">
               <p className="animate-fade-up text-xl text-muted [animation-delay:0.9s] sm:text-2xl">
-                Pronađite salon, izaberite slobodan termin i zakažite za par sekundi.{" "}
+                Pronađite salon, izaberite slobodan termin i zakažite u par klikova.{" "}
                 <span className="text-charcoal">Bez poziva, u bilo koje doba dana.</span>
               </p>
               <form
@@ -125,7 +125,7 @@ export default async function HomePage({ searchParams }: HomeProps) {
                   type="search"
                   defaultValue={q}
                   placeholder="Naziv salona, grad ili ulica"
-                  className="min-w-0 flex-1 bg-transparent py-2 text-base outline-none placeholder:text-neutral-400"
+                  className="min-w-0 flex-1 bg-transparent py-2 text-base outline-none placeholder:text-muted"
                 />
                 <button className="btn-primary btn-shine shrink-0">Traži</button>
               </form>

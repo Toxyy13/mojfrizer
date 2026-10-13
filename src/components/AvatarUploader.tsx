@@ -72,7 +72,7 @@ export function AvatarUploader({ name, src }: AvatarUploaderProps) {
           ref={input}
           type="file"
           accept="image/jpeg,image/png,image/webp"
-          className="sr-only"
+          className="peer sr-only"
           id="photo"
           disabled={busy}
           onChange={(e) => {
@@ -82,7 +82,7 @@ export function AvatarUploader({ name, src }: AvatarUploaderProps) {
         />
         <label
           htmlFor="photo"
-          className="btn-secondary btn-sm cursor-pointer justify-self-start"
+          className="btn-secondary btn-sm cursor-pointer justify-self-start peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-burgundy"
         >
           {busy ? "Čuvam…" : src ? "Promeni sliku" : "Dodaj sliku"}
         </label>

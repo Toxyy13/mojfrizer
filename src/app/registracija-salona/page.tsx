@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthForm } from "@/components/AuthForm";
 import { AuthShell } from "@/components/AuthShell";
+import { TermsLabel } from "@/components/TermsConsent";
 import { getSessionUser } from "@/lib/auth";
 import { registerSalon } from "./actions";
 
@@ -48,7 +49,10 @@ export default async function SalonSignUpPage() {
         next={null}
         submitLabel="Otvori salon"
         pendingLabel="Otvaram salon…"
-        fields={user ? [...salonFields] : [...salonFields, ...ownerFields]}
+        fields={[
+          ...(user ? salonFields : [...salonFields, ...ownerFields]),
+          ...(user ? [] : [{ name: "terms", label: "Uslovi", type: "checkbox", autoComplete: "off", content: <TermsLabel /> } as const]),
+        ]}
       />
     </AuthShell>
   );

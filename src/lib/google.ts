@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { decodeJwt } from "jose";
 import { Prisma, Role } from "@prisma/client";
 import { appUrl } from "./appUrl";
+import { TERMS_VERSION } from "./company";
 import { db } from "./db";
 import type { SessionUser } from "./auth";
 
@@ -108,7 +109,7 @@ export async function userForProfile(profile: GoogleProfile): Promise<SessionUse
   }
   try {
     return await db.user.create({
-      data: { email: profile.email, name: profile.name, googleId: profile.sub, emailVerifiedAt: new Date(), role: Role.CLIENT },
+      data: { email: profile.email, name: profile.name, googleId: profile.sub, emailVerifiedAt: new Date(), role: Role.CLIENT, termsAcceptedAt: new Date(), termsVersion: TERMS_VERSION },
       select,
     });
   } catch (error) {

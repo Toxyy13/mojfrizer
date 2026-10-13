@@ -1,6 +1,7 @@
 import { appUrl } from "./appUrl";
 import { db } from "./db";
 import { sendMail } from "./mail";
+import { unsubscribePostUrl, unsubscribeUrl } from "./unsubscribe";
 import { fullAddress } from "./salonAddress";
 import { TIME_ZONE } from "./time";
 import { servicesLabel } from "./visit";
@@ -33,11 +34,12 @@ export async function sendDueReminders(now: Date = new Date()): Promise<Reminder
       status: "BOOKED",
       reminderSentAt: null,
       startTime: { gt: from, lte: to },
-      client: { email: { not: null }, emailVerifiedAt: { not: null } },
+      client: { email: { not: null }, emailVerifiedAt: { not: null }, emailOptOut: false },
     },
     select: {
       id: true,
       startTime: true,
+      clientId: true,
       client: { select: { name: true, email: true } },
       salon: { select: { name: true, slug: true, address: true, city: true, phone: true } },
       service: { select: { name: true } },
@@ -76,6 +78,7 @@ export async function sendDueReminders(now: Date = new Date()): Promise<Reminder
         ]
           .filter((line, i, all) => line !== "" || all[i - 1] !== "")
           .join("\n"),
+        unsubscribe: a.clientId ? { pageUrl: unsubscribeUrl(a.clientId), postUrl: unsubscribePostUrl(a.clientId) } : undefined,
       });
       summary.sent += 1;
     } catch (error) {

@@ -15,7 +15,7 @@ export function Avatar({ name, src, size = 32 }: AvatarProps) {
   const style = { width: size, height: size, fontSize: size * 0.4 };
   if (src) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt="" width={size} height={size} style={style} className="shrink-0 rounded-full object-cover" />;
+    return <img src={src} alt={`Slika profila: ${name}`} width={size} height={size} style={style} className="shrink-0 rounded-full object-cover" />;
   }
   return (
     <span

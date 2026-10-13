@@ -8,6 +8,7 @@ import { sendResetMail, sendVerificationMail } from "@/lib/accountMail";
 import { getSessionUser, hashPassword, startSession } from "@/lib/auth";
 import { consumeToken } from "@/lib/emailTokens";
 import { db } from "@/lib/db";
+import { TERMS_VERSION } from "@/lib/company";
 import { safeNextPath } from "@/lib/landing";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import type { FormState } from "../prijava/actions";
@@ -29,6 +30,7 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
 
   if (name.length < 2 || name.length > 80) return { error: "Upišite ime i prezime.", values };
   if (!email.success) return { error: "Upišite ispravnu email adresu.", values };
+  if (formData.get("terms") !== "on") return { error: "Potvrdite da imate najmanje 15 godina i da prihvatate uslove.", values };
   if (rawPhone && !phone) return { error: "Broj telefona nije ispravan, npr. 064 123 4567.", values };
   if (password.length < MIN_PASSWORD_LENGTH) {
     return { error: `Lozinka mora imati bar ${MIN_PASSWORD_LENGTH} znakova.`, values };
@@ -36,7 +38,7 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
 
   try {
     const user = await db.user.create({
-      data: { name, email: email.data, phone, passwordHash: await hashPassword(password), role: Role.CLIENT },
+      data: { name, email: email.data, phone, passwordHash: await hashPassword(password), role: Role.CLIENT, termsAcceptedAt: new Date(), termsVersion: TERMS_VERSION },
       select: { id: true, email: true, name: true, role: true },
     });
     await startSession(user);
@@ -84,9 +86,10 @@ export async function updateProfile(_prev: ProfileState, formData: FormData): Pr
   const name = String(formData.get("name") ?? "").trim();
   const rawPhone = String(formData.get("phone") ?? "");
   const values = { name, phone: rawPhone };
-  const phone = normalizePhone(rawPhone);
+  // Phone is optional: an empty field removes it from the account.
+  const phone = rawPhone.trim() ? normalizePhone(rawPhone) : null;
   if (name.length < 2 || name.length > 80) return { error: "Upišite ime i prezime.", values };
-  if (!phone) return { error: "Upišite ispravan broj telefona, npr. 064 123 4567.", values };
+  if (rawPhone.trim() && !phone) return { error: "Upišite ispravan broj telefona, npr. 064 123 4567.", values };
   try {
     await db.user.update({ where: { id: user.id }, data: { name, phone } });
   } catch (error) {
@@ -97,7 +100,7 @@ export async function updateProfile(_prev: ProfileState, formData: FormData): Pr
     return { error: "Čuvanje nije uspelo. Pokušajte ponovo.", values };
   }
   revalidatePath("/nalog", "layout");
-  return { error: null, saved: true, values: { name, phone: formatPhone(phone) } };
+  return { error: null, saved: true, values: { name, phone: phone ? formatPhone(phone) : "" } };
 }
 
 /** Always answers the same, so the form can't be used to find out which emails have accounts. */

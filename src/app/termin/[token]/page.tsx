@@ -40,7 +40,7 @@ export default async function ManageBookingPage({ params }: { params: Promise<{ 
   return (
     <>
       <SiteHeader />
-      <main className="page max-w-3xl py-10 sm:py-16">
+      <main id="sadrzaj" tabIndex={-1} className="page max-w-3xl py-10 sm:py-16">
         <div className="card p-5 sm:p-8">
         <p className="flex items-center gap-2">
           <span className="eyebrow">Moj termin</span>
@@ -106,7 +106,7 @@ export default async function ManageBookingPage({ params }: { params: Promise<{ 
                 <fieldset className="flex flex-row-reverse justify-end gap-1 [&>label:has(:checked)]:text-burgundy [&>label:has(:checked)~label]:text-burgundy [&>label:hover]:text-burgundy [&>label:hover~label]:text-burgundy">
                   <legend className="sr-only">Ocena od 1 do 5</legend>
                   {[5, 4, 3, 2, 1].map((n) => (
-                    <label key={n} className="cursor-pointer text-3xl text-line transition-colors">
+                    <label key={n} className="cursor-pointer rounded text-3xl text-[#8a847d] transition-colors focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-burgundy">
                       <input type="radio" name="rating" value={n} required className="sr-only" />
                       <span aria-hidden>★</span>
                       <span className="sr-only">{n}</span>

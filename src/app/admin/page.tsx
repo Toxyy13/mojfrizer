@@ -15,7 +15,7 @@ export default async function AdminHome() {
   });
   if (salons.length === 1) redirect(`/admin/${salons[0].slug}`);
   return (
-    <main className="page max-w-xl py-16">
+    <main id="sadrzaj" tabIndex={-1} className="page max-w-xl py-16">
       <Logo />
       <h1 className="mt-10 font-serif text-4xl">Vaši saloni</h1>
       {salons.length === 0 && <p className="mt-4 text-muted">Nemate pristup nijednom salonu.</p>}

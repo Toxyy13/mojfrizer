@@ -19,11 +19,10 @@ export function ProfileForm({ name, phone }: ProfileFormProps) {
         <input name="name" required autoComplete="name" defaultValue={state.values?.name ?? name} className={input} />
       </label>
       <label className="block">
-        <span className="field-label">Broj telefona</span>
+        <span className="field-label">Broj telefona (nije obavezno)</span>
         <input
           name="phone"
           type="tel"
-          required
           autoComplete="tel"
           defaultValue={state.values?.phone ?? phone}
           placeholder="06x xxx xxxx"

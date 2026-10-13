@@ -1,15 +1,17 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, type ReactNode } from "react";
 import type { FormState } from "@/app/prijava/actions";
 
 interface AuthField {
   name: string;
   label: string;
-  type: "text" | "tel" | "email" | "password";
+  type: "text" | "tel" | "email" | "password" | "checkbox";
   autoComplete: string;
   hint?: string;
   optional?: boolean;
+  /** Rich label for checkboxes (e.g. with links to the terms). */
+  content?: ReactNode;
 }
 
 interface AuthFormProps {
@@ -29,7 +31,19 @@ export function AuthForm({ action, fields, submitLabel, pendingLabel, next, hidd
     <form action={formAction} className="grid gap-5">
       {next && <input type="hidden" name="next" value={next} />}
       {hidden && Object.entries(hidden).map(([name, value]) => <input key={name} type="hidden" name={name} value={value} />)}
-      {fields.map((field) => (
+      {fields.map((field) =>
+        field.type === "checkbox" ? (
+          <label key={field.name} className="flex items-start gap-3 text-sm">
+            <input
+              type="checkbox"
+              name={field.name}
+              required={!field.optional}
+              defaultChecked={false}
+              className="mt-0.5 size-5 shrink-0 accent-burgundy"
+            />
+            <span>{field.content ?? field.label}</span>
+          </label>
+        ) : (
         <label key={field.name} className="block">
           <span className="field-label">{field.label}</span>
           <input
@@ -42,7 +56,8 @@ export function AuthForm({ action, fields, submitLabel, pendingLabel, next, hidd
           />
           {field.hint && <span className="field-hint">{field.hint}</span>}
         </label>
-      ))}
+        ),
+      )}
       {state.error && (
         <p className="alert-error" role="alert">
           {state.error}

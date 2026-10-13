@@ -54,6 +54,11 @@ model User {
   // Salon the client lands on right after login.
   favoriteSalonId String?
   favoriteSalon   Salon?  @relation("FavoriteSalon", fields: [favoriteSalonId], references: [id], onDelete: SetNull)
+  // Terms and privacy policy accepted at sign-up (version = TERMS_VERSION in src/lib/company.ts).
+  termsAcceptedAt DateTime?
+  termsVersion    String?
+  // Customer turned off reminder and waitlist emails (account and password emails still go out).
+  emailOptOut     Boolean  @default(false)
   createdAt      DateTime @default(now())
 
   ownedSalons         Salon[]         @relation("SalonOwner")

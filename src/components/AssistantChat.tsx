@@ -37,10 +37,16 @@ export function AssistantChat({ slug, salonName }: AssistantChatProps) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, pending]);
+
+  // Opening the chat moves the keyboard into the question field.
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
 
   async function ask(question: string): Promise<void> {
     const text = question.trim();
@@ -86,6 +92,9 @@ export function AssistantChat({ slug, salonName }: AssistantChatProps) {
       {open && (
         <section
           aria-label="AI asistent"
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setOpen(false);
+          }}
           className="animate-rise flex h-[min(32rem,70dvh)] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-[0_24px_60px_-20px_rgb(0_0_0/0.3)]"
         >
           <header className="flex items-start justify-between border-b border-line bg-cream px-5 py-4">
@@ -155,12 +164,13 @@ export function AssistantChat({ slug, salonName }: AssistantChatProps) {
               Vaše pitanje
             </label>
             <input
+              ref={inputRef}
               id="assistant-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               maxLength={1000}
               placeholder="Napišite pitanje…"
-              className="min-w-0 flex-1 bg-transparent px-3 py-2 text-base outline-none placeholder:text-neutral-400"
+              className="min-w-0 flex-1 bg-transparent px-3 py-2 text-base outline-none placeholder:text-muted"
             />
             <button
               type="submit"
@@ -170,7 +180,7 @@ export function AssistantChat({ slug, salonName }: AssistantChatProps) {
               Pošalji
             </button>
           </form>
-          <p className="px-5 pb-2.5 text-[10px] text-muted">Odgovore daje AI i mogu sadržati greške. Termin potvrđuje salon.</p>
+          <p className="px-5 pb-2.5 text-xs text-muted">Odgovore daje AI i mogu sadržati greške. Termin potvrđuje salon.</p>
         </section>
       )}
       <button
