@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import type { AppointmentStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireSalonAccess, requireSalonOwner } from "@/lib/access";
@@ -37,6 +38,7 @@ export async function setAppointmentStatus(slug: string, formData: FormData): Pr
   const id = String(formData.get("id") ?? "");
   const status = String(formData.get("status") ?? "") as AppointmentStatus;
   if (!ALLOWED.includes(status)) return;
+  let overlap = false;
   try {
     // salonId in the filter keeps one tenant from touching another tenant's appointment.
     await db.$transaction(async (tx) => {
@@ -56,9 +58,12 @@ export async function setAppointmentStatus(slug: string, formData: FormData): Pr
     }
   } catch (error) {
     // Re-activating a cancelled slot that is now taken violates the overlap constraint.
-    console.error(error);
+    overlap = String(error).includes("appointments_no_overlap") || String(error).includes("23P01");
+    if (!overlap) console.error(error);
   }
   revalidatePath(`/admin/${slug}`);
+  // The owner is told why the appointment stayed cancelled instead of nothing happening.
+  if (overlap) redirect(`/admin/${slug}?zauzeto=1`);
 }
 
 export interface SwapState {
