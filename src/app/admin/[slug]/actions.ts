@@ -8,13 +8,13 @@ import { requireSalonAccess, requireSalonOwner } from "@/lib/access";
 import { applyComboPricing } from "@/lib/comboPricing";
 import { TIME_ZONE, formatLocalDateIso } from "@/lib/time";
 import { notifyWaitlist } from "@/lib/waitlist";
-import { bookingInputSchema, createAppointment, type BookingResult } from "@/lib/booking";
+import { salonBookingInputSchema, createAppointment, type BookingResult } from "@/lib/booking";
 import { setUrgentRequestStatus, swapForUrgentRequest, swapSchema } from "@/lib/urgent";
 
 export async function bookForClient(slug: string, raw: unknown): Promise<BookingResult> {
   const { salon, user, staffWorkerId } = await requireSalonAccess(slug);
   try {
-    const parsed = bookingInputSchema.safeParse(raw);
+    const parsed = salonBookingInputSchema.safeParse(raw);
     if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Neispravni podaci" };
     // A staff login can book only into their own schedule.
     const input = staffWorkerId ? { ...parsed.data, workerId: staffWorkerId } : parsed.data;
