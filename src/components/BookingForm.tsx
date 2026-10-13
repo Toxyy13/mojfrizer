@@ -460,12 +460,14 @@ export function BookingForm({
           <input className={input} value={clientName} onChange={(e) => setClientName(e.target.value)} required autoComplete="name" />
         </label>
         <label className="block">
-          <span className="field-label">Telefon</span>
+          <span className="field-label">
+            Telefon {mode === "salon" && <span className="font-normal text-muted">(nije obavezno)</span>}
+          </span>
           <input
             className={input}
             value={clientPhone}
             onChange={(e) => setClientPhone(e.target.value)}
-            required
+            required={mode === "public"}
             type="tel"
             inputMode="tel"
             autoComplete="tel"

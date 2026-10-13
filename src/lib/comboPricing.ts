@@ -35,6 +35,7 @@ export async function applyComboPricing(tx: Prisma.TransactionClient, appointmen
   const anchorPhone = normalizePhone(anchor.guestPhone);
   const visit = sameDay.filter(
     (a) =>
+      a.id === anchor.id || // a customer entered by name only still gets combo pricing within the one appointment
       (anchor.clientId !== null && a.clientId === anchor.clientId) ||
       (anchorPhone !== null && normalizePhone(a.guestPhone) === anchorPhone),
   );

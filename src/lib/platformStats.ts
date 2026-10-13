@@ -126,7 +126,7 @@ export async function getPlatformStats(now: Date = new Date()): Promise<Platform
     monthlyRows(since),
     db.workerProfile.groupBy({ by: ["salonId"], where: { isActive: true }, _count: { _all: true } }),
     db.$queryRaw<Array<{ salonId: string; clients: bigint }>>`
-      SELECT "salonId", count(DISTINCT coalesce("clientId", "guestPhone")) AS clients
+      SELECT "salonId", count(DISTINCT coalesce("clientId", "guestPhone", id)) AS clients
       FROM appointments WHERE status <> 'CANCELLED' GROUP BY "salonId"`,
     db.appointment.groupBy({ by: ["salonId"], where: { createdAt: { gte: since30 }, status: { not: "CANCELLED" } }, _count: { _all: true } }),
     db.chatMessage.groupBy({ by: ["salonId"], where: { createdAt: { gte: since30 } }, _count: { _all: true } }),

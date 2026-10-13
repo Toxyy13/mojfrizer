@@ -94,7 +94,9 @@ async function computeAvailableSlots(query: SlotQuery): Promise<Slot[]> {
   return slots;
 }
 
-export const bookingInputSchema = z.object({
+const phoneRule = z.string().trim().regex(/^\+?[0-9 /-]{6,20}$/, "Unesite ispravan broj telefona");
+
+const bookingBaseSchema = z.object({
   serviceIds: z
     .array(z.string().min(1))
     .min(1, "Izaberite bar jednu uslugu")
@@ -103,14 +105,18 @@ export const bookingInputSchema = z.object({
   dateIso: z.string().refine(isValidDateIso, "Neispravan datum"),
   minute: z.coerce.number().int().min(0).max(24 * 60),
   clientName: z.string().trim().min(2, "Unesite ime i prezime").max(80),
-  clientPhone: z
-    .string()
-    .trim()
-    .regex(/^\+?[0-9 /-]{6,20}$/, "Unesite ispravan broj telefona"),
   note: z.string().trim().max(300).optional().nullable(),
 });
 
-export type BookingInput = z.infer<typeof bookingInputSchema>;
+/** Online booking by a customer or guest: the salon needs a way to reach them, so the phone is required. */
+export const bookingInputSchema = bookingBaseSchema.extend({ clientPhone: phoneRule });
+
+/** Booking entered by the owner or staff: only the name is required; a phone is validated when given. */
+export const salonBookingInputSchema = bookingBaseSchema.extend({
+  clientPhone: z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? null : v), phoneRule.nullish()),
+});
+
+export type BookingInput = Omit<z.infer<typeof bookingInputSchema>, "clientPhone"> & { clientPhone?: string | null };
 
 export type BookingResult =
   | { ok: true; appointmentId: string; workerName: string; manageToken: string }
@@ -173,7 +179,7 @@ async function insertAppointment(salonId: string, input: BookingInput, actor: Bo
               },
               clientId: actor.clientId,
               guestName: input.clientName,
-              guestPhone: input.clientPhone,
+              guestPhone: input.clientPhone || null,
               source: actor.source,
               createdById: actor.createdById,
               note: input.note || null,
