@@ -6,8 +6,8 @@ export const COMPANY = {
   address: "[Adresa sedišta]",
   pib: "[PIB]",
   registryNumber: "[Matični broj]",
-  email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "[email za kontakt]",
-  phone: process.env.NEXT_PUBLIC_CONTACT_PHONE || "[telefon za kontakt]",
+  email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "todordevelop@gmail.com",
+  phone: process.env.NEXT_PUBLIC_CONTACT_PHONE || "+381 65 276 4422",
   website: "mojfrizer.com",
 } as const;
 
