@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { getAvailableSlots, type Slot } from "@/lib/booking";
 import { hasSalonAccess } from "@/lib/access";
+import { findViewableSalon } from "@/lib/salonVisibility";
 
 export interface SlotsResponse {
   slots: Slot[];
@@ -14,7 +15,7 @@ export async function GET(
   try {
     const { slug } = await params;
     const search = request.nextUrl.searchParams;
-    const salon = await db.salon.findFirst({ where: { slug, isActive: true }, select: { id: true } });
+    const salon = await findViewableSalon(slug);
     if (!salon) return NextResponse.json({ error: "Salon nije pronađen" }, { status: 404 });
 
     // Salon staff may book without the online lead time (e.g. a walk-in right now).

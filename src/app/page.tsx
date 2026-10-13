@@ -5,6 +5,7 @@ import { HeroSpotlight } from "@/components/HeroSpotlight";
 import { Marquee } from "@/components/Marquee";
 import { SiteHeader } from "@/components/SiteHeader";
 import { AssistantWidget } from "@/components/AssistantWidget";
+import { PUBLIC_SALONS, canViewSalon } from "@/lib/salonVisibility";
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { fullAddress } from "@/lib/salonAddress";
@@ -58,6 +59,8 @@ export default async function HomePage({ searchParams }: HomeProps) {
     db.salon.findMany({
       where: {
         isActive: true,
+        // Private salons never show up in search or lists.
+        ...PUBLIC_SALONS,
         // A newly opened salon shows up in search once it has a price list.
         services: { some: { isActive: true } },
         ...(q
@@ -74,8 +77,15 @@ export default async function HomePage({ searchParams }: HomeProps) {
       select: { id: true, name: true, slug: true, city: true, address: true },
       take: 50,
     }),
-    user ? db.user.findUnique({ where: { id: user.id }, select: { favoriteSalonId: true } }) : null,
+    user
+      ? db.user.findUnique({
+          where: { id: user.id },
+          select: { favoriteSalonId: true, favoriteSalon: { select: { id: true, name: true, slug: true, city: true, address: true, isActive: true } } },
+        })
+      : null,
   ]);
+  // The favorite is shown even when the salon is private, as long as this customer may open it.
+  const favorite = me?.favoriteSalon?.isActive && (await canViewSalon(me.favoriteSalon.id, user)) ? me.favoriteSalon : null;
   const ratings = await getSalonRatings(salons.map((s) => s.id));
 
   const returnTo = q ? `/?q=${encodeURIComponent(q)}` : "/";
@@ -152,6 +162,24 @@ export default async function HomePage({ searchParams }: HomeProps) {
               )}
             </span>
           </div>
+
+          {favorite && !q && (
+            <div className="card mt-6 flex items-center gap-4 border-burgundy/30 p-4 sm:p-5">
+              <span aria-hidden className="grid size-14 shrink-0 place-items-center rounded-xl bg-burgundy text-white font-serif text-xl">
+                {initials(favorite.name)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="eyebrow">Vaš omiljeni salon</p>
+                <Link href={`/s/${favorite.slug}`} className="block font-serif text-2xl leading-tight">
+                  {favorite.name}
+                </Link>
+                <p className="mt-1 truncate text-sm text-muted">{fullAddress(favorite)}</p>
+              </div>
+              <Link href={`/s/${favorite.slug}#zakazivanje`} className="btn-primary btn-sm">
+                Zakaži
+              </Link>
+            </div>
+          )}
 
           {salons.length === 0 && (
             <div className="card mt-6 p-8 text-center">

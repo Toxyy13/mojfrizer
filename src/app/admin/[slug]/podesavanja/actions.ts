@@ -58,6 +58,21 @@ export async function saveSalonInfo(slug: string, formData: FormData): Promise<v
   back(slug, "salon", { ok: "Podaci o salonu su sačuvani." });
 }
 
+export async function saveVisibility(slug: string, formData: FormData): Promise<void> {
+  const { salon } = await requireSalonOwner(slug);
+  const visibility = formData.get("visibility");
+  if (visibility !== "PUBLIC" && visibility !== "PRIVATE") back(slug, "vidljivost", { error: "Izaberite javni ili privatni salon." });
+  try {
+    await db.salon.update({ where: { id: salon.id }, data: { visibility } });
+  } catch (error) {
+    console.error(error);
+    back(slug, "vidljivost", { error: "Čuvanje nije uspelo." });
+  }
+  refresh(slug);
+  revalidatePath("/");
+  back(slug, "vidljivost", { ok: visibility === "PRIVATE" ? "Salon je sada privatan." : "Salon je sada javan." });
+}
+
 export async function saveService(slug: string, formData: FormData): Promise<void> {
   const { salon } = await requireSalonOwner(slug);
   const id = String(formData.get("id") ?? "");

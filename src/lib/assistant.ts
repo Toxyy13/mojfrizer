@@ -1,6 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { db } from "./db";
+import { PUBLIC_SALONS, canViewSalon } from "./salonVisibility";
+import { getSessionUser } from "./auth";
 import { getAvailableSlots } from "./booking";
 import { formatServicePrice } from "./money";
 import { fullAddress } from "./salonAddress";
@@ -171,6 +173,7 @@ async function searchSalons(input: Record<string, unknown>): Promise<string> {
   const salons = await db.salon.findMany({
     where: {
       isActive: true,
+      ...PUBLIC_SALONS,
       ...(query
         ? {
             OR: [
@@ -202,7 +205,9 @@ export async function answerQuestion(request: AssistantRequest): Promise<Assista
     return { ok: false, status: 503, error: "Asistent još nije uključen. Pozovite salon ili pošaljite poruku." };
   }
 
-  const salon = request.slug ? await loadSalon(request.slug) : null;
+  const found = request.slug ? await loadSalon(request.slug) : null;
+  // A private salon is invisible to the assistant unless this visitor may open it.
+  const salon = found && (await canViewSalon(found.id, await getSessionUser())) ? found : null;
   if (request.slug && !salon) return { ok: false, status: 404, error: "Salon nije pronađen" };
 
   const today = todayIso(TIME_ZONE);

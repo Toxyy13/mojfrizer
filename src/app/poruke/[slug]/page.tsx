@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChatThread } from "@/components/ChatThread";
 import { SiteHeader } from "@/components/SiteHeader";
+import { findViewableSalon } from "@/lib/salonVisibility";
 import { getSessionUser } from "@/lib/auth";
 import { loadConversation, markRead } from "@/lib/chat";
 import { db } from "@/lib/db";
@@ -22,7 +23,7 @@ export default async function CustomerChatPage({ params }: PageProps) {
   // Salon staff answer from the admin panel.
   if (user.role !== "CLIENT") redirect("/admin");
 
-  const salon = await db.salon.findFirst({ where: { slug, isActive: true }, select: { id: true, name: true, slug: true } });
+  const salon = await findViewableSalon(slug);
   if (!salon) notFound();
 
   await markRead(salon.id, user.id, false);

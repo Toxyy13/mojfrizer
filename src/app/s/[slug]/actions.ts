@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
+import { findViewableSalon } from "@/lib/salonVisibility";
 import { bookingInputSchema, createAppointment, type BookingResult } from "@/lib/booking";
 import { isBlockedOnline } from "@/lib/clients";
 import { sendBookingConfirmation } from "@/lib/manageBooking";
@@ -16,7 +17,7 @@ export async function bookOnline(slug: string, raw: unknown): Promise<BookingRes
   try {
     const parsed = bookingInputSchema.safeParse(raw);
     if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Neispravni podaci" };
-    const salon = await db.salon.findFirst({ where: { slug, isActive: true }, select: { id: true } });
+    const salon = await findViewableSalon(slug);
     if (!salon) return { ok: false, error: "Salon nije pronađen." };
     // Guests can book with just name and phone; a logged-in customer gets the booking on their account.
     const user = await getSessionUser();
@@ -41,7 +42,7 @@ export async function requestUrgent(slug: string, raw: unknown): Promise<ActionR
   try {
     const parsed = urgentRequestSchema.safeParse(raw);
     if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Neispravni podaci" };
-    const salon = await db.salon.findFirst({ where: { slug, isActive: true }, select: { id: true } });
+    const salon = await findViewableSalon(slug);
     if (!salon) return { ok: false, error: "Salon nije pronađen." };
     const user = await getSessionUser();
     return await createUrgentRequest(salon.id, parsed.data, user?.role === "CLIENT" ? user.id : null);
@@ -57,7 +58,7 @@ export async function joinSalonWaitlist(slug: string, serviceIds: unknown, dateI
     if (!ids.success) return { ok: false, error: "Izaberite uslugu." };
     const user = await getSessionUser();
     if (!user) return { ok: false, error: "login" };
-    const salon = await db.salon.findFirst({ where: { slug, isActive: true }, select: { id: true } });
+    const salon = await findViewableSalon(slug);
     if (!salon) return { ok: false, error: "Salon nije pronađen." };
     return await joinWaitlist(salon.id, user.id, ids.data, dateIso);
   } catch (error) {
