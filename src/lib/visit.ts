@@ -1,5 +1,6 @@
 import type { Prisma, Service, ServiceCombo } from "@prisma/client";
 import { db } from "./db";
+import { comboRulePrices } from "./comboRule";
 
 // Upper bound on services in one booking; keeps the slot search and the form sane.
 export const MAX_SERVICES_PER_VISIT = 6;
@@ -50,15 +51,9 @@ export async function resolveVisit(
   return { services, durationMinutes: visitDuration(services, combos) };
 }
 
-/** Price of each service in a visit: comboPrice applies when the visit has another service. */
-export function visitItemPrices(
-  services: Pick<Service, "id" | "price" | "comboPrice">[],
-  hasOtherServiceElsewhere = false,
-): number[] {
-  return services.map((s) => {
-    const hasOther = hasOtherServiceElsewhere || services.some((o) => o.id !== s.id);
-    return s.comboPrice !== null && hasOther ? s.comboPrice : s.price;
-  });
+/** Price of each service in a visit: comboPrice applies when the visit has another service (see comboRule.ts). */
+export function visitItemPrices(services: Pick<Service, "price" | "comboPrice">[]): number[] {
+  return comboRulePrices(services);
 }
 
 // Include for reading an appointment's services in order, with names.

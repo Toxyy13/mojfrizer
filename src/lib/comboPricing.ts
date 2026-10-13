@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { comboRulePrices } from "./comboRule";
 import { TIME_ZONE, formatLocalDateIso, localToUtc } from "./time";
 
 const ACTIVE_STATUSES = ["BOOKED", "COMPLETED"] as const;
@@ -41,17 +42,17 @@ export async function applyComboPricing(tx: Prisma.TransactionClient, appointmen
   // Every service the customer has that day, in active appointments.
   const activeItems = visit
     .filter((a) => isActive(a.status))
-    .flatMap((a) => a.services.map((item) => ({ appointmentId: a.id, itemId: item.id, serviceId: item.serviceId })));
+    .flatMap((a) => a.services.map((item) => ({ itemId: item.id, ...item.service })))
+    .sort((x, y) => y.price - x.price || x.itemId.localeCompare(y.itemId));
 
   for (const appt of visit) {
     if (appt.status === "COMPLETED") continue; // past revenue stays as charged
     let total = 0;
     for (const item of appt.services) {
-      let price = item.service.price;
-      if (item.service.comboPrice !== null) {
-        const hasOtherService = activeItems.some((o) => o.itemId !== item.id && o.serviceId !== item.serviceId);
-        if (hasOtherService) price = item.service.comboPrice;
-      }
+      // Items of a cancelled appointment are priced as if added to the customer's active visit.
+      const inVisit = activeItems.some((o) => o.itemId === item.id);
+      const items = inVisit ? activeItems : [...activeItems, { itemId: item.id, ...item.service }];
+      const price = comboRulePrices(items)[items.findIndex((o) => o.itemId === item.id)];
       if (price !== item.price) await tx.appointmentService.update({ where: { id: item.id }, data: { price } });
       total += price;
     }
