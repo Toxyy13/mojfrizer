@@ -14,7 +14,7 @@ import { BookingForm } from "@/components/BookingForm";
 import { AdminShell } from "@/components/AdminShell";
 import { bookForClient, closeUrgentRequest, setAppointmentStatus, swapForUrgent } from "./actions";
 import { UrgentRequests, type UrgentRequestView } from "./UrgentRequests";
-import { appointmentServicesInclude, resolveVisit, servicesLabel } from "@/lib/visit";
+import { appointmentServicesInclude, resolveVisit, servicesLabel, visitItemPrices } from "@/lib/visit";
 
 export const dynamic = "force-dynamic";
 
@@ -266,6 +266,8 @@ async function loadUrgentRequests(salonId: string, todayIsoDate: string): Promis
         dateIso,
         dateLabel: formatDateSr(dateIso),
         reason: r.reason,
+        surchargeLabel: r.surcharge > 0 ? formatRsd(r.surcharge) : "",
+        totalLabel: formatRsd((visit ? visitItemPrices(visit.services).reduce((a, b) => a + b, 0) : r.service.price) + r.surcharge),
         candidates: booked.map((a) => ({
           id: a.id,
           label: `${formatLocalTime(a.startTime, TIME_ZONE)} ${a.guestName ?? a.client?.name ?? "Mušterija"} (${

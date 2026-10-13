@@ -28,6 +28,7 @@ export async function createUrgentRequest(
   if (input.dateIso < todayIso(TIME_ZONE)) return { ok: false, error: "Izabrani dan je prošao." };
   const visit = await resolveVisit(salonId, input.serviceIds);
   if (!visit) return { ok: false, error: "Usluga nije pronađena." };
+  const salon = await db.salon.findUnique({ where: { id: salonId }, select: { urgentSurcharge: true } });
   await db.urgentRequest.create({
     data: {
       salonId,
@@ -38,6 +39,8 @@ export async function createUrgentRequest(
       guestPhone: input.clientPhone,
       date: new Date(`${input.dateIso}T00:00:00Z`),
       reason: input.reason,
+      // The price the customer was shown on the form.
+      surcharge: salon?.urgentSurcharge ?? 0,
     },
   });
   return { ok: true };
@@ -108,7 +111,8 @@ export async function swapForUrgentRequest(
           createdById: ownerId,
           startTime: urgentStart,
           endTime: urgentEnd,
-          price: itemPrices.reduce((sum, p) => sum + p, 0),
+          price: itemPrices.reduce((sum, p) => sum + p, 0) + request.surcharge,
+          urgentSurcharge: request.surcharge,
           note: `Hitno: ${request.reason}`,
         },
       });

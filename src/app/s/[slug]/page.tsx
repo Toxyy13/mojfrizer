@@ -237,6 +237,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
                 submit={bookOnline.bind(null, salon.slug)}
                 initialClient={customer ? { name: customer.name, phone: customer.phone ? formatPhone(customer.phone) : "" } : undefined}
                 requestUrgent={requestUrgent.bind(null, salon.slug)}
+                urgentSurcharge={salon.urgentSurcharge}
                 joinWaitlist={joinSalonWaitlist.bind(null, salon.slug)}
                 initialServiceIds={preselect.usluga?.split(",").filter(Boolean)}
                 combos={salon.serviceCombos}
