@@ -5,11 +5,13 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 process.env.AUTH_SECRET ??= "test-secret-at-least-32-characters-long!!";
 vi.mock("../mail", () => ({ sendMail: vi.fn(async () => true) }));
+vi.mock("@/lib/auth", () => ({ getSessionUser: vi.fn(async () => null) }));
 
 const { ownerDb } = await import("../db");
 const { createAppointment, getAvailableSlots } = await import("../booking");
 const { rescheduleByCustomer } = await import("../manageBooking");
 const { swapForUrgentRequest } = await import("../urgent");
+const { GET: slotsRoute } = await import("@/app/api/salons/[slug]/slots/route");
 const { localToUtc, TIME_ZONE } = await import("../time");
 
 const run = Math.random().toString(36).slice(2, 8);
@@ -23,6 +25,7 @@ const ids = {
   s15: id("s15"),
   s20: id("s20"),
   s45: id("s45"),
+  sh: id("sh"),
 };
 const DAY = "2031-05-05"; // a Monday, far in the future
 const h = (hour: number, min = 0): number => hour * 60 + min;
@@ -60,6 +63,10 @@ beforeAll(async () => {
     ],
   });
   // Cut + shave together take 45 minutes at this salon (combo), not the 30 + 15 sum by chance: use a shorter combo too.
+  await ownerDb.service.create({ data: { id: ids.sh, salonId: ids.salon, name: "Pranje kose", price: 10000, durationMinutes: 10 } });
+  await ownerDb.serviceCombo.create({
+    data: { salonId: ids.salon, serviceIds: [ids.s30, ids.s15, ids.sh].sort(), durationMinutes: 45 },
+  });
   await ownerDb.serviceCombo.create({
     data: { salonId: ids.salon, serviceIds: [ids.s20, ids.s15].sort(), durationMinutes: 45 },
   });
@@ -226,5 +233,41 @@ describe("moving a booking", () => {
     // Nothing changed: the booked customer is still at 18:00.
     expect((await ownerDb.appointment.findUniqueOrThrow({ where: { id: booked.id } })).startTime).toEqual(t(18));
     expect(await ownerDb.appointment.count({ where: { salonId: ids.salon } })).toBe(2);
+  });
+});
+
+describe("what the customer sees with a booking at 18:00", () => {
+  const sees = async (serviceIds: string[]): Promise<number[]> => {
+    const url = new URL(`http://localhost/api/salons/${ids.salon}/slots?serviceIds=${serviceIds.join(",")}&date=${DAY}`);
+    const res = await slotsRoute({ nextUrl: url } as never, { params: Promise.resolve({ slug: ids.salon }) });
+    return ((await res.json()) as { slots: { minute: number }[] }).slots.map((s) => s.minute);
+  };
+
+  it("45 min as one service, as a combo of three, and as a combo of two: nothing from 17:30 to 18:30, 17:15 is the last before", async () => {
+    await wipeBookings();
+    expect((await createAppointment(ids.salon, guest([ids.s30], h(18)), owner)).ok).toBe(true);
+    for (const picked of [[ids.s45], [ids.s30, ids.s15, ids.sh], [ids.s20, ids.s15]]) {
+      const grid = await sees(picked);
+      expect(grid, picked.join()).toContain(h(17, 15)); // 17:15-18:00 fits exactly
+      for (const m of [h(17, 30), h(17, 45)]) expect(grid, `${picked.join()} at ${m}`).not.toContain(m);
+      expect(grid).not.toContain(h(18)); // the 30 min booking at 18:00 is until 18:30
+      expect(grid).toContain(h(18, 30));
+    }
+  });
+
+  it("a 30 min service may still start at 17:30, and with no service chosen the grid offers nothing", async () => {
+    expect(await sees([ids.s30])).toContain(h(17, 30));
+    expect(await sees([])).toEqual([]);
+  });
+});
+
+describe("restoring a cancelled booking whose time was taken", () => {
+  it("is refused with an error the admin action recognises", async () => {
+    await wipeBookings();
+    const base = { salonId: ids.salon, workerId: ids.w1, serviceId: ids.s30, guestName: "A", guestPhone: "1", source: "SALON" as const, price: 1 };
+    const old = await ownerDb.appointment.create({ data: { ...base, startTime: t(18), endTime: t(18, 30), status: "CANCELLED" } });
+    await ownerDb.appointment.create({ data: { ...base, startTime: t(18, 15), endTime: t(18, 45) } });
+    const error = await ownerDb.appointment.updateMany({ where: { id: old.id }, data: { status: "BOOKED" } }).catch((e) => e);
+    expect(String(error)).toMatch(/appointments_no_overlap|23P01/);
   });
 });

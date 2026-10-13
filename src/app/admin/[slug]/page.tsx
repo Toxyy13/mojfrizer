@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ date?: string; zauzeto?: string }>;
 }
 
 const STATUS_LABEL: Record<AppointmentStatus, string> = {
@@ -87,6 +87,11 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
 
   return (
     <AdminShell salon={salon} user={user} active="raspored">
+      {sp.zauzeto && (
+        <p className="alert-error mb-3" role="alert">
+          Termin nije vraćen: u to vreme frizer već ima drugi termin. Otkazani termin ostaje otkazan.
+        </p>
+      )}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4" aria-label="Pregled">
         <div className="card col-span-2 p-5">
           <div className="flex items-center gap-2">

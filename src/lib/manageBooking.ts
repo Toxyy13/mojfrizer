@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { appUrl } from "./appUrl";
 // Everything here is reached through the booking's secret link (or by the booking flow), so it runs with RLS bypass.
 import { systemDb as db } from "./db";
-import { getAvailableSlots } from "./booking";
+import { getAvailableSlots, withSerializationRetry } from "./booking";
 import { applyComboPricing } from "./comboPricing";
 import { sendMail } from "./mail";
 import { notifyWaitlist } from "./waitlist";
@@ -137,7 +137,7 @@ export async function rescheduleByCustomer(token: string, dateIso: string, minut
 
   for (const workerId of workerIds) {
     try {
-      const moved = await db.$transaction(
+      const moved = await withSerializationRetry(() => db.$transaction(
         async (tx) => {
           const overlap = await tx.appointment.count({
             where: {
@@ -158,7 +158,7 @@ export async function rescheduleByCustomer(token: string, dateIso: string, minut
           return true;
         },
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-      );
+      ));
       if (!moved) continue;
       await db.$transaction((tx) => applyComboPricing(tx, a.id));
       if (oldDayIso !== dateIso) await repriceDay(a.salonId, oldDayIso, a.id);
