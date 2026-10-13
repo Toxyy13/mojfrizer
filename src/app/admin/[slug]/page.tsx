@@ -72,7 +72,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
 
   const statusAction = setAppointmentStatus.bind(null, slug);
   // Urgent requests and revenue are salon-wide, so only the owner sees them.
-  const urgentRequests = isStaff ? [] : await loadUrgentRequests(salon.id, today);
+  const urgentRequests = isStaff ? [] : await loadUrgentRequests(salon.id, slug, today);
   const activeCount = appointments.filter((a) => a.status === "BOOKED").length;
   const [flags, timeOff] = await Promise.all([
     clientFlags(salon.id, appointments.map(clientKeyOf)),
@@ -236,10 +236,10 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
 }
 
 /** Pending urgent requests from today on, each with that day's booked appointments as swap candidates. */
-async function loadUrgentRequests(salonId: string, todayIsoDate: string): Promise<UrgentRequestView[]> {
+async function loadUrgentRequests(salonId: string, slug: string, todayIsoDate: string): Promise<UrgentRequestView[]> {
   const requests = await db.urgentRequest.findMany({
     where: { salonId, status: "PENDING", date: { gte: new Date(`${todayIsoDate}T00:00:00Z`) } },
-    include: { service: true },
+    include: { service: true, worker: { select: { displayName: true } } },
     orderBy: [{ date: "asc" }, { createdAt: "asc" }],
   });
   return Promise.all(
@@ -266,6 +266,9 @@ async function loadUrgentRequests(salonId: string, todayIsoDate: string): Promis
         dateIso,
         dateLabel: formatDateSr(dateIso),
         reason: r.reason,
+        workerName: r.worker?.displayName ?? null,
+        timeWish: r.timeWish,
+        chatHref: r.clientId ? `/admin/${slug}/poruke/${r.clientId}` : null,
         surchargeLabel: r.surcharge > 0 ? formatRsd(r.surcharge) : "",
         totalLabel: formatRsd((visit ? visitItemPrices(visit.services).reduce((a, b) => a + b, 0) : r.service.price) + r.surcharge),
         candidates: booked.map((a) => ({

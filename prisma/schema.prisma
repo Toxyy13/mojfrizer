@@ -164,6 +164,7 @@ model WorkerProfile {
 
   appointments Appointment[]
   timeOff      WorkerTimeOff[]
+  urgentRequests UrgentRequest[]
 
   @@unique([salonId, userId])
   @@index([salonId])
@@ -250,6 +251,11 @@ model UrgentRequest {
   guestPhone    String
   date          DateTime            @db.Date
   reason        String
+  // Preferred hairdresser (null = anyone); staff logins only see requests for them or for anyone.
+  workerId      String?
+  worker        WorkerProfile?      @relation(fields: [workerId], references: [id], onDelete: SetNull)
+  // Free-text time wish from the "Hitna rezervacija" chat flow, e.g. "danas posle 17h".
+  timeWish      String?
   // Surcharge the customer was shown when sending the request, in para.
   surcharge     Int                 @default(0)
   status        UrgentRequestStatus @default(PENDING)

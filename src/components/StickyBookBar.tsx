@@ -7,10 +7,13 @@ interface StickyBookBarProps {
   targetId: string;
   label: string;
   hint?: string;
+  /** Optional second button, e.g. the urgent booking. */
+  secondaryHref?: string;
+  secondaryLabel?: string;
 }
 
 /** Thumb-reachable "book" button on phones, hidden on desktop and when the form is already visible. */
-export function StickyBookBar({ targetId, label, hint }: StickyBookBarProps) {
+export function StickyBookBar({ targetId, label, hint, secondaryHref, secondaryLabel }: StickyBookBarProps) {
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
@@ -33,6 +36,11 @@ export function StickyBookBar({ targetId, label, hint }: StickyBookBarProps) {
         <a href={`#${targetId}`} tabIndex={hidden ? -1 : 0} className={`btn-primary ${hint ? "shrink-0" : "w-full"}`}>
           {label}
         </a>
+        {secondaryHref && secondaryLabel && (
+          <a href={secondaryHref} tabIndex={hidden ? -1 : 0} className="btn-secondary shrink-0">
+            {secondaryLabel}
+          </a>
+        )}
       </div>
     </div>
   );

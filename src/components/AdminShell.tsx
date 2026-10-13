@@ -19,7 +19,8 @@ export async function AdminShell({ salon, user, active, children }: AdminShellPr
   const tabs: Array<{ id: AdminTab; label: string; href: string; badge?: number }> = [
     { id: "raspored", label: "Raspored", href: `/admin/${salon.slug}` },
   ];
-  // Staff logins see only their own schedule.
+  // Staff logins see their own schedule and the urgent chats addressed to them.
+  if (!isOwner) tabs.push({ id: "poruke", label: "Hitne poruke", href: `/admin/${salon.slug}/poruke` });
   if (isOwner) {
     const unread = await unreadForSalon(salon.id);
     tabs.push({ id: "poruke", label: "Poruke", href: `/admin/${salon.slug}/poruke`, badge: unread });
