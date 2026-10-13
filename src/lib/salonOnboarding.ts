@@ -6,7 +6,7 @@ import { db } from "./db";
 // Path segments and subdomains a salon slug must not take.
 const RESERVED_SLUGS = new Set([
   "admin", "api", "app", "www", "mail", "s", "prijava", "registracija", "registracija-salona", "nalog", "poruke",
-  "razvoj", "termin", "zaboravljena-lozinka", "nova-lozinka", "potvrda-emaila", "mojfrizer", "podrska", "blog", "pomoc",
+  "razvoj", "dodaj-salon", "termin", "zaboravljena-lozinka", "nova-lozinka", "potvrda-emaila", "mojfrizer", "podrska", "blog", "pomoc",
 ]);
 
 const TRANSLIT: Record<string, string> = { š: "s", đ: "dj", č: "c", ć: "c", ž: "z" };

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 // Each salon can also live on its own subdomain: kod-olgice.mojfrizer.com -> /s/kod-olgice
 const RESERVED_SUBDOMAINS = new Set(["www", "app", "admin"]);
-const PASSTHROUGH_PREFIXES = ["/admin", "/razvoj", "/api", "/prijava", "/registracija", "/nalog", "/poruke", "/zaboravljena-lozinka", "/nova-lozinka", "/potvrda-emaila", "/termin", "/s/", "/uslovi", "/privatnost", "/kolacici", "/povracaj-novca", "/brisanje-podataka", "/o-nama", "/licence", "/odjava-mejlova"];
+const PASSTHROUGH_PREFIXES = ["/admin", "/razvoj", "/dodaj-salon", "/api", "/prijava", "/registracija", "/nalog", "/poruke", "/zaboravljena-lozinka", "/nova-lozinka", "/potvrda-emaila", "/termin", "/s/", "/uslovi", "/privatnost", "/kolacici", "/povracaj-novca", "/brisanje-podataka", "/o-nama", "/licence", "/odjava-mejlova"];
 
 export function proxy(request: NextRequest): NextResponse {
   const rootDomain = process.env.ROOT_DOMAIN;

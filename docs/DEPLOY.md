@@ -12,6 +12,7 @@ Na vercel.com u projektu: Storage → Create → Neon Postgres. Vercel sam doda 
    - `CRON_SECRET`: drugi nasumičan niz
    - `SEED_OWNER_PASSWORD`: lozinka za Olgicin admin nalog (min. 8 znakova)
    - `SEED_DEVELOPER_EMAIL` i `SEED_DEVELOPER_PASSWORD`: nalog vlasnika platforme (uloga developer, panel `/razvoj`). Svaki deploy ga napravi ili unapredi; bez ove dve promenljive se preskače. Samo on pravi naloge salona. Lozinka ide samo u Vercel, nikad u chat ni u repo.
+   - `NEXT_PUBLIC_CONTACT_PHONE` i `NEXT_PUBLIC_CONTACT_EMAIL`: kontakt koji vide saloni na stranici „Dodaj svoj salon” (`/dodaj-salon`); posle promene treba novi deploy.
    - `APP_URL`: adresa sajta, dok nema domena npr. `https://mojfrizer.vercel.app`; kasnije `https://mojfrizer.com`
    - `ROOT_DOMAIN`: `mojfrizer.com` (tek kad domen postoji)
    - kasnije: `RESEND_API_KEY`, `MAIL_FROM`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ANTHROPIC_API_KEY`

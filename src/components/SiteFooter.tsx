@@ -17,6 +17,9 @@ export function SiteFooter() {
           <Link href="/nalog" className="hover:text-charcoal">
             Moj nalog
           </Link>
+          <Link href="/dodaj-salon" className="hover:text-charcoal">
+            Dodaj svoj salon
+          </Link>
           <Link href="/admin" className="hover:text-charcoal">
             Prijava salona
           </Link>
