@@ -2,7 +2,8 @@
 // Every salon-owned table carries salonId; queries must always filter by it.
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {

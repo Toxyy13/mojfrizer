@@ -42,11 +42,21 @@ const loadSalon = cache(async (slug: string) => {
   });
 });
 
+// Same rule for metadata and page, asked once per request (the memo is per request and keyed by who asks).
+const requestMemo = cache(() => new Map<string, Promise<boolean>>());
+function canViewOnce(salonId: string, session: Awaited<ReturnType<typeof getSessionUser>>): Promise<boolean> {
+  const memo = requestMemo();
+  const key = `${salonId}:${session?.id ?? ""}`;
+  let result = memo.get(key);
+  if (!result) memo.set(key, (result = canViewSalon(salonId, session)));
+  return result;
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const salon = await loadSalon(slug);
   // Private salons stay hidden from visitors who aren't connected to them (no meta tags leak).
-  return salon && (await canViewSalon(salon.id, await getSessionUser()))
+  return salon && (await canViewOnce(salon.id, await getSessionUser()))
     ? { title: `${salon.name} · zakažite termin`, description: `${salon.name}, ${salon.city}` }
     : {};
 }
@@ -56,17 +66,16 @@ const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 7];
 export default async function SalonPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
   const preselect = (await searchParams) ?? {};
-  const salon = await loadSalon(slug);
-  const session = await getSessionUser();
-  if (!salon || !(await canViewSalon(salon.id, session))) notFound();
-
-  const [rating, reviews] = await Promise.all([
+  const [salon, session] = await Promise.all([loadSalon(slug), getSessionUser()]);
+  if (!salon) notFound();
+  // Visibility check and the page's other data are independent, so they run together (one wave of queries, not three).
+  const [canView, rating, reviews, customer] = await Promise.all([
+    canViewOnce(salon.id, session),
     getSalonRating(salon.id),
     db.review.findMany({ where: { salonId: salon.id }, orderBy: { createdAt: "desc" }, take: 6 }),
+    session ? db.user.findUnique({ where: { id: session.id }, select: { name: true, phone: true, favoriteSalonId: true } }) : null,
   ]);
-  const customer = session
-    ? await db.user.findUnique({ where: { id: session.id }, select: { name: true, phone: true, favoriteSalonId: true } })
-    : null;
+  if (!canView) notFound();
 
   const todayDate = todayIso(TIME_ZONE);
   const today = isoWeekdayOf(todayDate);
