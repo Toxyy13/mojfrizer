@@ -52,7 +52,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
   const [y, m] = dateIso.split("-").map(Number);
   const nextMonthIso = `${m === 12 ? y + 1 : y}-${String(m === 12 ? 1 : m + 1).padStart(2, "0")}-01`;
 
-  const [workers, services, combos, hours, daysOff, appointments, dayRevenue, monthRevenue] = await Promise.all([
+  const [workers, services, combos, hours, daysOff, appointments, dayRevenue, monthRevenue, timeOff, breakRules, urgentRequests] = await Promise.all([
     db.workerProfile.findMany({ where: { salonId: salon.id, isActive: true, ...(staffWorkerId ? { id: staffWorkerId } : {}) }, orderBy: { displayName: "asc" } }),
     db.service.findMany({ where: { salonId: salon.id, isActive: true }, orderBy: { sortOrder: "asc" } }),
     db.serviceCombo.findMany({ where: { salonId: salon.id }, select: { serviceIds: true, durationMinutes: true } }),
@@ -69,20 +69,18 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
       localToUtc(monthStartIso, 0, TIME_ZONE),
       localToUtc(nextMonthIso, 0, TIME_ZONE),
     ),
-  ]);
-
-  const statusAction = setAppointmentStatus.bind(null, slug);
-  // Urgent requests and revenue are salon-wide, so only the owner sees them.
-  const urgentRequests = isStaff ? [] : await loadUrgentRequests(salon.id, slug, today);
-  const activeCount = appointments.filter((a) => a.status === "BOOKED").length;
-  const [flags, timeOff, breakRules] = await Promise.all([
-    clientFlags(salon.id, appointments.map(clientKeyOf)),
     db.workerTimeOff.findMany({
       where: { salonId: salon.id, startTime: { lt: dayEnd }, endTime: { gt: dayStart } },
       orderBy: { startTime: "asc" },
     }),
     db.workerBreak.findMany({ where: { salonId: salon.id }, orderBy: { startMinute: "asc" } }),
+    // Urgent requests are salon-wide, so only the owner sees them.
+    isStaff ? [] : loadUrgentRequests(salon.id, slug, today),
   ]);
+
+  const statusAction = setAppointmentStatus.bind(null, slug);
+  const activeCount = appointments.filter((a) => a.status === "BOOKED").length;
+  const flags = await clientFlags(salon.id, appointments.map(clientKeyOf));
   const dayBreaks = breakIntervalsForDay(breakRules, dateIso);
 
   return (

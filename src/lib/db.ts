@@ -10,6 +10,36 @@ const base: PrismaClient = globalForPrisma.prisma ?? new PrismaClient();
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = base;
 
 type AnyFn = (...args: unknown[]) => unknown;
+
+// Prisma loads `include`/nested `select` as one extra query per relation by default. With the join strategy the whole
+// tree is one SQL statement, which is one network round trip to the database instead of several (and with RLS every
+// statement costs four round trips, see defer()).
+const JOIN_OPERATIONS = new Set(["findFirst", "findFirstOrThrow", "findUnique", "findUniqueOrThrow", "findMany"]);
+function withJoinStrategy(operation: string, args: unknown[]): unknown[] {
+  const first = args[0];
+  if (!JOIN_OPERATIONS.has(operation) || typeof first !== "object" || first === null) return args;
+  const query = first as { include?: unknown; select?: unknown; relationLoadStrategy?: unknown };
+  if (query.relationLoadStrategy !== undefined || (!query.include && !query.select)) return args;
+  return [{ ...query, relationLoadStrategy: "join" }, ...args.slice(1)];
+}
+
+function plainClient(client: PrismaClient): PrismaClient {
+  return new Proxy(client, {
+    get(target, prop) {
+      const value = Reflect.get(target, prop);
+      if (typeof prop !== "string" || prop.startsWith("$") || prop.startsWith("_") || typeof value !== "object" || value === null) {
+        return typeof value === "function" ? (value as AnyFn).bind(target) : value;
+      }
+      return new Proxy(value, {
+        get(model, operation) {
+          const fn = Reflect.get(model, operation);
+          if (typeof fn !== "function" || typeof operation !== "string") return fn;
+          return (...args: unknown[]) => (fn as AnyFn).apply(model, withJoinStrategy(operation, args));
+        },
+      });
+    },
+  }) as PrismaClient;
+}
 const RAW = Symbol("rawPrismaPromise");
 
 interface Deferred<T> extends PromiseLike<T> {
@@ -82,7 +112,8 @@ function enforcedClient(resolveIdentity: IdentitySource): PrismaClient {
       get(target, prop) {
         const value = Reflect.get(target, prop);
         if (typeof value !== "function") return value;
-        return (...args: unknown[]) => defer((value as AnyFn).apply(target, args) as PromiseLike<unknown>, resolveIdentity);
+        return (...args: unknown[]) =>
+          defer((value as AnyFn).apply(target, typeof prop === "string" ? withJoinStrategy(prop, args) : args) as PromiseLike<unknown>, resolveIdentity);
       },
     });
 
@@ -98,14 +129,14 @@ function enforcedClient(resolveIdentity: IdentitySource): PrismaClient {
 }
 
 /** The app's database client. Who is asking is read from the login cookie, or from runAsSystem()/runAsUser(). */
-export const db: PrismaClient = isRlsEnforced() ? enforcedClient(async (scoped) => scoped ?? (await requestIdentity())) : base;
+export const db: PrismaClient = isRlsEnforced() ? enforcedClient(async (scoped) => scoped ?? (await requestIdentity())) : plainClient(base);
 
 /**
  * Client that always runs with RLS bypass, for modules that only contain trusted internal code
  * (cron, mail tokens, login). It is the plain owner connection, so it costs nothing extra.
  * Prefer it over scattering runAsSystem() when a whole file is system code.
  */
-export const systemDb: PrismaClient = base;
+export const systemDb: PrismaClient = plainClient(base);
 
 /** The unrestricted client: migrations, seed, scripts and tests that set up data. Never import it from request code. */
 export const ownerDb: PrismaClient = base;

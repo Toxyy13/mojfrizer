@@ -53,3 +53,10 @@ Kad se kupi mojfrizer.com: Vercel → Domains → dodaj `mojfrizer.com` i `*.moj
 
 ## Lokalna provera produkcijskog builda
 `VERCEL=1 VERCEL_ENV=production SEED_OWNER_PASSWORD=... bash scripts/vercel-build.sh`
+
+## Brzina (region baze i funkcija)
+Najveći uzrok sporosti je razdaljina između Vercel funkcije i Neon baze: svaki upit plaća put tamo i nazad (preko okeana oko 80-100 ms), a stranica ima 5-20 upita. `vercel.json` drži funkcije u `fra1` (Frankfurt), pa Neon projekat mora biti u **AWS Europe (Frankfurt) `eu-central-1`**.
+- Provera: Neon → Project → Settings → Region. Ako piše US East (N. Virginia), napravi novi projekat u Frankfurtu (Vercel → Storage → Neon), prenesi podatke (`pg_dump`/`pg_restore`) i zameni `DATABASE_URL` i `DATABASE_URL_UNPOOLED`.
+- `DATABASE_URL` mora biti **pooled** adresa (u hostu piše `-pooler`); `DATABASE_URL_UNPOOLED` služi samo za migracije u build-u.
+- Neon besplatni plan uspava bazu posle 5 min mirovanja; prvi klik posle pauze čeka ~0,5-1 s da se probudi. Plaćeni plan to može da isključi.
+- Sa `RLS_ENFORCE=1` svaki upit ima 3 dodatna kruga ka bazi. U istom regionu to je zanemarivo (1-2 ms), preko okeana je to glavni razlog sporosti.
