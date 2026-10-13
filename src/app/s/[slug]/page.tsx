@@ -103,9 +103,6 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
             <a href="#zakazivanje" className="btn-primary px-8">
               Zakaži termin
             </a>
-            <a href="#hitno" className="btn-secondary border-burgundy text-burgundy">
-              Hitna rezervacija
-            </a>
             <Link href={`/poruke/${salon.slug}`} className="btn-secondary">
               Pošalji poruku
             </Link>
@@ -267,7 +264,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
         </section>
       </main>
       <SiteFooter />
-      <StickyBookBar targetId="zakazivanje" label="Zakaži termin" hint={openNow.label} secondaryHref="#hitno" secondaryLabel="Hitno" />
+      <StickyBookBar targetId="zakazivanje" label="Zakaži termin" hint={openNow.label} />
       <AssistantWidget slug={salon.slug} salonName={salon.name} />
     </>
   );

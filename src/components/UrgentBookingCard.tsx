@@ -48,6 +48,20 @@ export function UrgentBookingCard({ slug, services, workers, days, surcharge, vi
     return () => window.removeEventListener("hashchange", check);
   }, []);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   const loginHref = `/prijava?next=${encodeURIComponent(`/s/${slug}#hitno`)}`;
   const toggle = (id: string): void =>
     setServiceIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
@@ -77,15 +91,31 @@ export function UrgentBookingCard({ slug, services, workers, days, surcharge, vi
             {surcharge > 0 && ` Hitan termin je skuplji za ${formatRsd(surcharge)}.`}
           </p>
         </div>
-        {!open && viewer !== "other" && (
-          <button type="button" onClick={() => setOpen(true)} className="btn-primary shrink-0">
+        {viewer !== "other" && (
+          <button type="button" onClick={() => setOpen(true)} className="btn-primary shrink-0" aria-haspopup="dialog">
             Hitna rezervacija
           </button>
         )}
       </div>
 
-      {open && viewer === "guest" && (
-        <div className="mt-4 grid gap-3 border-t border-burgundy/20 pt-4">
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-charcoal/50 p-0 sm:items-center sm:p-4" onClick={() => setOpen(false)}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Hitna rezervacija"
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-cream p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:rounded-3xl sm:p-6"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <p className="font-serif text-2xl leading-tight">Hitna rezervacija</p>
+              <button type="button" onClick={() => setOpen(false)} className="btn-ghost size-10 shrink-0 p-0 text-lg" aria-label="Zatvori">
+                ✕
+              </button>
+            </div>
+
+      {viewer === "guest" && (
+        <div className="mt-4 grid gap-3">
           <p className="text-sm">Da bismo mogli da razgovaramo, prijavite se ili napravite nalog (potreban je samo email). Posle prijave vraćate se ovde.</p>
           <div className="flex flex-wrap gap-2">
             <a href={loginHref} className="btn-primary">Prijavi se</a>
@@ -94,8 +124,8 @@ export function UrgentBookingCard({ slug, services, workers, days, surcharge, vi
         </div>
       )}
 
-      {open && viewer === "client" && (
-        <div className="mt-4 grid gap-4 border-t border-burgundy/20 pt-4">
+      {viewer === "client" && (
+        <div className="mt-4 grid gap-4">
           <fieldset className="min-w-0">
             <legend className="field-label">Usluga</legend>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -149,6 +179,9 @@ export function UrgentBookingCard({ slug, services, workers, days, surcharge, vi
             <button type="button" onClick={() => setOpen(false)} className="link text-sm text-muted">
               Odustani
             </button>
+          </div>
+        </div>
+      )}
           </div>
         </div>
       )}
