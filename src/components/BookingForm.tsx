@@ -5,6 +5,7 @@ import type React from "react";
 import type { BookingResult } from "@/lib/booking";
 import type { SlotsResponse } from "@/app/api/salons/[slug]/slots/route";
 import { formatPrice, formatRsd } from "@/lib/money";
+import { comboRulePrices } from "@/lib/comboRule";
 
 export interface BookingService {
   id: string;
@@ -76,10 +77,7 @@ function visitSummary(chosen: BookingService[], combos: BookingCombo[]): { minut
       ? combos.find((c) => c.serviceIds.length === ids.length && [...c.serviceIds].sort().every((id, i) => id === ids[i]))
       : undefined;
   const minutes = combo?.durationMinutes ?? chosen.reduce((sum, s) => sum + s.durationMin, 0);
-  const price = chosen.reduce(
-    (sum, s) => sum + (s.comboPrice !== null && chosen.length > 1 ? s.comboPrice : s.price),
-    0,
-  );
+  const price = comboRulePrices(chosen).reduce((sum, p) => sum + p, 0);
   return { minutes, price };
 }
 
