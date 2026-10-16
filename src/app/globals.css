@@ -160,15 +160,23 @@
   }
 }
 
-/* Giant wordmark: each letter swells in width and weight under the pointer. */
+/* Giant wordmark: letters swell in width and weight near the pointer. The outer box keeps the
+   resting size (a hidden copy sets it) so the effect never moves the hit area; HeroSpotlight sets
+   --k (0 to 1) on each letter from its distance to the pointer, so influence fades out smoothly. */
 @utility wordmark-letter {
+  position: relative;
   display: inline-block;
-  font-variation-settings: "wdth" 100, "wght" 800;
-  transition: font-variation-settings 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.4s, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-  &:hover {
-    font-variation-settings: "wdth" 75, "wght" 300;
-    color: var(--color-burgundy);
-    transform: translateY(-2%) rotate(-3deg);
+  --k: 0;
+  & > .wordmark-glyph {
+    position: absolute;
+    inset: 0;
+    text-align: center;
+    font-variation-settings: "wdth" calc(100 - 25 * var(--k)), "wght" calc(800 - 500 * var(--k));
+    transform: translateY(calc(-2% * var(--k))) rotate(calc(-3deg * var(--k)));
+    color: color-mix(in srgb, currentColor calc(100% - 100% * var(--k)), var(--color-burgundy));
+    transition: font-variation-settings 0.18s ease-out, transform 0.18s ease-out, color 0.18s ease-out;
+    pointer-events: none;
+    will-change: transform;
   }
 }
 

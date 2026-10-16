@@ -37,7 +37,8 @@ function WordmarkLine({ text, start, accentLast = false }: { text: string; start
           className={`wordmark-letter animate-letter ${accentLast && i === text.length - 1 ? "text-burgundy" : ""}`}
           style={{ animationDelay: `${(start + i) * 70}ms` }}
         >
-          {ch}
+          <span aria-hidden className="invisible">{ch}</span>
+          <span aria-hidden className="wordmark-glyph">{ch}</span>
         </span>
       ))}
     </>
