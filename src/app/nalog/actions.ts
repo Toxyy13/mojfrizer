@@ -4,7 +4,8 @@ import { Prisma, Role } from "@prisma/client";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { sendResetMail, sendVerificationMail } from "@/lib/accountMail";
+import { sendPasswordChangedMail, sendResetMail, sendVerificationMail } from "@/lib/accountMail";
+import bcrypt from "bcryptjs";
 import { MAX_PASSWORD_LENGTH, getSessionUser, hashPassword, startSession } from "@/lib/auth";
 import { consumeToken } from "@/lib/emailTokens";
 import { db, systemDb } from "@/lib/db";
@@ -12,7 +13,7 @@ import { TERMS_VERSION } from "@/lib/company";
 import { safeNextPath } from "@/lib/landing";
 import { canViewSalon } from "@/lib/salonVisibility";
 import { formatPhone, normalizePhone } from "@/lib/phone";
-import { consume, keyPart, requestIp, waitMessage } from "@/lib/rateLimit";
+import { clearLimit, consume, isBlocked, keyPart, recordHit, requestIp, waitMessage } from "@/lib/rateLimit";
 import type { FormState } from "../prijava/actions";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -161,6 +162,9 @@ export async function resetPassword(_prev: FormState, formData: FormData): Promi
         data: { usedAt: new Date() },
       }),
     ]);
+    // A new password ends the wait caused by earlier wrong attempts on this login.
+    const owner = await systemDb.user.findUnique({ where: { id: used.userId }, select: { email: true } });
+    if (owner?.email) await clearLimit(`login:acct:${keyPart(owner.email)}`);
   } catch (error) {
     console.error(error);
     return { error: "Čuvanje nije uspelo. Pokušajte ponovo." };
@@ -179,4 +183,37 @@ export async function resendVerification(): Promise<void> {
     console.error(error);
   }
   revalidatePath("/nalog");
+}
+
+const CHANGE_FAILURES = { limit: 5, windowSec: 900 };
+
+/** "Promena lozinke" on the account: the current password is required, and wrong guesses wait like at login. */
+export async function changePassword(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await getSessionUser();
+  if (!session) redirect("/prijava?next=/nalog/lozinka");
+  const current = String(formData.get("current") ?? "");
+  const password = String(formData.get("password") ?? "");
+  const rule = { key: `pwchange:user:${session.id}`, ...CHANGE_FAILURES };
+  try {
+    const blocked = await isBlocked(rule);
+    if (!blocked.ok) return { error: waitMessage(blocked) };
+    const user = await systemDb.user.findUnique({ where: { id: session.id }, select: { passwordHash: true } });
+    if (!user?.passwordHash) return { error: "Ovaj nalog nema lozinku. Postavite je preko „Zaboravljena lozinka”." };
+    if (!(await bcrypt.compare(current.slice(0, MAX_PASSWORD_LENGTH), user.passwordHash))) {
+      await recordHit(rule);
+      return { error: "Trenutna lozinka nije tačna." };
+    }
+    if (password.length < MIN_PASSWORD_LENGTH) return { error: `Lozinka mora imati bar ${MIN_PASSWORD_LENGTH} znakova.` };
+    if (password.length > MAX_PASSWORD_LENGTH) return { error: `Lozinka može imati najviše ${MAX_PASSWORD_LENGTH} znakova.` };
+    if (password === current) return { error: "Nova lozinka mora da se razlikuje od trenutne." };
+    await systemDb.user.update({ where: { id: session.id }, data: { passwordHash: await hashPassword(password) } });
+    // Reset links requested before the change must not work any more.
+    await systemDb.emailToken.updateMany({ where: { userId: session.id, kind: "RESET_PASSWORD", usedAt: null }, data: { usedAt: new Date() } });
+    await clearLimit(rule.key);
+    await sendPasswordChangedMail(session.id).catch((mailError: unknown) => console.error(mailError));
+  } catch (error) {
+    console.error(error);
+    return { error: "Čuvanje nije uspelo. Pokušajte ponovo." };
+  }
+  return { error: null, notice: "Lozinka je promenjena." };
 }
