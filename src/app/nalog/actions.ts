@@ -5,16 +5,19 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sendResetMail, sendVerificationMail } from "@/lib/accountMail";
-import { getSessionUser, hashPassword, revokeSessions, startSession } from "@/lib/auth";
+import { MAX_PASSWORD_LENGTH, getSessionUser, hashPassword, revokeSessions, startSession } from "@/lib/auth";
 import { consumeToken } from "@/lib/emailTokens";
 import { db, systemDb } from "@/lib/db";
 import { TERMS_VERSION } from "@/lib/company";
 import { safeNextPath } from "@/lib/landing";
 import { canViewSalon } from "@/lib/salonVisibility";
 import { formatPhone, normalizePhone } from "@/lib/phone";
+import { consume, keyPart, requestIp, waitMessage } from "@/lib/rateLimit";
 import type { FormState } from "../prijava/actions";
 
 const MIN_PASSWORD_LENGTH = 8;
+
+const RESET_NOTICE = "Ako nalog sa tom adresom postoji, poslali smo vam link za novu lozinku.";
 
 const emailSchema = z.string().trim().toLowerCase().email().max(120);
 
@@ -29,6 +32,14 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
   // Phone is optional here; it only prefills the booking form.
   const phone = rawPhone ? normalizePhone(rawPhone) : null;
 
+  // Bots fill every field they see; people never see this one.
+  if (String(formData.get("mf_hp") ?? "") !== "") return { error: "Greška pri registraciji. Pokušajte ponovo.", values };
+  const limited = await consume([
+    { key: `register:ip:${await requestIp()}`, limit: 5, windowSec: 3600 },
+    { key: "register:all", limit: 300, windowSec: 3600 },
+  ]);
+  if (!limited.ok) return { error: waitMessage(limited), values };
+
   if (name.length < 2 || name.length > 80) return { error: "Upišite ime i prezime.", values };
   if (!email.success) return { error: "Upišite ispravnu email adresu.", values };
   if (formData.get("terms") !== "on") return { error: "Potvrdite da imate najmanje 15 godina i da prihvatate uslove.", values };
@@ -36,6 +47,7 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
   if (password.length < MIN_PASSWORD_LENGTH) {
     return { error: `Lozinka mora imati bar ${MIN_PASSWORD_LENGTH} znakova.`, values };
   }
+  if (password.length > MAX_PASSWORD_LENGTH) return { error: `Lozinka može imati najviše ${MAX_PASSWORD_LENGTH} znakova.`, values };
 
   try {
     // Registration creates the account before anyone is logged in: system access (RLS).
@@ -85,6 +97,8 @@ export interface ProfileState extends FormState {
 export async function updateProfile(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
   const user = await getSessionUser();
   if (!user) redirect("/prijava?next=/nalog/profil");
+  const limited = await consume([{ key: `profile:user:${user.id}`, limit: 30, windowSec: 3600 }]);
+  if (!limited.ok) return { error: waitMessage(limited) };
   const name = String(formData.get("name") ?? "").trim();
   const rawPhone = String(formData.get("phone") ?? "");
   const values = { name, phone: rawPhone };
@@ -109,12 +123,19 @@ export async function updateProfile(_prev: ProfileState, formData: FormData): Pr
 export async function requestPasswordReset(_prev: FormState, formData: FormData): Promise<FormState> {
   const email = emailSchema.safeParse(String(formData.get("email") ?? ""));
   if (!email.success) return { error: "Upišite ispravnu email adresu.", values: { email: String(formData.get("email") ?? "") } };
+  if (String(formData.get("mf_hp") ?? "") !== "") return { error: null, notice: RESET_NOTICE };
+  // Same answer whether or not the limit was hit or the account exists; only the mail is withheld.
+  const limited = await consume([
+    { key: `reset:ip:${await requestIp()}`, limit: 5, windowSec: 900 },
+    { key: `reset:email:${keyPart(email.data)}`, limit: 3, windowSec: 3600 },
+  ]);
+  if (!limited.ok) return { error: null, notice: RESET_NOTICE };
   try {
     await sendResetMail(email.data);
   } catch (error) {
     console.error(error);
   }
-  return { error: null, notice: "Ako nalog sa tom adresom postoji, poslali smo vam link za novu lozinku." };
+  return { error: null, notice: RESET_NOTICE };
 }
 
 export async function resetPassword(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -123,6 +144,9 @@ export async function resetPassword(_prev: FormState, formData: FormData): Promi
   if (password.length < MIN_PASSWORD_LENGTH) {
     return { error: `Lozinka mora imati bar ${MIN_PASSWORD_LENGTH} znakova.` };
   }
+  if (password.length > MAX_PASSWORD_LENGTH) return { error: `Lozinka može imati najviše ${MAX_PASSWORD_LENGTH} znakova.` };
+  const limited = await consume([{ key: `reset-use:ip:${await requestIp()}`, limit: 20, windowSec: 900 }]);
+  if (!limited.ok) return { error: waitMessage(limited) };
   try {
     const used = await consumeToken(token, "RESET_PASSWORD");
     if (!used) return { error: "Link je istekao ili je već iskorišćen. Zatražite novi." };
@@ -150,6 +174,7 @@ export async function resetPassword(_prev: FormState, formData: FormData): Promi
 export async function resendVerification(): Promise<void> {
   const user = await getSessionUser();
   if (!user) redirect("/prijava?next=/nalog");
+  if (!(await consume([{ key: `verify:user:${user.id}`, limit: 5, windowSec: 3600 }])).ok) return;
   try {
     await sendVerificationMail(user.id);
   } catch (error) {
