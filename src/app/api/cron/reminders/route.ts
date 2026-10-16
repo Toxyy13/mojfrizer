@@ -4,6 +4,7 @@ import { apiError } from "@/lib/apiError";
 import { sendDueReminders } from "@/lib/reminders";
 import { sendReviewRequests } from "@/lib/reviewRequests";
 import { purgeExpiredData } from "@/lib/retention";
+import { purgeRateLimits } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       console.error(error);
       return null;
     });
+    await purgeRateLimits().catch((error: unknown) => console.error(error));
     return NextResponse.json({ ...reminders, reviewRequests, purged });
   } catch (error) {
     console.error(error);

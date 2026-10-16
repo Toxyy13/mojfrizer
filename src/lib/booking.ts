@@ -230,7 +230,8 @@ function isConflictError(error: unknown): boolean {
     return error.code === "P2034" || error.message.includes("appointments_no_overlap");
   }
   if (error instanceof Prisma.PrismaClientUnknownRequestError) {
-    return error.message.includes("appointments_no_overlap") || error.message.includes("23P01");
+    // 40P01 = deadlock between two bookings made at the same moment: the loser simply tries the next worker.
+    return error.message.includes("appointments_no_overlap") || error.message.includes("23P01") || error.message.includes("40P01");
   }
   return false;
 }

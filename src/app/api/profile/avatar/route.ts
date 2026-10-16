@@ -3,6 +3,7 @@ import { apiError } from "@/lib/apiError";
 import { getSessionUser } from "@/lib/auth";
 import { MAX_AVATAR_BYTES, sniffImageType } from "@/lib/avatar";
 import { db } from "@/lib/db";
+import { consume } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,13 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const user = await getSessionUser();
   if (!user) return apiError(401);
+  if (!(await consume([{ key: `avatar:user:${user.id}`, limit: 10, windowSec: 3600 }])).ok) {
+    return apiError(429, "Previše izmena slike. Pokušajte kasnije.");
+  }
+  // A declared size over the limit is refused before the body is read into memory.
+  if (Number(request.headers.get("content-length") ?? 0) > MAX_AVATAR_BYTES + 100_000) {
+    return apiError(413, "Slika je prevelika.");
+  }
   try {
     const form = await request.formData();
     const photo = form.get("photo");

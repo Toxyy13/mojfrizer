@@ -473,3 +473,13 @@ model SalonMembership {
   @@index([salonId])
   @@map("salon_memberships")
 }
+
+// Fixed-window counters for abuse protection (src/lib/rateLimit.ts). System access only.
+model RateLimit {
+  key         String   @id
+  count       Int      @default(0)
+  windowStart DateTime @default(now())
+
+  @@index([windowStart])
+  @@map("rate_limits")
+}
