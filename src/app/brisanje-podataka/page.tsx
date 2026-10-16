@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 export default async function DataPage() {
   const session = await getSessionUser();
-  const user = session ? await db.user.findUnique({ where: { id: session.id }, select: { email: true, emailOptOut: true } }) : null;
+  const user = session ? await db.user.findUnique({ where: { id: session.id }, select: { email: true, emailOptOut: true, passwordHash: true } }) : null;
 
   return (
     <LegalPage
@@ -59,7 +59,7 @@ export default async function DataPage() {
             <li>vaše ocene ostaju bez vašeg imena.</li>
           </ul>
           <p>Ovo se ne može poništiti.</p>
-          <DeleteForm />
+          <DeleteForm askPassword={Boolean(user.passwordHash)} />
         </>
       ) : (
         <>

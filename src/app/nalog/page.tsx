@@ -301,7 +301,7 @@ export default async function AccountPage() {
             </Link>
 
             <Link href="/brisanje-podataka" className="btn-ghost w-full">
-              Moji podaci i brisanje naloga
+              Mejlovi, podaci i brisanje naloga
             </Link>
 
             <form action={logout}>
