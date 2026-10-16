@@ -2,6 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { signOut, startSession, verifyCredentials } from "@/lib/auth";
+import { sendLockoutMail } from "@/lib/accountMail";
+import { looksLikeEmail } from "@/lib/phone";
 import { landingPathFor, safeNextPath } from "@/lib/landing";
 import { clearLimit, consume, isBlocked, keyPart, recordHit, requestIp, waitMessage, type Rule } from "@/lib/rateLimit";
 
@@ -43,6 +45,10 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
     const user = await verifyCredentials(loginValue, password);
     if (!user) {
       for (const rule of failRules) await recordHit(rule);
+      // The fifth wrong password starts the wait: tell the owner of the account once.
+      if (looksLikeEmail(loginValue) && !(await isBlocked(failRules[0])).ok) {
+        await sendLockoutMail(loginValue.trim()).catch((mailError: unknown) => console.error(mailError));
+      }
       return { error: "Pogrešna email adresa ili lozinka.", values };
     }
     await clearLimit(...failRules.map((rule) => rule.key));

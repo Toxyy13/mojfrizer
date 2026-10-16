@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { apiError, readJson, type ApiErrorBody } from "@/lib/apiError";
 import { answerQuestion, assistantRequestSchema, recordAssistantUse } from "@/lib/assistant";
 
 import { consume, requestIp } from "@/lib/rateLimit";
@@ -11,14 +12,14 @@ export interface AssistantResponse {
   reply: string;
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse<AssistantResponse | { error: string }>> {
+export async function POST(request: NextRequest): Promise<NextResponse<AssistantResponse | ApiErrorBody>> {
   try {
     // Same-site requests only: another website can't use a visitor's browser to spend this budget.
     const origin = request.headers.get("origin");
     if (origin && origin !== request.nextUrl.origin && !origin.endsWith(`.${process.env.ROOT_DOMAIN ?? "mojfrizer.com"}`)) {
-      return NextResponse.json({ error: "Zabranjeno" }, { status: 403 });
+      return apiError(403, "Zabranjeno.");
     }
-    if (Number(request.headers.get("content-length") ?? 0) > 20_000) return NextResponse.json({ error: "Neispravno pitanje" }, { status: 413 });
+    if (Number(request.headers.get("content-length") ?? 0) > 20_000) return apiError(413, "Neispravno pitanje.");
     const ip = await requestIp();
     const limited = await consume([
       { key: `assistant:ip:${ip}`, limit: 20, windowSec: 600 },
@@ -26,17 +27,17 @@ export async function POST(request: NextRequest): Promise<NextResponse<Assistant
       { key: "assistant:all-day", limit: globalDailyLimit(), windowSec: 86_400 },
     ]);
     if (!limited.ok) {
-      return NextResponse.json({ error: "Previše pitanja za kratko vreme. Pokušajte malo kasnije." }, { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } });
+      return apiError(429, "Previše pitanja za kratko vreme. Pokušajte malo kasnije.", { "Retry-After": String(limited.retryAfterSec) });
     }
-    const parsed = assistantRequestSchema.safeParse(await request.json());
-    if (!parsed.success) return NextResponse.json({ error: "Neispravno pitanje" }, { status: 400 });
+    const parsed = assistantRequestSchema.safeParse(await readJson(request));
+    if (!parsed.success) return apiError(400, "Neispravno pitanje.");
 
     const result = await answerQuestion(parsed.data);
-    if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+    if (!result.ok) return apiError(result.status, result.error);
     await recordAssistantUse(parsed.data.slug);
     return NextResponse.json({ reply: result.reply });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Greška asistenta" }, { status: 500 });
+    return apiError(500, "Greška asistenta.");
   }
 }

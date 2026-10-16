@@ -19,3 +19,12 @@ Nemoj generisati celu aplikaciju odjednom jer će kod biti polovičan. Radi uvek
 ## Baza i tenant izolacija
 - Svaka nova tabela dobija RLS i politike u istoj migraciji (vidi `docs/ARCHITECTURE.md`, odeljak „Row Level Security”); test `rls.test.ts` pada ako tabela nema uključen RLS.
 - Kod koji u ime posetioca čita ili piše tuđe redove (tajni linkovi, zakazivanje, prijava, cron) koristi `systemDb` ili `runAsSystem`, i to tek posle provere ovlašćenja.
+
+## API i greške
+- JSON endpointi odgovaraju greškom samo preko `apiError(status, poruka?)` iz `src/lib/apiError.ts`: telo je `{ error, code }`, status je pravi (400 ulaz, 401 nije prijavljen, 403 zabranjeno, 404, 413, 415, 429 sa `Retry-After`, 500). Telo zahteva se čita sa `readJson` (loš JSON je 400, ne 500) i proverava zod-om.
+- Klijentu nikad ne vraćati poruku izuzetka, SQL ni stack; samo `console.error` na serveru.
+- Idempotentni su: odjava sa mejlova, brisanje slike, brisanje naloga (drugi poziv vraća čist odgovor), cron. Novi POST koji pravi podatke treba da bude siguran na dupli klik (unique ključ ili provera pre upisa).
+- Stranice grešaka: `not-found.tsx` (404), `error.tsx` i `global-error.tsx` (500), `/zabranjeno` (403), `/previse-zahteva` (429); svi koriste `ErrorPanel`.
+
+## Minimizacija podataka (pregled 2026-10-16)
+Prikuplja se samo: ime, email (ili telefon za stare naloge), lozinka (hash), telefon samo kod zakazivanja bez naloga (salon mora da može da pozove) i opciono na profilu, napomena uz termin (opciono), razlog hitnog zahteva. Registracija traži samo ime, email, lozinku i potvrdu uslova; telefon i slika su opcioni. Ocene javno prikazuju samo ime. Brojač pokušaja prijave čuva IP i email samo dok traje prozor (do 2 dana).

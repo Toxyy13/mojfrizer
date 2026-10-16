@@ -1,8 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { apiError, type ApiErrorBody } from "@/lib/apiError";
 import { systemDb } from "@/lib/db";
 import { getAvailableSlots, type Slot } from "@/lib/booking";
 import { hasSalonAccess } from "@/lib/access";
 import { findViewableSalon } from "@/lib/salonVisibility";
+import { isValidDateIso } from "@/lib/time";
 import { consume, requestIp } from "@/lib/rateLimit";
 
 // Free slots change with every booking and depend on who asks (private salons, staff mode, a booking being moved),
@@ -16,23 +18,25 @@ export interface SlotsResponse {
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
-): Promise<NextResponse<SlotsResponse | { error: string }>> {
+): Promise<NextResponse<SlotsResponse | ApiErrorBody>> {
   try {
     // The calendar page asks for slots on every click; this only stops scripts that scrape or hammer it.
     const limited = await consume([{ key: `slots:ip:${await requestIp()}`, limit: 240, windowSec: 60 }]);
     if (!limited.ok) {
-      return NextResponse.json({ error: "Previše zahteva. Pokušajte ponovo za minut." }, { status: 429, headers: { ...NO_STORE, "Retry-After": String(limited.retryAfterSec) } });
+      return apiError(429, "Previše zahteva. Pokušajte ponovo za minut.", { ...NO_STORE, "Retry-After": String(limited.retryAfterSec) });
     }
     const { slug } = await params;
     const search = request.nextUrl.searchParams;
     const salon = await findViewableSalon(slug);
-    if (!salon) return NextResponse.json({ error: "Salon nije pronađen" }, { status: 404, headers: NO_STORE });
+    if (!salon) return apiError(404, "Salon nije pronađen.", NO_STORE);
 
     // Salon staff may book without the online lead time (e.g. a walk-in right now).
+    const dateIso = search.get("date") ?? "";
+    if (!isValidDateIso(dateIso)) return apiError(400, "Neispravan datum.", NO_STORE);
     const staffMode = search.get("scope") === "salon" && (await hasSalonAccess(salon.id));
     const common = {
       salonId: salon.id,
-      dateIso: search.get("date") ?? "",
+      dateIso,
       workerId: search.get("workerId") || null,
       enforceLeadTime: !staffMode,
     };
@@ -44,7 +48,7 @@ export async function GET(
         where: { manageToken: token, salonId: salon.id },
         select: { startTime: true, endTime: true },
       });
-      if (!appointment) return NextResponse.json({ error: "Termin nije pronađen" }, { status: 404, headers: NO_STORE });
+      if (!appointment) return apiError(404, "Termin nije pronađen.", NO_STORE);
       const durationMinutes = Math.round((appointment.endTime.getTime() - appointment.startTime.getTime()) / 60_000);
       return NextResponse.json({ slots: await getAvailableSlots({ ...common, durationMinutes }) }, { headers: NO_STORE });
     }
@@ -54,6 +58,6 @@ export async function GET(
     return NextResponse.json({ slots }, { headers: NO_STORE });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Greška pri učitavanju termina" }, { status: 500, headers: NO_STORE });
+    return apiError(500, "Greška pri učitavanju termina.", NO_STORE);
   }
 }
