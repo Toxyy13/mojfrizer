@@ -3,6 +3,7 @@ import { appUrl } from "@/lib/appUrl";
 import { startSession } from "@/lib/auth";
 import { fetchProfile, OAUTH_COOKIE, userForProfile, type OAuthAttempt } from "@/lib/google";
 import { landingPathFor, safeNextPath } from "@/lib/landing";
+import { consume, requestIp } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return response;
   };
 
+  if (!(await consume([{ key: `google-cb:ip:${await requestIp()}`, limit: 30, windowSec: 600 }])).ok) return fail();
   const attempt = readAttempt(request);
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
