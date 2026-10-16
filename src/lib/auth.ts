@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { SignJWT } from "jose";
 import bcrypt from "bcryptjs";
@@ -61,8 +62,25 @@ export async function signOut(): Promise<void> {
   store.delete(COOKIE_NAME);
 }
 
-export async function getSessionUser(): Promise<SessionUser | null> {
-  return currentSessionClaims();
+/**
+ * The logged-in user of this request. The cookie only says who the user was when it was issued, so the account is
+ * re-read: a deleted account, a changed role or a cookie older than the last password change no longer counts.
+ */
+export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
+  const claims = await currentSessionClaims();
+  if (!claims) return null;
+  const fresh = await systemDb.user.findUnique({
+    where: { id: claims.id },
+    select: { email: true, name: true, role: true, sessionsValidAfter: true },
+  });
+  if (!fresh) return null;
+  if (fresh.sessionsValidAfter && claims.issuedAt < Math.floor(fresh.sessionsValidAfter.getTime() / 1000)) return null;
+  return { id: claims.id, email: fresh.email, name: fresh.name, role: fresh.role };
+});
+
+/** Logs the user out everywhere: every cookie issued so far stops working. Call after a password reset or change. */
+export async function revokeSessions(userId: string): Promise<void> {
+  await systemDb.user.update({ where: { id: userId }, data: { sessionsValidAfter: new Date() } });
 }
 
 export async function hashPassword(password: string): Promise<string> {

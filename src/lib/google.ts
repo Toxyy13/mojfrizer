@@ -100,13 +100,19 @@ export async function userForProfile(profile: GoogleProfile): Promise<SessionUse
   const byGoogle = await db.user.findUnique({ where: { googleId: profile.sub }, select });
   if (byGoogle) return byGoogle;
 
-  const byEmail = await db.user.findUnique({ where: { email: profile.email }, select });
+  const byEmail = await db.user.findUnique({ where: { email: profile.email }, select: { ...select, emailVerifiedAt: true } });
   if (byEmail) {
     await db.user.update({
       where: { id: byEmail.id },
-      data: { googleId: profile.sub, emailVerifiedAt: new Date() },
+      data: {
+        googleId: profile.sub,
+        emailVerifiedAt: byEmail.emailVerifiedAt ?? new Date(),
+        // An account whose email was never confirmed may have been registered by someone else with this address
+        // (and their password). Google proves the real owner, so that password and old sessions are dropped.
+        ...(byEmail.emailVerifiedAt ? {} : { passwordHash: null, sessionsValidAfter: new Date() }),
+      },
     });
-    return byEmail;
+    return { id: byEmail.id, email: byEmail.email, name: byEmail.name, role: byEmail.role };
   }
   try {
     return await db.user.create({

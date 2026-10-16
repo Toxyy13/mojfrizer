@@ -5,7 +5,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sendResetMail, sendVerificationMail } from "@/lib/accountMail";
-import { MAX_PASSWORD_LENGTH, getSessionUser, hashPassword, startSession } from "@/lib/auth";
+import { MAX_PASSWORD_LENGTH, getSessionUser, hashPassword, revokeSessions, startSession } from "@/lib/auth";
 import { consumeToken } from "@/lib/emailTokens";
 import { db, systemDb } from "@/lib/db";
 import { TERMS_VERSION } from "@/lib/company";
@@ -161,6 +161,8 @@ export async function resetPassword(_prev: FormState, formData: FormData): Promi
         data: { usedAt: new Date() },
       }),
     ]);
+    // A stolen cookie must not survive the reset.
+    await revokeSessions(used.userId);
   } catch (error) {
     console.error(error);
     return { error: "Čuvanje nije uspelo. Pokušajte ponovo." };
