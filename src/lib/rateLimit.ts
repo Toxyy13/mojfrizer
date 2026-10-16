@@ -58,6 +58,18 @@ export async function isBlocked(rule: Rule): Promise<LimitResult> {
   }
 }
 
+/** How many hits a key has in its current window (0 when none), for "N attempts left" hints. */
+export async function hitCount(rule: Rule): Promise<number> {
+  try {
+    const [row] = await systemDb.$queryRaw<{ count: number }[]>`
+      SELECT "count" FROM rate_limits WHERE "key" = ${rule.key} AND "windowStart" >= now() - make_interval(secs => ${rule.windowSec})`;
+    return row?.count ?? 0;
+  } catch (error) {
+    console.error("rate limit check failed", error);
+    return 0;
+  }
+}
+
 /** Counts one hit without checking (a failed login, after the attempt). */
 export async function recordHit(rule: Rule): Promise<void> {
   await consume([rule]);

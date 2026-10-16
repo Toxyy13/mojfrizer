@@ -5,7 +5,7 @@ import { signOut, startSession, verifyCredentials } from "@/lib/auth";
 import { sendLockoutMail } from "@/lib/accountMail";
 import { looksLikeEmail } from "@/lib/phone";
 import { landingPathFor, safeNextPath } from "@/lib/landing";
-import { clearLimit, consume, isBlocked, keyPart, recordHit, requestIp, waitMessage, type Rule } from "@/lib/rateLimit";
+import { clearLimit, consume, hitCount, isBlocked, keyPart, recordHit, requestIp, waitMessage, type Rule } from "@/lib/rateLimit";
 
 // Brute force protection: every attempt counts against the caller's address; failures also count against the
 // account (from anywhere) and against the account from this address, and block further tries for a while.
@@ -13,6 +13,8 @@ const IP_ATTEMPTS = { limit: 30, windowSec: 600 };
 const ACCOUNT_FAILURES = { limit: 5, windowSec: 900 };
 const ACCOUNT_IP_FAILURES = { limit: 5, windowSec: 900 };
 const lockedMessage = (minutes: number): string => `Uneli ste pogrešnu lozinku previše puta. Pokušajte ponovo za ${minutes} min ili promenite lozinku preko „Zaboravljena lozinka”.`;
+/** From this many wrong passwords on, the form says how many tries are left before the wait. */
+const WARN_FROM_FAILURES = 3;
 
 export interface FormState {
   error: string | null;
@@ -20,6 +22,13 @@ export interface FormState {
   notice?: string;
   /** Submitted non-secret values, so the form keeps them after an error. */
   values?: Record<string, string>;
+  /** Login is locked until this moment (epoch ms): the form disables itself and counts down. */
+  lockedUntil?: number;
+}
+
+function lockedState(retryAfterSec: number, values: Record<string, string>): FormState {
+  const seconds = Math.max(1, retryAfterSec);
+  return { error: lockedMessage(Math.max(1, Math.ceil(seconds / 60))), values, lockedUntil: Date.now() + seconds * 1000 };
 }
 
 /** Email (or, for older accounts, a phone number) plus password. */
@@ -40,7 +49,7 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
     if (!attempts.ok) return { error: waitMessage(attempts), values };
     for (const rule of failRules) {
       const blocked = await isBlocked(rule);
-      if (!blocked.ok) return { error: lockedMessage(Math.max(1, Math.ceil(blocked.retryAfterSec / 60))), values };
+      if (!blocked.ok) return lockedState(blocked.retryAfterSec, values);
     }
     const user = await verifyCredentials(loginValue, password);
     if (!user) {
@@ -49,7 +58,14 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
       if (looksLikeEmail(loginValue) && !(await isBlocked(failRules[0])).ok) {
         await sendLockoutMail(loginValue.trim()).catch((mailError: unknown) => console.error(mailError));
       }
-      return { error: "Pogrešna email adresa ili lozinka.", values };
+      const failures = Math.max(...(await Promise.all(failRules.map(hitCount))));
+      if (failures >= ACCOUNT_FAILURES.limit) return lockedState((await isBlocked(failRules[0])).retryAfterSec || ACCOUNT_FAILURES.windowSec, values);
+      const left = ACCOUNT_FAILURES.limit - failures;
+      const warning =
+        failures >= WARN_FROM_FAILURES
+          ? ` Još ${left === 1 ? "1 pokušaj" : `${left} pokušaja`}: posle toga morate da sačekate ${Math.round(ACCOUNT_FAILURES.windowSec / 60)} minuta pre sledeće prijave.`
+          : "";
+      return { error: `Pogrešna email adresa ili lozinka.${warning}`, values };
     }
     await clearLimit(...failRules.map((rule) => rule.key));
     await startSession(user);
