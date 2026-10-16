@@ -13,7 +13,7 @@ import { TERMS_VERSION } from "@/lib/company";
 import { safeNextPath } from "@/lib/landing";
 import { canViewSalon } from "@/lib/salonVisibility";
 import { formatPhone, normalizePhone } from "@/lib/phone";
-import { clearLimit, consume, isBlocked, keyPart, recordHit, requestIp, waitMessage } from "@/lib/rateLimit";
+import { clearLimit, clearLimitPrefix, consume, isBlocked, keyPart, recordHit, requestIp, waitMessage } from "@/lib/rateLimit";
 import type { FormState } from "../prijava/actions";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -166,7 +166,11 @@ export async function resetPassword(_prev: FormState, formData: FormData): Promi
     await revokeSessions(used.userId);
     // A new password ends the wait caused by earlier wrong attempts on this login.
     const owner = await systemDb.user.findUnique({ where: { id: used.userId }, select: { email: true } });
-    if (owner?.email) await clearLimit(`login:acct:${keyPart(owner.email)}`);
+    if (owner?.email) {
+      const account = keyPart(owner.email);
+      await clearLimit(`login:acct:${account}`);
+      await clearLimitPrefix(`login:acct-ip:${account}:`);
+    }
   } catch (error) {
     console.error(error);
     return { error: "Čuvanje nije uspelo. Pokušajte ponovo." };

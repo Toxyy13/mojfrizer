@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
+import { matchesQuery } from "./searchText";
 import { db, systemDb } from "./db";
 import { PUBLIC_SALONS, canViewSalon } from "./salonVisibility";
 import { getSessionUser } from "./auth";
@@ -170,24 +171,13 @@ async function findFreeSlots(salon: SalonWithData, input: Record<string, unknown
 
 async function searchSalons(input: Record<string, unknown>): Promise<string> {
   const query = typeof input.query === "string" ? input.query.trim().slice(0, 60) : "";
-  const salons = await db.salon.findMany({
-    where: {
-      isActive: true,
-      ...PUBLIC_SALONS,
-      ...(query
-        ? {
-            OR: [
-              { name: { contains: query, mode: "insensitive" } },
-              { city: { contains: query, mode: "insensitive" } },
-              { address: { contains: query, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-    },
+  const found = await db.salon.findMany({
+    where: { isActive: true, ...PUBLIC_SALONS },
     orderBy: { name: "asc" },
     select: { name: true, slug: true, city: true, address: true },
-    take: 10,
+    ...(query ? {} : { take: 10 }),
   });
+  const salons = (query ? found.filter((s) => matchesQuery(query, s.name, s.city, s.address)) : found).slice(0, 10);
   if (salons.length === 0) return `Nema salona za „${query}”.`;
   return salons.map((s) => `- ${s.name}, ${fullAddress(s)}, /s/${s.slug}`).join("\n");
 }
