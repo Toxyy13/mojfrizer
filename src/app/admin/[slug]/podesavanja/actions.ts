@@ -6,7 +6,8 @@ import { db, systemDb } from "@/lib/db";
 import { requireSalonOwner } from "@/lib/access";
 import { appointmentsInBreak } from "@/lib/breaks";
 import { rsdToPara } from "@/lib/money";
-import { hashPassword } from "@/lib/auth";
+import { MAX_PASSWORD_LENGTH, hashPassword } from "@/lib/auth";
+import { consume } from "@/lib/rateLimit";
 import { formatPhone, looksLikeEmail, normalizePhone } from "@/lib/phone";
 import {
   MAX_DAYS_OFF_RANGE,
@@ -212,6 +213,10 @@ export async function createWorkerLogin(slug: string, formData: FormData): Promi
   if (worker.userId) back(slug, "radnici", { error: "Ovaj radnik već ima nalog." });
   if (!looksLikeEmail(email)) back(slug, "radnici", { error: "Upišite ispravnu email adresu." });
   if (password.length < 8) back(slug, "radnici", { error: "Lozinka mora imati bar 8 znakova." });
+  if (password.length > MAX_PASSWORD_LENGTH) back(slug, "radnici", { error: `Lozinka može imati najviše ${MAX_PASSWORD_LENGTH} znakova.` });
+  if (!(await consume([{ key: `worker-login:salon:${salon.id}`, limit: 20, windowSec: 3600 }])).ok) {
+    back(slug, "radnici", { error: "Previše pokušaja. Pokušajte ponovo kasnije." });
+  }
   // Creating a login account (and checking that the email is free) is system work: staff cannot see other users.
   if (await systemDb.user.findUnique({ where: { email }, select: { id: true } })) {
     back(slug, "radnici", { error: "Ta email adresa se već koristi. Izaberite drugu." });
