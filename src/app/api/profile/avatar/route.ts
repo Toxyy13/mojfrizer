@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { MAX_AVATAR_BYTES, sniffImageType } from "@/lib/avatar";
 import { db } from "@/lib/db";
+import { consume } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,13 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Prijavite se." }, { status: 401 });
+  if (!(await consume([{ key: `avatar:user:${user.id}`, limit: 10, windowSec: 3600 }])).ok) {
+    return NextResponse.json({ error: "Previše izmena slike. Pokušajte kasnije." }, { status: 429 });
+  }
+  // A declared size over the limit is refused before the body is read into memory.
+  if (Number(request.headers.get("content-length") ?? 0) > MAX_AVATAR_BYTES + 100_000) {
+    return NextResponse.json({ error: "Slika je prevelika." }, { status: 413 });
+  }
   try {
     const form = await request.formData();
     const photo = form.get("photo");

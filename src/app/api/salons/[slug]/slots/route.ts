@@ -3,6 +3,7 @@ import { systemDb } from "@/lib/db";
 import { getAvailableSlots, type Slot } from "@/lib/booking";
 import { hasSalonAccess } from "@/lib/access";
 import { findViewableSalon } from "@/lib/salonVisibility";
+import { consume, requestIp } from "@/lib/rateLimit";
 
 // Free slots change with every booking and depend on who asks (private salons, staff mode, a booking being moved),
 // so no browser, proxy or CDN may keep an answer.
@@ -17,6 +18,11 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> },
 ): Promise<NextResponse<SlotsResponse | { error: string }>> {
   try {
+    // The calendar page asks for slots on every click; this only stops scripts that scrape or hammer it.
+    const limited = await consume([{ key: `slots:ip:${await requestIp()}`, limit: 240, windowSec: 60 }]);
+    if (!limited.ok) {
+      return NextResponse.json({ error: "Previše zahteva. Pokušajte ponovo za minut." }, { status: 429, headers: { ...NO_STORE, "Retry-After": String(limited.retryAfterSec) } });
+    }
     const { slug } = await params;
     const search = request.nextUrl.searchParams;
     const salon = await findViewableSalon(slug);

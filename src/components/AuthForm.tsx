@@ -30,6 +30,13 @@ export function AuthForm({ action, fields, submitLabel, pendingLabel, next, hidd
   return (
     <form action={formAction} className="grid gap-5">
       {next && <input type="hidden" name="next" value={next} />}
+      {/* Honeypot: invisible to people, filled in by bots. The server refuses submissions that have it. */}
+      <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+        <label>
+          Website
+          <input type="text" name="mf_hp" tabIndex={-1} autoComplete="off" defaultValue="" />
+        </label>
+      </div>
       {hidden && Object.entries(hidden).map(([name, value]) => <input key={name} type="hidden" name={name} value={value} />)}
       {fields.map((field) =>
         field.type === "checkbox" ? (
