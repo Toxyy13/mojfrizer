@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { apiError, readJson, type ApiErrorBody } from "@/lib/apiError";
 import { answerQuestion, assistantRequestSchema, recordAssistantUse } from "@/lib/assistant";
 
 // Simple per-instance limit so one visitor can't run up the AI bill.
@@ -19,21 +20,21 @@ export interface AssistantResponse {
   reply: string;
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse<AssistantResponse | { error: string }>> {
+export async function POST(request: NextRequest): Promise<NextResponse<AssistantResponse | ApiErrorBody>> {
   try {
     const ip = (request.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
     if (isRateLimited(ip)) {
-      return NextResponse.json({ error: "Previše pitanja za kratko vreme. Pokušajte malo kasnije." }, { status: 429 });
+      return apiError(429, "Previše pitanja za kratko vreme. Pokušajte malo kasnije.", { "Retry-After": "600" });
     }
-    const parsed = assistantRequestSchema.safeParse(await request.json());
-    if (!parsed.success) return NextResponse.json({ error: "Neispravno pitanje" }, { status: 400 });
+    const parsed = assistantRequestSchema.safeParse(await readJson(request));
+    if (!parsed.success) return apiError(400, "Neispravno pitanje.");
 
     const result = await answerQuestion(parsed.data);
-    if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+    if (!result.ok) return apiError(result.status, result.error);
     await recordAssistantUse(parsed.data.slug);
     return NextResponse.json({ reply: result.reply });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Greška asistenta" }, { status: 500 });
+    return apiError(500, "Greška asistenta.");
   }
 }
