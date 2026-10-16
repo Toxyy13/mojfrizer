@@ -11,6 +11,8 @@ export interface SessionClaims {
   email: string | null;
   name: string;
   role: Role;
+  /** When the cookie was issued (epoch seconds). */
+  issuedAt: number;
 }
 
 export function secretKey(): Uint8Array {
@@ -27,7 +29,7 @@ export async function verifySessionToken(token: string | undefined): Promise<Ses
     if (typeof payload.sub !== "string") return null;
     const role = payload.role === "ADMIN" || payload.role === "WORKER" || payload.role === "DEVELOPER" ? payload.role : "CLIENT";
     const email = typeof payload.email === "string" ? payload.email : null;
-    return { id: payload.sub, email, name: String(payload.name), role };
+    return { id: payload.sub, email, name: String(payload.name), role, issuedAt: typeof payload.iat === "number" ? payload.iat : 0 };
   } catch {
     return null;
   }

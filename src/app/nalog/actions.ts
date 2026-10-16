@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sendPasswordChangedMail, sendResetMail, sendVerificationMail } from "@/lib/accountMail";
 import bcrypt from "bcryptjs";
-import { MAX_PASSWORD_LENGTH, getSessionUser, hashPassword, startSession } from "@/lib/auth";
+import { MAX_PASSWORD_LENGTH, getSessionUser, hashPassword, revokeSessions, startSession } from "@/lib/auth";
 import { consumeToken } from "@/lib/emailTokens";
 import { db, systemDb } from "@/lib/db";
 import { TERMS_VERSION } from "@/lib/company";
@@ -162,6 +162,8 @@ export async function resetPassword(_prev: FormState, formData: FormData): Promi
         data: { usedAt: new Date() },
       }),
     ]);
+    // A stolen cookie must not survive the reset.
+    await revokeSessions(used.userId);
     // A new password ends the wait caused by earlier wrong attempts on this login.
     const owner = await systemDb.user.findUnique({ where: { id: used.userId }, select: { email: true } });
     if (owner?.email) await clearLimit(`login:acct:${keyPart(owner.email)}`);
@@ -210,6 +212,9 @@ export async function changePassword(_prev: FormState, formData: FormData): Prom
     // Reset links requested before the change must not work any more.
     await systemDb.emailToken.updateMany({ where: { userId: session.id, kind: "RESET_PASSWORD", usedAt: null }, data: { usedAt: new Date() } });
     await clearLimit(rule.key);
+    // Every other device is logged out (a stolen cookie must not survive); this one gets a fresh session.
+    await revokeSessions(session.id);
+    await startSession(session);
     await sendPasswordChangedMail(session.id).catch((mailError: unknown) => console.error(mailError));
   } catch (error) {
     console.error(error);
