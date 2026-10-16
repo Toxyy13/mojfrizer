@@ -296,6 +296,10 @@ export default async function AccountPage() {
               </ul>
             </section>
 
+            <Link href="/nalog/lozinka" className="btn-ghost w-full">
+              Promena lozinke
+            </Link>
+
             <Link href="/brisanje-podataka" className="btn-ghost w-full">
               Moji podaci i brisanje naloga
             </Link>

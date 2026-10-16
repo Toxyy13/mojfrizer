@@ -25,6 +25,9 @@ export function DeveloperShell({ user, active, children }: DeveloperShellProps) 
             <p className="truncate text-sm font-medium leading-tight">Platforma</p>
             <p className="truncate text-xs text-muted">{user.name}</p>
           </div>
+          <Link href="/nalog/lozinka" className="btn-ghost btn-sm hidden sm:inline-flex">
+            Lozinka
+          </Link>
           <form action={logout}>
             <button className="btn-secondary btn-sm">Odjava</button>
           </form>

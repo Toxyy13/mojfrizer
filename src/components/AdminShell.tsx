@@ -43,6 +43,9 @@ export async function AdminShell({ salon, user, active, children }: AdminShellPr
           <Link href={`/s/${salon.slug}`} className="btn-ghost btn-sm hidden sm:inline-flex">
             Javna stranica ↗
           </Link>
+          <Link href="/nalog/lozinka" className="btn-ghost btn-sm hidden sm:inline-flex">
+            Lozinka
+          </Link>
           <form action={logout}>
             <button className="btn-secondary btn-sm">Odjava</button>
           </form>
