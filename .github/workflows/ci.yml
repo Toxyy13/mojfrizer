@@ -32,6 +32,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Fails on a critical vulnerability in anything that ships to production (dev tools are checked weekly by Dependabot).
+      - run: npm audit --omit=dev --audit-level=critical
       - run: npx prisma migrate deploy
       - run: npm run db:seed
       - run: npm run typecheck
