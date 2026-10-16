@@ -67,6 +67,8 @@ model User {
   termsVersion    String?
   // Customer turned off reminder and waitlist emails (account and password emails still go out).
   emailOptOut     Boolean  @default(false)
+  // Login cookies issued before this moment are no longer accepted (password reset or change).
+  sessionsValidAfter DateTime?
   createdAt      DateTime @default(now())
 
   ownedSalons         Salon[]         @relation("SalonOwner")
