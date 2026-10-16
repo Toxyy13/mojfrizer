@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import { MAX_PASSWORD_LENGTH, getSessionUser, signOut } from "@/lib/auth";
 import { isBlocked, recordHit, waitMessage } from "@/lib/rateLimit";
 import { db, systemDb } from "@/lib/db";
+import { fold } from "@/lib/searchText";
 import type { FormState } from "../prijava/actions";
 
 const CONFIRM_WORD = "OBRIŠI";
@@ -15,8 +16,9 @@ const CONFIRM_WORD = "OBRIŠI";
 export async function deleteMyAccount(_prev: FormState, formData: FormData): Promise<FormState> {
   const session = await getSessionUser();
   if (!session) redirect("/prijava?next=/brisanje-podataka");
-  const typed = String(formData.get("confirm") ?? "").trim().toLocaleUpperCase("sr-Latn");
-  if (typed !== CONFIRM_WORD) return { error: `Upišite reč ${CONFIRM_WORD} da potvrdite brisanje.` };
+  const typed = fold(String(formData.get("confirm") ?? "").trim());
+  // "obrisi" works as well as "obriši" (no one should have to type š).
+  if (typed !== fold(CONFIRM_WORD)) return { error: `Upišite reč ${CONFIRM_WORD} da potvrdite brisanje.` };
   try {
     // Someone at an unlocked phone must not be able to erase the account: accounts with a password ask for it.
     const owner = await systemDb.user.findUnique({ where: { id: session.id }, select: { passwordHash: true } });

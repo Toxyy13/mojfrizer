@@ -9,6 +9,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { AssistantWidget } from "@/components/AssistantWidget";
 import { PUBLIC_SALONS, canViewSalon } from "@/lib/salonVisibility";
 import { getSessionUser } from "@/lib/auth";
+import { matchesQuery } from "@/lib/searchText";
 import { db } from "@/lib/db";
 import { fullAddress } from "@/lib/salonAddress";
 import { formatRating, getSalonRatings } from "@/lib/reviews";
@@ -58,7 +59,7 @@ export default async function HomePage({ searchParams }: HomeProps) {
   const q = ((await searchParams).q ?? "").trim().slice(0, 60);
   const user = await getSessionUser();
 
-  const [salons, me] = await Promise.all([
+  const [allSalons, me] = await Promise.all([
     db.salon.findMany({
       where: {
         isActive: true,
@@ -66,19 +67,11 @@ export default async function HomePage({ searchParams }: HomeProps) {
         ...PUBLIC_SALONS,
         // A newly opened salon shows up in search once it has a price list.
         services: { some: { isActive: true } },
-        ...(q
-          ? {
-              OR: [
-                { name: { contains: q, mode: "insensitive" } },
-                { city: { contains: q, mode: "insensitive" } },
-                { address: { contains: q, mode: "insensitive" } },
-              ],
-            }
-          : {}),
       },
       orderBy: { name: "asc" },
       select: { id: true, name: true, slug: true, city: true, address: true },
-      take: 50,
+      // Diacritics and script don't matter in the search, so it is matched in code (see searchText.ts).
+      ...(q ? {} : { take: 50 }),
     }),
     user
       ? db.user.findUnique({
@@ -87,6 +80,7 @@ export default async function HomePage({ searchParams }: HomeProps) {
         })
       : null,
   ]);
+  const salons = (q ? allSalons.filter((s) => matchesQuery(q, s.name, s.city, s.address)) : allSalons).slice(0, 50);
   // The favorite is shown even when the salon is private, as long as this customer may open it.
   const favorite = me?.favoriteSalon?.isActive && (await canViewSalon(me.favoriteSalon.id, user)) ? me.favoriteSalon : null;
   const ratings = await getSalonRatings(salons.map((s) => s.id));

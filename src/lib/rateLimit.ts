@@ -84,6 +84,15 @@ export async function clearLimit(...keys: string[]): Promise<void> {
   }
 }
 
+/** Forgets every key that starts with a prefix (e.g. an account's counters from all addresses). */
+export async function clearLimitPrefix(prefix: string): Promise<void> {
+  try {
+    await systemDb.rateLimit.deleteMany({ where: { key: { startsWith: prefix } } });
+  } catch (error) {
+    console.error("rate limit reset failed", error);
+  }
+}
+
 /** Deletes counters whose window is long over (called by the cron job). */
 export async function purgeRateLimits(): Promise<number> {
   const { count } = await systemDb.rateLimit.deleteMany({ where: { windowStart: { lt: new Date(Date.now() - 2 * 24 * 3_600_000) } } });
