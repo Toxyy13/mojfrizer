@@ -26,7 +26,6 @@ export async function sendToSalon(slug: string, formData: FormData): Promise<voi
     await addMessage({ salonId: salon.id, clientId: user.id, senderId: user.id, fromSalon: false, text: parsed.data.text });
   } catch (error) {
     console.error(error);
-    return;
   }
   revalidatePath(`/poruke/${slug}`);
 }

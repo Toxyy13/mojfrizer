@@ -43,10 +43,6 @@ export async function markRead(salonId: string, clientId: string, readerIsSalon:
   });
 }
 
-export async function unreadForClient(clientId: string): Promise<number> {
-  return db.chatMessage.count({ where: { clientId, fromSalon: true, readAt: null } });
-}
-
 export async function unreadForSalon(salonId: string): Promise<number> {
   return db.chatMessage.count({ where: { salonId, fromSalon: false, readAt: null } });
 }

@@ -38,12 +38,13 @@ export async function setAppointmentStatus(slug: string, formData: FormData): Pr
   const id = String(formData.get("id") ?? "");
   const status = String(formData.get("status") ?? "") as AppointmentStatus;
   if (!ALLOWED.includes(status)) return;
+  const where = { id, salonId: salon.id, ...(staffWorkerId ? { workerId: staffWorkerId } : {}) };
   let overlap = false;
   try {
     // salonId in the filter keeps one tenant from touching another tenant's appointment.
     await db.$transaction(async (tx) => {
       const { count } = await tx.appointment.updateMany({
-        where: { id, salonId: salon.id, ...(staffWorkerId ? { workerId: staffWorkerId } : {}) },
+        where,
         data: { status },
       });
       // Cancelling or restoring a service can change combo prices in the same visit.
@@ -51,7 +52,7 @@ export async function setAppointmentStatus(slug: string, formData: FormData): Pr
     });
     if (status === "CANCELLED") {
       const cancelled = await db.appointment.findFirst({
-        where: { id, salonId: salon.id, ...(staffWorkerId ? { workerId: staffWorkerId } : {}) },
+        where,
         select: { startTime: true },
       });
       if (cancelled) await notifyWaitlist(salon.id, formatLocalDateIso(cancelled.startTime, TIME_ZONE));

@@ -20,6 +20,13 @@ const MIN_PASSWORD_LENGTH = 8;
 
 const RESET_NOTICE = "Ako nalog sa tom adresom postoji, poslali smo vam link za novu lozinku.";
 
+const passwordError = (password: string): string | null =>
+  password.length < MIN_PASSWORD_LENGTH
+    ? `Lozinka mora imati bar ${MIN_PASSWORD_LENGTH} znakova.`
+    : password.length > MAX_PASSWORD_LENGTH
+      ? `Lozinka može imati najviše ${MAX_PASSWORD_LENGTH} znakova.`
+      : null;
+
 const emailSchema = z.string().trim().toLowerCase().email().max(120);
 
 export async function register(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -45,10 +52,8 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
   if (!email.success) return { error: "Upišite ispravnu email adresu.", values };
   if (formData.get("terms") !== "on") return { error: "Potvrdite da imate najmanje 15 godina i da prihvatate uslove.", values };
   if (rawPhone && !phone) return { error: "Broj telefona nije ispravan, npr. 064 123 4567.", values };
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return { error: `Lozinka mora imati bar ${MIN_PASSWORD_LENGTH} znakova.`, values };
-  }
-  if (password.length > MAX_PASSWORD_LENGTH) return { error: `Lozinka može imati najviše ${MAX_PASSWORD_LENGTH} znakova.`, values };
+  const passwordProblem = passwordError(password);
+  if (passwordProblem) return { error: passwordProblem, values };
 
   try {
     // Registration creates the account before anyone is logged in: system access (RLS).
@@ -85,7 +90,6 @@ export async function setFavoriteSalon(formData: FormData): Promise<void> {
     await db.user.update({ where: { id: user.id }, data: { favoriteSalonId: salonId || null } });
   } catch (error) {
     console.error(error);
-    return;
   }
   revalidatePath(returnTo);
 }
@@ -142,10 +146,8 @@ export async function requestPasswordReset(_prev: FormState, formData: FormData)
 export async function resetPassword(_prev: FormState, formData: FormData): Promise<FormState> {
   const token = String(formData.get("token") ?? "");
   const password = String(formData.get("password") ?? "");
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return { error: `Lozinka mora imati bar ${MIN_PASSWORD_LENGTH} znakova.` };
-  }
-  if (password.length > MAX_PASSWORD_LENGTH) return { error: `Lozinka može imati najviše ${MAX_PASSWORD_LENGTH} znakova.` };
+  const passwordProblem = passwordError(password);
+  if (passwordProblem) return { error: passwordProblem };
   const limited = await consume([{ key: `reset-use:ip:${await requestIp()}`, limit: 20, windowSec: 900 }]);
   if (!limited.ok) return { error: waitMessage(limited) };
   try {
@@ -209,8 +211,8 @@ export async function changePassword(_prev: FormState, formData: FormData): Prom
       await recordHit(rule);
       return { error: "Trenutna lozinka nije tačna." };
     }
-    if (password.length < MIN_PASSWORD_LENGTH) return { error: `Lozinka mora imati bar ${MIN_PASSWORD_LENGTH} znakova.` };
-    if (password.length > MAX_PASSWORD_LENGTH) return { error: `Lozinka može imati najviše ${MAX_PASSWORD_LENGTH} znakova.` };
+    const passwordProblem = passwordError(password);
+    if (passwordProblem) return { error: passwordProblem };
     if (password === current) return { error: "Nova lozinka mora da se razlikuje od trenutne." };
     await systemDb.user.update({ where: { id: session.id }, data: { passwordHash: await hashPassword(password) } });
     // Reset links requested before the change must not work any more.
