@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import { signOut, startSession, verifyCredentials } from "@/lib/auth";
 import { sendLockoutMail } from "@/lib/accountMail";
 import { looksLikeEmail } from "@/lib/phone";
+import { headers } from "next/headers";
+import { systemDb } from "@/lib/db";
+import { assessLogin, captchaEnabled, captchaPassed, isKnownDevice, rememberDevice } from "@/lib/loginRisk";
 import { landingPathFor, safeNextPath } from "@/lib/landing";
 import { clearLimit, consume, hitCount, isBlocked, keyPart, recordHit, requestIp, waitMessage, type Rule } from "@/lib/rateLimit";
 
@@ -12,6 +15,8 @@ import { clearLimit, consume, hitCount, isBlocked, keyPart, recordHit, requestIp
 const IP_ATTEMPTS = { limit: 30, windowSec: 600 };
 const ACCOUNT_FAILURES = { limit: 5, windowSec: 900 };
 const ACCOUNT_IP_FAILURES = { limit: 5, windowSec: 900 };
+const IP_FAILURES = { limit: Number.MAX_SAFE_INTEGER, windowSec: 600 };
+const REFUSED = "Prijava je odbijena zbog sumnjive aktivnosti. Pokušajte ponovo kasnije ili kontaktirajte podršku.";
 const lockedMessage = (minutes: number): string => `Uneli ste pogrešnu lozinku previše puta. Pokušajte ponovo za ${minutes} min ili promenite lozinku preko „Zaboravljena lozinka”.`;
 /** From this many wrong passwords on, the form says how many tries are left before the wait. */
 const WARN_FROM_FAILURES = 3;
@@ -24,6 +29,8 @@ export interface FormState {
   values?: Record<string, string>;
   /** Login is locked until this moment (epoch ms): the form disables itself and counts down. */
   lockedUntil?: number;
+  /** The form must show the captcha before the next try. */
+  captcha?: boolean;
 }
 
 function lockedState(retryAfterSec: number, values: Record<string, string>): FormState {
@@ -51,9 +58,24 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
       const blocked = await isBlocked(rule);
       if (!blocked.ok) return lockedState(blocked.retryAfterSec, values);
     }
+    const ipFailRule: Rule = { key: `login:ipfail:${ip}`, ...IP_FAILURES };
+    const known = await isKnownDevice(account);
+    const role = looksLikeEmail(loginValue) ? (await systemDb.user.findUnique({ where: { email: loginValue.trim().toLowerCase() }, select: { role: true } }))?.role : undefined;
+    const { risk, reasons } = assessLogin({
+      userAgent: (await headers()).get("user-agent") ?? "",
+      knownDevice: known,
+      accountFailures: await hitCount(failRules[0]),
+      ipFailures: await hitCount(ipFailRule),
+      developer: role === "DEVELOPER",
+    });
+    if (risk !== "no_risk") console.warn(`login ${risk}`, { account, ip, reasons });
+    if (risk === "dangerous") return { error: REFUSED, values };
+    if (risk === "risky" && captchaEnabled() && !(await captchaPassed(String(formData.get("cf-turnstile-response") ?? ""), ip))) {
+      return { error: "Potvrdite da niste robot, pa pokušajte ponovo.", values, captcha: true };
+    }
     const user = await verifyCredentials(loginValue, password);
     if (!user) {
-      for (const rule of failRules) await recordHit(rule);
+      for (const rule of [...failRules, ipFailRule]) await recordHit(rule);
       // The fifth wrong password starts the wait: tell the owner of the account once.
       if (looksLikeEmail(loginValue) && !(await isBlocked(failRules[0])).ok) {
         await sendLockoutMail(loginValue.trim()).catch((mailError: unknown) => console.error(mailError));
@@ -69,6 +91,7 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
     }
     await clearLimit(...failRules.map((rule) => rule.key));
     await startSession(user, formData.get("remember") === "on");
+    await rememberDevice(account);
     target = safeNextPath(formData.get("next")) ?? (await landingPathFor(user));
   } catch (error) {
     console.error(error);

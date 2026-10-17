@@ -1,5 +1,6 @@
 "use client";
 
+import Script from "next/script";
 import { useActionState, useEffect, useState, type ReactNode } from "react";
 import type { FormState } from "@/app/prijava/actions";
 
@@ -88,6 +89,12 @@ export function AuthForm({ action, fields, submitLabel, pendingLabel, next, hidd
         ),
       )}
       </fieldset>
+      {state.captcha && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+        <>
+          <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="lazyOnload" />
+          <div className="cf-turnstile" data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
+        </>
+      )}
       {locked && (
         <p className="alert-error" role="status">
           Prijava je privremeno zaključana zbog previše pogrešnih lozinki. Pokušajte ponovo za <strong className="tabular-nums">{clock(lockLeft)}</strong>.
