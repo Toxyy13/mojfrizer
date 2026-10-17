@@ -31,6 +31,11 @@ function refresh(slug: string): void {
   revalidatePath(`/s/${slug}`);
 }
 
+function done(slug: string, section: string, ok: string): never {
+  refresh(slug);
+  back(slug, section, { ok });
+}
+
 export async function saveSalonInfo(slug: string, formData: FormData): Promise<void> {
   const { salon } = await requireSalonOwner(slug);
   const parsed = salonInfoSchema.safeParse({
@@ -56,8 +61,7 @@ export async function saveSalonInfo(slug: string, formData: FormData): Promise<v
     console.error(error);
     back(slug, "salon", { error: "Čuvanje nije uspelo." });
   }
-  refresh(slug);
-  back(slug, "salon", { ok: "Podaci o salonu su sačuvani." });
+  done(slug, "salon", "Podaci o salonu su sačuvani.");
 }
 
 export async function saveVisibility(slug: string, formData: FormData): Promise<void> {
@@ -70,9 +74,8 @@ export async function saveVisibility(slug: string, formData: FormData): Promise<
     console.error(error);
     back(slug, "vidljivost", { error: "Čuvanje nije uspelo." });
   }
-  refresh(slug);
   revalidatePath("/");
-  back(slug, "vidljivost", { ok: visibility === "PRIVATE" ? "Salon je sada privatan." : "Salon je sada javan." });
+  done(slug, "vidljivost", visibility === "PRIVATE" ? "Salon je sada privatan." : "Salon je sada javan.");
 }
 
 export async function saveService(slug: string, formData: FormData): Promise<void> {
@@ -104,8 +107,7 @@ export async function saveService(slug: string, formData: FormData): Promise<voi
     saved = false;
   }
   if (!saved) back(slug, "usluge", { error: "Čuvanje usluge nije uspelo." });
-  refresh(slug);
-  back(slug, "usluge", { ok: id ? `Usluga „${f.name}" je izmenjena.` : `Usluga „${f.name}" je dodata.` });
+  done(slug, "usluge", id ? `Usluga „${f.name}" je izmenjena.` : `Usluga „${f.name}" je dodata.`);
 }
 
 /** Hides or shows a service. Services are never deleted because past appointments point to them. */
@@ -114,8 +116,7 @@ export async function toggleService(slug: string, formData: FormData): Promise<v
   const id = String(formData.get("id") ?? "");
   const isActive = formData.get("isActive") === "true";
   await db.service.updateMany({ where: { id, salonId: salon.id }, data: { isActive } });
-  refresh(slug);
-  back(slug, "usluge", { ok: isActive ? "Usluga je ponovo u cenovniku." : "Usluga je sklonjena iz cenovnika." });
+  done(slug, "usluge", isActive ? "Usluga je ponovo u cenovniku." : "Usluga je sklonjena iz cenovnika.");
 }
 
 export async function saveWorkingHours(slug: string, formData: FormData): Promise<void> {
@@ -131,8 +132,7 @@ export async function saveWorkingHours(slug: string, formData: FormData): Promis
     console.error(error);
     back(slug, "radno-vreme", { error: "Čuvanje radnog vremena nije uspelo." });
   }
-  refresh(slug);
-  back(slug, "radno-vreme", { ok: "Radno vreme je sačuvano. Već zakazani termini ostaju." });
+  done(slug, "radno-vreme", "Radno vreme je sačuvano. Već zakazani termini ostaju.");
 }
 
 export async function addDaysOff(slug: string, formData: FormData): Promise<void> {
@@ -179,8 +179,7 @@ export async function addDaysOff(slug: string, formData: FormData): Promise<void
 export async function removeDayOff(slug: string, formData: FormData): Promise<void> {
   const { salon } = await requireSalonOwner(slug);
   await db.salonDayOff.deleteMany({ where: { id: String(formData.get("id") ?? ""), salonId: salon.id } });
-  refresh(slug);
-  back(slug, "neradni-dani", { ok: "Neradni dan je uklonjen." });
+  done(slug, "neradni-dani", "Neradni dan je uklonjen.");
 }
 
 export async function saveWorker(slug: string, formData: FormData): Promise<void> {
@@ -198,8 +197,7 @@ export async function saveWorker(slug: string, formData: FormData): Promise<void
   } else {
     await db.workerProfile.create({ data: { salonId: salon.id, displayName, specialities } });
   }
-  refresh(slug);
-  back(slug, "radnici", { ok: id ? "Radnik je izmenjen." : `${displayName} je dodat/a.` });
+  done(slug, "radnici", id ? "Radnik je izmenjen." : `${displayName} je dodat/a.`);
 }
 
 /** Gives a worker their own login (email + password set by the owner); it sees only that worker's schedule. */
@@ -225,8 +223,7 @@ export async function createWorkerLogin(slug: string, formData: FormData): Promi
     data: { email, name: worker.displayName, passwordHash: await hashPassword(password), role: "WORKER" },
   });
   await db.workerProfile.update({ where: { id: worker.id }, data: { userId: user.id } });
-  refresh(slug);
-  back(slug, "radnici", { ok: `Nalog za ${worker.displayName} je napravljen (${email}).` });
+  done(slug, "radnici", `Nalog za ${worker.displayName} je napravljen (${email}).`);
 }
 
 /** Unlinks a worker's login; their past appointments stay. */
@@ -236,8 +233,7 @@ export async function removeWorkerLogin(slug: string, formData: FormData): Promi
   if (!worker?.userId) back(slug, "radnici", { error: "Radnik nema nalog." });
   if (worker.userId === salon.ownerId) back(slug, "radnici", { error: "Nalog vlasnika se ne uklanja." });
   await db.workerProfile.update({ where: { id: worker.id }, data: { userId: null } });
-  refresh(slug);
-  back(slug, "radnici", { ok: "Nalog radnika je uklonjen." });
+  done(slug, "radnici", "Nalog radnika je uklonjen.");
 }
 
 export async function toggleWorker(slug: string, formData: FormData): Promise<void> {
@@ -257,8 +253,7 @@ export async function toggleWorker(slug: string, formData: FormData): Promise<vo
     }
   }
   await db.workerProfile.updateMany({ where: { id, salonId: salon.id }, data: { isActive } });
-  refresh(slug);
-  back(slug, "radnici", { ok: isActive ? "Radnik je ponovo aktivan." : "Radnik više ne prima termine." });
+  done(slug, "radnici", isActive ? "Radnik je ponovo aktivan." : "Radnik više ne prima termine.");
 }
 
 /** Blocks one hairdresser: whole days (no times) or a time window within one day. */
@@ -309,8 +304,7 @@ export async function addWorkerTimeOff(slug: string, formData: FormData): Promis
 export async function removeWorkerTimeOff(slug: string, formData: FormData): Promise<void> {
   const { salon } = await requireSalonOwner(slug);
   await db.workerTimeOff.deleteMany({ where: { id: String(formData.get("id") ?? ""), salonId: salon.id } });
-  refresh(slug);
-  back(slug, "odsustva", { ok: "Odsustvo je uklonjeno." });
+  done(slug, "odsustva", "Odsustvo je uklonjeno.");
 }
 
 /** Adds a break for one hairdresser: repeating on chosen weekdays, or on a single date. Only the owner decides breaks. */
@@ -364,8 +358,7 @@ export async function addWorkerBreak(slug: string, formData: FormData): Promise<
 export async function removeWorkerBreak(slug: string, formData: FormData): Promise<void> {
   const { salon } = await requireSalonOwner(slug);
   await db.workerBreak.deleteMany({ where: { id: String(formData.get("id") ?? ""), salonId: salon.id } });
-  refresh(slug);
-  back(slug, "pauze", { ok: "Pauza je uklonjena." });
+  done(slug, "pauze", "Pauza je uklonjena.");
 }
 
 /** Saves how long a set of services takes together, e.g. šišanje + pranje = 30 min. */
@@ -391,13 +384,11 @@ export async function saveServiceCombo(slug: string, formData: FormData): Promis
   } else {
     await db.serviceCombo.create({ data: { salonId: salon.id, serviceIds, durationMinutes } });
   }
-  refresh(slug);
-  back(slug, "kombinacije", { ok: same ? "Trajanje kombinacije je izmenjeno." : "Kombinacija je dodata." });
+  done(slug, "kombinacije", same ? "Trajanje kombinacije je izmenjeno." : "Kombinacija je dodata.");
 }
 
 export async function removeServiceCombo(slug: string, formData: FormData): Promise<void> {
   const { salon } = await requireSalonOwner(slug);
   await db.serviceCombo.deleteMany({ where: { id: String(formData.get("id") ?? ""), salonId: salon.id } });
-  refresh(slug);
-  back(slug, "kombinacije", { ok: "Kombinacija je obrisana. Te usluge zajedno traju koliko i zbir." });
+  done(slug, "kombinacije", "Kombinacija je obrisana. Te usluge zajedno traju koliko i zbir.");
 }

@@ -7,7 +7,6 @@ import { systemDb } from "./db";
 import { looksLikeEmail, normalizePhone } from "./phone";
 import { SESSION_COOKIE, currentSessionClaims, secretKey } from "./sessionToken";
 
-const COOKIE_NAME = SESSION_COOKIE;
 const SESSION_DAYS = 7;
 /** bcrypt only reads the first 72 bytes; capping the input also stops huge passwords from being used to burn CPU. */
 export const MAX_PASSWORD_LENGTH = 72;
@@ -48,7 +47,7 @@ export async function startSession(user: SessionUser): Promise<void> {
     .setExpirationTime(`${SESSION_DAYS}d`)
     .sign(secretKey());
   const store = await cookies();
-  store.set(COOKIE_NAME, token, {
+  store.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -59,7 +58,7 @@ export async function startSession(user: SessionUser): Promise<void> {
 
 export async function signOut(): Promise<void> {
   const store = await cookies();
-  store.delete(COOKIE_NAME);
+  store.delete(SESSION_COOKIE);
 }
 
 /**

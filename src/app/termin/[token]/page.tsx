@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { AppointmentStatus } from "@prisma/client";
 import { SiteHeader } from "@/components/SiteHeader";
+import { CLIENT_STATUS_LABEL } from "@/components/clientStatusLabel";
 import { ManageBooking } from "@/components/ManageBooking";
 import { systemDb as db } from "@/lib/db";
 import { appointmentWhenFormat, canChangeOnline, loadManagedAppointment } from "@/lib/manageBooking";
@@ -16,13 +16,6 @@ import { cancelBooking, rescheduleBooking, reviewVisit } from "./actions";
 
 export const metadata: Metadata = { title: "Moj termin · mojfrizer", robots: { index: false } };
 export const dynamic = "force-dynamic";
-
-const STATUS_LABEL: Record<AppointmentStatus, string> = {
-  BOOKED: "Zakazano",
-  COMPLETED: "Završeno",
-  CANCELLED: "Otkazano",
-  NO_SHOW: "Niste došli",
-};
 
 export default async function ManageBookingPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -44,7 +37,7 @@ export default async function ManageBookingPage({ params }: { params: Promise<{ 
         <div className="card p-5 sm:p-8">
         <p className="flex items-center gap-2">
           <span className="eyebrow">Moj termin</span>
-          <span className={`badge ${a.status === "BOOKED" ? "bg-burgundy-soft text-burgundy" : "bg-sand text-muted"}`}>{STATUS_LABEL[a.status]}</span>
+          <span className={`badge ${a.status === "BOOKED" ? "bg-burgundy-soft text-burgundy" : "bg-sand text-muted"}`}>{CLIENT_STATUS_LABEL[a.status]}</span>
         </p>
         <h1 className={`mt-4 font-serif text-4xl leading-tight first-letter:uppercase sm:text-5xl ${a.status === "CANCELLED" ? "text-muted line-through" : ""}`}>
           {appointmentWhenFormat.format(a.startTime)}

@@ -59,7 +59,7 @@ export async function requestUrgent(slug: string, raw: unknown): Promise<ActionR
     if ((await countOpenUrgentRequests(salon.id, parsed.data.clientPhone, clientId)) >= MAX_OPEN_URGENT_REQUESTS) {
       return { ok: false, error: "Već imate otvorene hitne zahteve u ovom salonu. Sačekajte odgovor ili pozovite salon." };
     }
-    return await createUrgentRequest(salon.id, parsed.data, user?.role === "CLIENT" ? user.id : null);
+    return await createUrgentRequest(salon.id, parsed.data, clientId);
   } catch (error) {
     console.error(error);
     return { ok: false, error: "Došlo je do greške. Pokušajte ponovo ili nas pozovite." };

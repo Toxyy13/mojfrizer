@@ -26,13 +26,12 @@ export async function addMessage(input: {
 }
 
 export async function loadConversation(salonId: string, clientId: string): Promise<ChatLine[]> {
-  const rows = await db.chatMessage.findMany({
+  return db.chatMessage.findMany({
     where: { salonId, clientId },
     orderBy: { createdAt: "asc" },
     take: 300,
     select: { id: true, text: true, fromSalon: true, createdAt: true },
   });
-  return rows;
 }
 
 /** Marks the other side's messages as read when someone opens the conversation. */
@@ -41,10 +40,6 @@ export async function markRead(salonId: string, clientId: string, readerIsSalon:
     where: { salonId, clientId, fromSalon: !readerIsSalon, readAt: null },
     data: { readAt: new Date() },
   });
-}
-
-export async function unreadForClient(clientId: string): Promise<number> {
-  return db.chatMessage.count({ where: { clientId, fromSalon: true, readAt: null } });
 }
 
 export async function unreadForSalon(salonId: string): Promise<number> {

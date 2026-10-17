@@ -68,7 +68,6 @@ export function AuthForm({ action, fields, submitLabel, pendingLabel, next, hidd
               type="checkbox"
               name={field.name}
               required={!field.optional}
-              defaultChecked={false}
               className="mt-0.5 size-5 shrink-0 accent-burgundy"
             />
             <span>{field.content ?? field.label}</span>

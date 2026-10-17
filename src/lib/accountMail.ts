@@ -4,8 +4,6 @@ import { systemDb as db } from "./db";
 import { issueToken } from "./emailTokens";
 import { sendMail } from "./mail";
 
-const baseUrl = (): string => appUrl();
-
 /** Mails the "confirm your email" link. Does nothing for verified accounts or without an email. */
 export async function sendVerificationMail(userId: string): Promise<boolean> {
   const user = await db.user.findUnique({ where: { id: userId }, select: { name: true, email: true, emailVerifiedAt: true } });
@@ -19,7 +17,7 @@ export async function sendVerificationMail(userId: string): Promise<boolean> {
       `Zdravo ${user.name},`,
       "",
       "potvrdite email adresu klikom na link (važi 48 sati):",
-      `${baseUrl()}/potvrda-emaila?token=${token}`,
+      `${appUrl()}/potvrda-emaila?token=${token}`,
       "",
       "Tek posle potvrde šaljemo podsetnike za termine na ovu adresu.",
       "Ako niste pravili nalog na mojfrizer.com, ignorišite ovaj mejl.",
@@ -41,7 +39,7 @@ export async function sendResetMail(email: string): Promise<void> {
       `Zdravo ${user.name},`,
       "",
       "da biste postavili novu lozinku, kliknite na link (važi 1 sat):",
-      `${baseUrl()}/nova-lozinka?token=${token}`,
+      `${appUrl()}/nova-lozinka?token=${token}`,
       "",
       "Ako niste tražili novu lozinku, ignorišite ovaj mejl, vaša lozinka ostaje ista.",
     ].join("\n"),
@@ -60,7 +58,7 @@ export async function sendLockoutMail(email: string): Promise<void> {
       "",
       "neko je 5 puta uneo pogrešnu lozinku za vaš nalog, pa smo prijavu privremeno zaključali na 15 minuta.",
       "Ako ste to bili vi, sačekajte ili postavite novu lozinku:",
-      `${baseUrl()}/zaboravljena-lozinka`,
+      `${appUrl()}/zaboravljena-lozinka`,
       "",
       "Ako niste, ne morate ništa da radite: vaša lozinka nije promenjena. Preporučujemo da je ipak promenite.",
     ].join("\n"),
@@ -79,7 +77,7 @@ export async function sendPasswordChangedMail(userId: string): Promise<void> {
       "",
       "lozinka za vaš nalog na mojfrizer.com je upravo promenjena.",
       "Ako to niste vi, odmah postavite novu lozinku:",
-      `${baseUrl()}/zaboravljena-lozinka`,
+      `${appUrl()}/zaboravljena-lozinka`,
     ].join("\n"),
   });
 }

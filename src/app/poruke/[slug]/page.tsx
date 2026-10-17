@@ -6,7 +6,6 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { findViewableSalon } from "@/lib/salonVisibility";
 import { getSessionUser } from "@/lib/auth";
 import { loadConversation, markRead } from "@/lib/chat";
-import { db } from "@/lib/db";
 import { sendToSalon } from "../actions";
 
 export const metadata: Metadata = { title: "Poruke · mojfrizer" };

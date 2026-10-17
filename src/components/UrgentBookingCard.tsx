@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { BookingService, BookingWorker } from "./BookingForm";
 import { formatRsd } from "@/lib/money";
 
-export interface UrgentChatValues {
+interface UrgentChatValues {
   serviceIds: string[];
   workerId: string | null;
   dateIso: string;

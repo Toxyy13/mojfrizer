@@ -58,12 +58,13 @@ async function computeAvailableSlots(query: SlotQuery): Promise<Slot[]> {
     select: { id: true },
   });
   if (workers.length === 0) return [];
+  const workerIds = workers.map((w) => w.id);
 
   const dayStart = localToUtc(query.dateIso, 0, TIME_ZONE);
   const dayEnd = localToUtc(query.dateIso, 24 * 60, TIME_ZONE);
   const workerFilter = {
     salonId: salon.id,
-    workerId: { in: workers.map((w) => w.id) },
+    workerId: { in: workerIds },
     startTime: { lt: dayEnd },
     endTime: { gt: dayStart },
   };
@@ -72,7 +73,7 @@ async function computeAvailableSlots(query: SlotQuery): Promise<Slot[]> {
   const [appointments, timeOff, breakRules] = await Promise.all([
     db.appointment.findMany({ where: { ...workerFilter, status: { in: [...ACTIVE_STATUSES] } }, select }),
     db.workerTimeOff.findMany({ where: workerFilter, select }),
-    db.workerBreak.findMany({ where: { salonId: salon.id, workerId: { in: workers.map((w) => w.id) } } }),
+    db.workerBreak.findMany({ where: { salonId: salon.id, workerId: { in: workerIds } } }),
   ]);
   // Breaks (lunch, coffee) block a worker like time off does, so a visit can't run across one.
   const busy = [...appointments, ...timeOff, ...breakIntervalsForDay(breakRules, query.dateIso)];
