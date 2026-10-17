@@ -6,6 +6,7 @@ import { Avatar } from "@/components/Avatar";
 import { avatarUrl } from "@/lib/avatar";
 import { requireSalonAccess } from "@/lib/access";
 import { clientFlags, clientKeyOf } from "@/lib/clients";
+import { shiftMonthIso } from "@/lib/platformStats";
 import { getRevenue } from "@/lib/revenue";
 import { formatRsd } from "@/lib/money";
 import { TIME_ZONE, addDaysIso, formatDateSr, formatLocalTime, isValidDateIso, localToUtc, todayIso } from "@/lib/time";
@@ -38,6 +39,8 @@ const STATUS_STYLE: Record<AppointmentStatus, { row: string; badge: string }> = 
   NO_SHOW: { row: "border-l-line opacity-75", badge: "bg-sand text-muted" },
 };
 
+const NOTE = "mt-4 rounded-2xl border border-dashed border-line bg-sand px-4 py-3 text-sm text-muted";
+
 export default async function AdminSalonPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
   const { salon, user, staffWorkerId } = await requireSalonAccess(slug);
@@ -48,9 +51,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
 
   const dayStart = localToUtc(dateIso, 0, TIME_ZONE);
   const dayEnd = localToUtc(dateIso, 24 * 60, TIME_ZONE);
-  const monthStartIso = `${dateIso.slice(0, 7)}-01`;
-  const [y, m] = dateIso.split("-").map(Number);
-  const nextMonthIso = `${m === 12 ? y + 1 : y}-${String(m === 12 ? 1 : m + 1).padStart(2, "0")}-01`;
+  const monthIso = dateIso.slice(0, 7);
 
   const [workers, services, combos, hours, daysOff, appointments, dayRevenue, monthRevenue, timeOff, breakRules, urgentRequests] = await Promise.all([
     db.workerProfile.findMany({ where: { salonId: salon.id, isActive: true, ...(staffWorkerId ? { id: staffWorkerId } : {}) }, orderBy: { displayName: "asc" } }),
@@ -64,11 +65,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
       orderBy: { startTime: "asc" },
     }),
     getRevenue(salon.id, dayStart, dayEnd),
-    getRevenue(
-      salon.id,
-      localToUtc(monthStartIso, 0, TIME_ZONE),
-      localToUtc(nextMonthIso, 0, TIME_ZONE),
-    ),
+    getRevenue(salon.id, localToUtc(`${monthIso}-01`, 0, TIME_ZONE), localToUtc(`${shiftMonthIso(monthIso, 1)}-01`, 0, TIME_ZONE)),
     db.workerTimeOff.findMany({
       where: { salonId: salon.id, startTime: { lt: dayEnd }, endTime: { gt: dayStart } },
       orderBy: { startTime: "asc" },
@@ -145,7 +142,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
                 {timeOff
                   .filter((t) => t.workerId === w.id)
                   .map((t) => (
-                    <p key={t.id} className="mt-4 rounded-2xl border border-dashed border-line bg-sand px-4 py-3 text-sm text-muted">
+                    <p key={t.id} className={NOTE}>
                       Odsustvo{" "}
                       {t.startTime <= dayStart && t.endTime >= dayEnd
                         ? "ceo dan"
@@ -158,7 +155,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
                 {dayBreaks
                   .filter((b) => b.workerId === w.id)
                   .map((b) => (
-                    <p key={`b${b.id}`} className="mt-4 rounded-2xl border border-dashed border-line bg-sand px-4 py-3 text-sm text-muted">
+                    <p key={`b${b.id}`} className={NOTE}>
                       Pauza {formatLocalTime(b.startTime, TIME_ZONE)}–{formatLocalTime(b.endTime, TIME_ZONE)}
                       {b.label ? ` · ${b.label}` : ""}
                     </p>
@@ -169,7 +166,11 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
                   </p>
                 )}
                 <ol className="mt-4 grid gap-2">
-                  {list.map((a) => (
+                  {list.map((a) => {
+                    const flag = flags.get(clientKeyOf(a));
+                    const clientName = a.guestName ?? a.client?.name ?? "Mušterija";
+                    const strike = a.status === "CANCELLED" ? "line-through" : "";
+                    return (
                     <li key={a.id} className={`card border-l-4 p-4 ${STATUS_STYLE[a.status].row}`}>
                       <div className="flex items-start gap-3">
                         <div className="w-14 shrink-0">
@@ -180,20 +181,13 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
                           <div className="flex flex-wrap items-center gap-2">
                             {a.client && <Avatar name={a.client.name} src={avatarUrl(a.client.id, a.client.avatar)} size={24} />}
                             {isStaff ? (
-                              <span className={`font-medium ${a.status === "CANCELLED" ? "line-through" : ""}`}>
-                                {a.guestName ?? a.client?.name ?? "Mušterija"}
-                              </span>
+                              <span className={`font-medium ${strike}`}>{clientName}</span>
                             ) : (
-                              <Link
-                                href={`/admin/${salon.slug}/musterije/${encodeURIComponent(clientKeyOf(a))}`}
-                                className={`font-medium hover:text-burgundy ${a.status === "CANCELLED" ? "line-through" : ""}`}
-                              >
-                                {a.guestName ?? a.client?.name ?? "Mušterija"}
+                              <Link href={`/admin/${salon.slug}/musterije/${encodeURIComponent(clientKeyOf(a))}`} className={`font-medium hover:text-burgundy ${strike}`}>
+                                {clientName}
                               </Link>
                             )}
-                            {(flags.get(clientKeyOf(a))?.noShows ?? 0) > 0 && (
-                              <span className="badge bg-burgundy text-white">{flags.get(clientKeyOf(a))?.noShows}× nije došao</span>
-                            )}
+                            {(flag?.noShows ?? 0) > 0 && <span className="badge bg-burgundy text-white">{flag?.noShows}× nije došao</span>}
                             {a.source === "SALON" && <span className="badge bg-sand text-muted">upisao salon</span>}
                             <span className={`badge ml-auto ${STATUS_STYLE[a.status].badge}`}>{STATUS_LABEL[a.status]}</span>
                           </div>
@@ -201,9 +195,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
                             {servicesLabel(a)} · {formatRsd(a.price)} · <PhoneLink phone={a.guestPhone ?? a.client?.phone ?? null} />
                           </p>
                           {a.note && <p className="mt-2 rounded-lg bg-cream px-3 py-2 text-xs text-muted">„{a.note}”</p>}
-                          {flags.get(clientKeyOf(a))?.note && (
-                            <p className="mt-2 text-xs text-muted">Beleška: {flags.get(clientKeyOf(a))?.note}</p>
-                          )}
+                          {flag?.note && <p className="mt-2 text-xs text-muted">Beleška: {flag.note}</p>}
                           <div className="mt-3 flex flex-wrap gap-2">
                             {a.status === "BOOKED" ? (
                               <>
@@ -218,7 +210,8 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
                         </div>
                       </div>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ol>
               </article>
             );

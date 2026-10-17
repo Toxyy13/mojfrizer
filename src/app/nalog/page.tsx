@@ -15,6 +15,7 @@ import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/money";
 import { formatPhone } from "@/lib/phone";
 import { fullAddress } from "@/lib/salonAddress";
+import { TIME_ZONE } from "@/lib/time";
 import { canReview } from "@/lib/reviews";
 import { servicesLabel } from "@/lib/visit";
 import { logout } from "../prijava/actions";
@@ -22,9 +23,6 @@ import { resendVerification } from "./actions";
 
 export const metadata: Metadata = { title: "Moj nalog · mojfrizer" };
 export const dynamic = "force-dynamic";
-
-// Salons are in Serbia; show booking times in local time.
-const TIME_ZONE = "Europe/Belgrade";
 
 const STATUS_LABEL: Record<AppointmentStatus, string> = {
   BOOKED: "Zakazano",

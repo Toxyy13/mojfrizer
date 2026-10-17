@@ -84,6 +84,10 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
   const mapEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(fullAddress)}&z=16&output=embed`;
   const openNow = openStatus(salon.workingHours, salon.daysOff, todayDate, today);
+  const tel = salon.phone?.replace(/\s/g, "");
+  const bookingServices = toBookingServices(salon.services);
+  const bookingWorkers = toBookingWorkers(salon.workers);
+  const bookingDays = upcomingDays(salon.workingHours, salon.daysOff, 14);
   const cheapest = salon.services.reduce<number | null>((min, s) => (min === null || s.price < min ? s.price : min), null);
 
   return (
@@ -116,7 +120,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
               Pošalji poruku
             </Link>
             {salon.phone && (
-              <a href={`tel:${salon.phone.replace(/\s/g, "")}`} className="btn-secondary">
+              <a href={`tel:${tel}`} className="btn-secondary">
                 Pozovi
               </a>
             )}
@@ -138,7 +142,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
                 <h2 className="eyebrow">Adresa</h2>
                 <p className="mt-2 font-serif text-2xl sm:text-3xl">{fullAddress}</p>
                 {salon.phone && (
-                  <a href={`tel:${salon.phone.replace(/\s/g, "")}`} className="link mt-1 inline-block text-sm text-muted">
+                  <a href={`tel:${tel}`} className="link mt-1 inline-block text-sm text-muted">
                     {salon.phone}
                   </a>
                 )}
@@ -246,9 +250,9 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
             <div className="grid min-w-0 gap-8">
               <UrgentBookingCard
                 slug={salon.slug}
-                services={toBookingServices(salon.services)}
-                workers={toBookingWorkers(salon.workers)}
-                days={upcomingDays(salon.workingHours, salon.daysOff, 14)}
+                services={bookingServices}
+                workers={bookingWorkers}
+                days={bookingDays}
                 surcharge={salon.urgentSurcharge}
                 viewer={!session ? "guest" : session.role === "CLIENT" ? "client" : "other"}
                 start={startUrgentBooking.bind(null, salon.slug)}
@@ -256,9 +260,9 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
               <BookingForm
                 slug={salon.slug}
                 mode="public"
-                services={toBookingServices(salon.services)}
-                workers={toBookingWorkers(salon.workers)}
-                days={upcomingDays(salon.workingHours, salon.daysOff, 14)}
+                services={bookingServices}
+                workers={bookingWorkers}
+                days={bookingDays}
                 submit={bookOnline.bind(null, salon.slug)}
                 initialClient={customer ? { name: customer.name, phone: customer.phone ? formatPhone(customer.phone) : "" } : undefined}
                 requestUrgent={requestUrgent.bind(null, salon.slug)}
