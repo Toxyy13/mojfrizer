@@ -68,7 +68,7 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
       return { error: `Pogrešna email adresa ili lozinka.${warning}`, values };
     }
     await clearLimit(...failRules.map((rule) => rule.key));
-    await startSession(user);
+    await startSession(user, formData.get("remember") === "on");
     target = safeNextPath(formData.get("next")) ?? (await landingPathFor(user));
   } catch (error) {
     console.error(error);

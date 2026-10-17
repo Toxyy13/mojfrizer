@@ -53,6 +53,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
         fields={[
           { name: "login", label: "Email adresa", type: "text", autoComplete: "username" },
           { name: "password", label: "Lozinka", type: "password", autoComplete: "current-password" },
+          { name: "remember", label: "Zapamti me", type: "checkbox", autoComplete: "off", optional: true },
         ]}
       />
       <p className="mt-4 text-center text-sm">

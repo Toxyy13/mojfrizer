@@ -8,6 +8,8 @@ import { looksLikeEmail, normalizePhone } from "./phone";
 import { SESSION_COOKIE, currentSessionClaims, secretKey } from "./sessionToken";
 
 const SESSION_DAYS = 7;
+/** "Zapamti me" on the login form; the developer account always keeps the short session. */
+const REMEMBER_DAYS = 30;
 /** bcrypt only reads the first 72 bytes; capping the input also stops huge passwords from being used to burn CPU. */
 export const MAX_PASSWORD_LENGTH = 72;
 const BCRYPT_COST = 12;
@@ -39,12 +41,13 @@ export async function verifyCredentials(login: string, password: string): Promis
 }
 
 /** Sets the session cookie for an already verified user. */
-export async function startSession(user: SessionUser): Promise<void> {
+export async function startSession(user: SessionUser, remember = false): Promise<void> {
+  const days = remember && user.role !== "DEVELOPER" ? REMEMBER_DAYS : SESSION_DAYS;
   const token = await new SignJWT({ email: user.email, name: user.name, role: user.role })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(user.id)
     .setIssuedAt()
-    .setExpirationTime(`${SESSION_DAYS}d`)
+    .setExpirationTime(`${days}d`)
     .sign(secretKey());
   const store = await cookies();
   store.set(SESSION_COOKIE, token, {
@@ -52,7 +55,7 @@ export async function startSession(user: SessionUser): Promise<void> {
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: SESSION_DAYS * 24 * 3600,
+    maxAge: days * 24 * 3600,
   });
 }
 
