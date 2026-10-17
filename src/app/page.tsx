@@ -59,8 +59,7 @@ function initials(name: string): string {
 export default async function HomePage({ searchParams }: HomeProps) {
   const q = ((await searchParams).q ?? "").trim().slice(0, 60);
   const user = await getSessionUser();
-  // Salon logins have no customer side: no salon search, only their own salon's tools.
-  if (user && isSalonRole(user.role)) redirect("/admin");
+  if (isSalonRole(user?.role)) redirect("/admin");
 
   const [allSalons, me] = await Promise.all([
     db.salon.findMany({

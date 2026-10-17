@@ -195,13 +195,13 @@ export async function answerQuestion(request: AssistantRequest): Promise<Assista
     return { ok: false, status: 503, error: "Asistent još nije uključen. Pozovite salon ili pošaljite poruku." };
   }
 
-  // Salon logins don't use the customer assistant, and it must not become a way to search other salons.
   const asker = await getSessionUser();
-  if (asker && isSalonRole(asker.role) && !request.slug) return { ok: false, status: 403, error: "Zabranjeno." };
+  // Salon logins get no platform-wide salon search; with a slug, canViewSalon limits them to their own salon.
+  if (isSalonRole(asker?.role) && !request.slug) return { ok: false, status: 403, error: "Zabranjeno." };
 
   const found = request.slug ? await loadSalon(request.slug) : null;
   // A private salon is invisible to the assistant unless this visitor may open it.
-  const salon = found && (await canViewSalon(found.id, await getSessionUser())) ? found : null;
+  const salon = found && (await canViewSalon(found.id, asker)) ? found : null;
   if (request.slug && !salon) return { ok: false, status: 404, error: "Salon nije pronađen" };
 
   const today = todayIso(TIME_ZONE);

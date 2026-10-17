@@ -81,10 +81,9 @@ export async function setFavoriteSalon(formData: FormData): Promise<void> {
   const user = await getSessionUser();
   if (!user) redirect(`/prijava?next=${encodeURIComponent(returnTo)}`);
 
-  if (user.role !== "CLIENT") return;
-
   const salonId = String(formData.get("salonId") ?? "");
   try {
+    if (user.role !== "CLIENT") return;
     if (salonId) {
       const salon = await db.salon.findFirst({ where: { id: salonId, isActive: true }, select: { id: true } });
       if (!salon || !(await canViewSalon(salon.id, user))) return;
