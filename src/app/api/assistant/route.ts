@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { apiError, readJson, type ApiErrorBody } from "@/lib/apiError";
 import { answerQuestion, assistantRequestSchema, recordAssistantUse } from "@/lib/assistant";
 import { consume, requestIp } from "@/lib/rateLimit";
+import { isSameSite } from "@/lib/sameOrigin";
 
 // Limits live in the database (shared by all instances) so one visitor can't run up the AI bill.
 // Per visitor: 20 questions / 10 min and 100 / day. Whole platform: ASSISTANT_DAILY_LIMIT (default 3000) per day.
@@ -14,10 +15,7 @@ export interface AssistantResponse {
 export async function POST(request: NextRequest): Promise<NextResponse<AssistantResponse | ApiErrorBody>> {
   try {
     // Same-site requests only: another website can't use a visitor's browser to spend this budget.
-    const origin = request.headers.get("origin");
-    if (origin && origin !== request.nextUrl.origin && !origin.endsWith(`.${process.env.ROOT_DOMAIN ?? "mojfrizer.com"}`)) {
-      return apiError(403, "Zabranjeno.");
-    }
+    if (!isSameSite(request)) return apiError(403, "Zabranjeno.");
     if (Number(request.headers.get("content-length") ?? 0) > 20_000) return apiError(413, "Neispravno pitanje.");
     const ip = await requestIp();
     const limited = await consume([

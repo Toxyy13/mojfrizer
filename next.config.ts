@@ -28,13 +28,21 @@ const securityHeaders = [
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
   { key: "X-DNS-Prefetch-Control", value: "off" },
+  { key: "Cross-Origin-Resource-Policy", value: "same-site" },
 ];
+
+// Private areas and the API never belong in a search index.
+const noIndex = [{ key: "X-Robots-Tag", value: "noindex, nofollow" }];
+const privatePaths = ["admin", "razvoj", "nalog", "poruke", "api", "nova-lozinka", "potvrda-emaila", "termin", "q", "dodaj-salon"];
 
 const nextConfig: NextConfig = {
   // Don't advertise the framework.
   poweredByHeader: false,
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      ...privatePaths.map((path) => ({ source: `/${path}/:rest*`, headers: noIndex })),
+    ];
   },
 };
 

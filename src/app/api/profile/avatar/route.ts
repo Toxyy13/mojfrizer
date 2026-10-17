@@ -4,11 +4,13 @@ import { getSessionUser } from "@/lib/auth";
 import { MAX_AVATAR_BYTES, sniffImageType } from "@/lib/avatar";
 import { db } from "@/lib/db";
 import { consume } from "@/lib/rateLimit";
+import { isSameSite } from "@/lib/sameOrigin";
 
 export const dynamic = "force-dynamic";
 
 /** Saves the logged-in user's profile photo (multipart field "photo"). */
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  if (!isSameSite(request)) return apiError(403, "Zabranjeno.");
   const user = await getSessionUser();
   if (!user) return apiError(401);
   if (!(await consume([{ key: `avatar:user:${user.id}`, limit: 10, windowSec: 3600 }])).ok) {
@@ -38,7 +40,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-export async function DELETE(): Promise<NextResponse> {
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
+  if (!isSameSite(request)) return apiError(403, "Zabranjeno.");
   const user = await getSessionUser();
   if (!user) return apiError(401);
   await db.userAvatar.deleteMany({ where: { userId: user.id } });

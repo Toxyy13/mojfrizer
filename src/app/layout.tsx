@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
 import { CookieBanner } from "@/components/CookieBanner";
+import { appUrl } from "@/lib/appUrl";
 import "./globals.css";
 
 // Display: Bricolage Grotesque (variable width and weight, used for the big animated wordmark).
@@ -14,6 +15,8 @@ const display = Bricolage_Grotesque({
 const body = Plus_Jakarta_Sans({ subsets: ["latin", "latin-ext"], variable: "--font-body" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(appUrl()),
+  alternates: { canonical: "./" },
   title: "mojfrizer · zakažite frizera online",
   description: "Pronađite frizerski salon i zakažite termin u par klikova, bez poziva.",
 };
