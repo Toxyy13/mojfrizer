@@ -55,12 +55,14 @@ export function shiftMonthIso(monthIso: string, delta: number): string {
   return new Date(Date.UTC(y, m - 1 + delta, 1)).toISOString().slice(0, 7);
 }
 
+const emptyPoint = (monthIso: string): MonthPoint => ({ monthIso, bookings: 0, revenuePara: 0, bookedPara: 0 });
+
 /** The last `count` months ending at `endMonthIso`, oldest first, with zeros where nothing happened. */
 export function fillMonths(points: MonthPoint[], endMonthIso: string, count: number): MonthPoint[] {
   const byMonth = new Map(points.map((p) => [p.monthIso, p]));
   return Array.from({ length: count }, (_, i) => {
     const monthIso = shiftMonthIso(endMonthIso, i - (count - 1));
-    return byMonth.get(monthIso) ?? { monthIso, bookings: 0, revenuePara: 0, bookedPara: 0 };
+    return byMonth.get(monthIso) ?? emptyPoint(monthIso);
   });
 }
 
@@ -91,21 +93,21 @@ const toPoint = (row: MonthRow): MonthPoint => ({
   bookedPara: Number(row.booked ?? 0),
 });
 
-const sinceMonths = (endMonthIso: string, count: number): Date => new Date(`${shiftMonthIso(endMonthIso, 1 - count)}-01T00:00:00Z`);
+// One day of slack: the UTC month start can fall slightly before the Belgrade month start.
+const sinceMonths = (endMonthIso: string, count: number): Date =>
+  new Date(new Date(`${shiftMonthIso(endMonthIso, 1 - count)}-01T00:00:00Z`).getTime() - 86_400_000);
 
 /** Month-by-month series for one salon (12 months by default). */
 export async function getSalonSeries(salonId: string, months = 12, now: Date = new Date()): Promise<MonthPoint[]> {
   const end = currentMonthIso(now);
-  // One day of slack: the UTC month start can fall slightly before the Belgrade month start.
-  const since = new Date(sinceMonths(end, months).getTime() - 86_400_000);
-  const rows = await monthlyRows(since, salonId);
+  const rows = await monthlyRows(sinceMonths(end, months), salonId);
   return fillMonths(rows.map(toPoint), end, months);
 }
 
 function sumSeries(points: MonthPoint[]): MonthPoint[] {
   const total = new Map<string, MonthPoint>();
   for (const p of points) {
-    const t = total.get(p.monthIso) ?? { monthIso: p.monthIso, bookings: 0, revenuePara: 0, bookedPara: 0 };
+    const t = total.get(p.monthIso) ?? emptyPoint(p.monthIso);
     t.bookings += p.bookings;
     t.revenuePara += p.revenuePara;
     t.bookedPara += p.bookedPara;
@@ -119,11 +121,10 @@ export async function getPlatformStats(now: Date = new Date()): Promise<Platform
   const monthIso = currentMonthIso(now);
   const prevIso = shiftMonthIso(monthIso, -1);
   const since30 = new Date(now.getTime() - 30 * 86_400_000);
-  const since = new Date(sinceMonths(monthIso, 12).getTime() - 86_400_000);
 
   const [salons, rows, staff, clients, bookings30, messages30, assistant30, customerAccounts] = await Promise.all([
     db.salon.findMany({ select: { id: true, name: true, slug: true, city: true, isActive: true, createdAt: true }, orderBy: { createdAt: "asc" } }),
-    monthlyRows(since),
+    monthlyRows(sinceMonths(monthIso, 12)),
     db.workerProfile.groupBy({ by: ["salonId"], where: { isActive: true }, _count: { _all: true } }),
     db.$queryRaw<Array<{ salonId: string; clients: bigint }>>`
       SELECT "salonId", count(DISTINCT coalesce("clientId", "guestPhone", id)) AS clients
@@ -142,11 +143,10 @@ export async function getPlatformStats(now: Date = new Date()): Promise<Platform
   const assistantBy = counts(assistant30);
   const clientsBy = new Map(clients.map((r) => [r.salonId, Number(r.clients)]));
 
-  const empty = (m: string): MonthPoint => ({ monthIso: m, bookings: 0, revenuePara: 0, bookedPara: 0 });
   const salonStats: SalonStats[] = salons.map((s) => {
     const own = rows.filter((r) => r.salonId === s.id).map(toPoint);
-    const thisMonth = own.find((p) => p.monthIso === monthIso) ?? empty(monthIso);
-    const lastMonth = own.find((p) => p.monthIso === prevIso) ?? empty(prevIso);
+    const thisMonth = own.find((p) => p.monthIso === monthIso) ?? emptyPoint(monthIso);
+    const lastMonth = own.find((p) => p.monthIso === prevIso) ?? emptyPoint(prevIso);
     return {
       ...s,
       activeStaff: staffBy.get(s.id) ?? 0,

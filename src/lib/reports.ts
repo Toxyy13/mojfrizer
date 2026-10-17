@@ -1,6 +1,7 @@
 import type { AppointmentStatus } from "@prisma/client";
 import { db } from "./db";
 import { clientKeyOf, listSalonClients } from "./clients";
+import { shiftMonthIso } from "./platformStats";
 import { TIME_ZONE, formatLocalDateIso, localToUtc } from "./time";
 
 // Monthly report for the salon owner. Revenue counts only COMPLETED appointments, like the daily pazar.
@@ -28,16 +29,10 @@ export function isValidMonthIso(value: string): boolean {
   return /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
 }
 
-export function shiftMonth(monthIso: string, delta: number): string {
-  const [y, m] = monthIso.split("-").map(Number);
-  const d = new Date(Date.UTC(y, m - 1 + delta, 1));
-  return d.toISOString().slice(0, 7);
-}
-
 function monthRange(monthIso: string): { from: Date; to: Date } {
   return {
     from: localToUtc(`${monthIso}-01`, 0, TIME_ZONE),
-    to: localToUtc(`${shiftMonth(monthIso, 1)}-01`, 0, TIME_ZONE),
+    to: localToUtc(`${shiftMonthIso(monthIso, 1)}-01`, 0, TIME_ZONE),
   };
 }
 
@@ -47,7 +42,7 @@ function toRows(map: Map<string, ReportRow>): ReportRow[] {
 
 export async function getMonthReport(salonId: string, monthIso: string): Promise<MonthReport> {
   const { from, to } = monthRange(monthIso);
-  const prev = monthRange(shiftMonth(monthIso, -1));
+  const prev = monthRange(shiftMonthIso(monthIso, -1));
   const [appointments, previous, clients] = await Promise.all([
     db.appointment.findMany({
       where: { salonId, startTime: { gte: from, lt: to } },
@@ -75,7 +70,7 @@ export async function getMonthReport(salonId: string, monthIso: string): Promise
   const byStatus: Record<AppointmentStatus, number> = { BOOKED: 0, COMPLETED: 0, CANCELLED: 0, NO_SHOW: 0 };
   const services = new Map<string, ReportRow>();
   const workers = new Map<string, ReportRow>();
-  const days = new Map<string, { dateIso: string; revenuePara: number; count: number }>();
+  const days = new Map<string, MonthReport["byDay"][number]>();
   const keys = new Set<string>();
   let revenue = 0;
   let online = 0;

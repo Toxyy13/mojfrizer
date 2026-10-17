@@ -10,25 +10,28 @@ export const MAX_OPEN_URGENT_REQUESTS = 3;
 
 const lastDigits = (phone: string | null | undefined): string => (phone ?? "").replace(/\D/g, "").slice(-8);
 
+const countOwn = (rows: Array<{ guestPhone: string | null; clientId: string | null }>, phone: string | null, clientId: string | null): number => {
+  const key = lastDigits(phone);
+  return rows.filter((r) => (clientId !== null && r.clientId === clientId) || (key.length >= 6 && lastDigits(r.guestPhone) === key)).length;
+};
+
 /** How many upcoming, not yet cancelled online bookings this phone number or account already has in the salon. */
 export async function countActiveOnlineBookings(salonId: string, phone: string | null, clientId: string | null): Promise<number> {
-  const key = lastDigits(phone);
   const rows = await systemDb.appointment.findMany({
     where: { salonId, source: "ONLINE", status: "BOOKED", startTime: { gt: new Date() } },
     select: { guestPhone: true, clientId: true },
     take: 1000,
   });
-  return rows.filter((r) => (clientId !== null && r.clientId === clientId) || (key.length >= 6 && lastDigits(r.guestPhone) === key)).length;
+  return countOwn(rows, phone, clientId);
 }
 
 export async function countOpenUrgentRequests(salonId: string, phone: string | null, clientId: string | null): Promise<number> {
-  const key = lastDigits(phone);
   const rows = await systemDb.urgentRequest.findMany({
     where: { salonId, status: "PENDING" },
     select: { guestPhone: true, clientId: true },
     take: 1000,
   });
-  return rows.filter((r) => (clientId !== null && r.clientId === clientId) || (key.length >= 6 && lastDigits(r.guestPhone) === key)).length;
+  return countOwn(rows, phone, clientId);
 }
 
 /** Request-rate limits for a booking or urgent request from this address and phone number. Returns an error text, or null. */

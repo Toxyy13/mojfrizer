@@ -6,6 +6,7 @@ import type { BookingResult } from "@/lib/booking";
 import type { SlotsResponse } from "@/app/api/salons/[slug]/slots/route";
 import { formatPrice, formatRsd } from "@/lib/money";
 import { comboRulePrices } from "@/lib/comboRule";
+import { minutesToHHMM as hhmm } from "@/lib/time";
 
 export interface BookingService {
   id: string;
@@ -81,10 +82,6 @@ function visitSummary(chosen: BookingService[], combos: BookingCombo[]): { minut
   return { minutes, price };
 }
 
-function hhmm(minute: number): string {
-  return `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
-}
-
 const input = "field";
 
 function StepTitle({ n, children }: { n: number; children: React.ReactNode }) {
@@ -143,6 +140,7 @@ export function BookingForm({
   const hasService = chosen.length > 0;
   const summary = useMemo(() => visitSummary(chosen, combos), [chosen, combos]);
   const servicesText = chosen.map((s) => s.name).join(" + ");
+  const day = days.find((d) => d.iso === dateIso);
   const toggleService = (id: string): void =>
     setServiceIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
 
@@ -231,7 +229,7 @@ export function BookingForm({
       <div className="animate-rise rounded-2xl bg-burgundy-soft p-6 sm:p-10" role="status">
         <p className="eyebrow text-burgundy">Hitan zahtev je poslat</p>
         <p className="mt-3 font-serif text-3xl sm:text-4xl">
-          {servicesText}, {days.find((d) => d.iso === dateIso)?.label ?? dateIso}
+          {servicesText}, {day?.label ?? dateIso}
         </p>
         <p className="mt-2 text-muted">
           Salon će pokušati da nađe zamenu sa nekim od zakazanih mušterija i pozvaće vas na {clientPhone}.
@@ -256,7 +254,7 @@ export function BookingForm({
         </span>
         <p className="eyebrow mt-6 text-forest">{mode === "public" ? "Termin je zakazan" : "Termin je upisan"}</p>
         <p className="mt-3 font-serif text-3xl sm:text-4xl">
-          {servicesText}, {days.find((d) => d.iso === dateIso)?.label ?? dateIso} u {minute !== null ? hhmm(minute) : ""}
+          {servicesText}, {day?.label ?? dateIso} u {minute !== null ? hhmm(minute) : ""}
         </p>
         <p className="mt-2 text-muted">Frizer: {result.workerName}</p>
         {mode === "public" && (
@@ -376,7 +374,7 @@ export function BookingForm({
           {slots && slots.length === 0 && !urgent && (
             <div className="grid gap-3">
               <p className="rounded-xl bg-sand/60 px-4 py-3 text-sm text-muted">Nema slobodnih termina za ovaj dan. Probajte drugi dan.</p>
-              {joinWaitlist && hasService && dateIso && !days.find((d) => d.iso === dateIso)?.closed && (
+              {joinWaitlist && hasService && dateIso && !day?.closed && (
                 <WaitlistOffer
                   outcome={waitlist[`${serviceKey}|${dateIso}`]}
                   loginHref={`/prijava?next=${encodeURIComponent(`/s/${slug}#zakazivanje`)}`}
@@ -391,7 +389,7 @@ export function BookingForm({
                   }}
                 />
               )}
-              {requestUrgent && !days.find((d) => d.iso === dateIso)?.closed && (
+              {requestUrgent && !day?.closed && (
                 <div className="rounded-xl border border-burgundy/25 p-4">
                   <p className="text-sm">Morate baš ovog dana? Pošaljite hitan zahtev i salon će probati da zameni termin sa nekim.</p>
                   <button
@@ -501,7 +499,7 @@ export function BookingForm({
             <>
               <span className="font-medium text-charcoal">{servicesText}</span>
               {" · "}
-              {days.find((d) => d.iso === dateIso)?.label}
+              {day?.label}
               {minute !== null && ` u ${hhmm(minute)}`}
               {" · "}
               {summary.minutes} min · {formatPrice(summary.price)}

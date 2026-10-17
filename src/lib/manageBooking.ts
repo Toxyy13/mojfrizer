@@ -118,9 +118,10 @@ export async function rescheduleByCustomer(token: string, dateIso: string, minut
   if (!canChangeOnline(a)) {
     return { ok: false, error: "Termin više ne može da se pomeri preko sajta. Pozovite salon." };
   }
+  const lengthMs = a.endTime.getTime() - a.startTime.getTime();
   const slots = await getAvailableSlots({
     salonId: a.salonId,
-    durationMinutes: Math.round((a.endTime.getTime() - a.startTime.getTime()) / 60_000),
+    durationMinutes: Math.round(lengthMs / 60_000),
     dateIso,
     workerId: null,
     enforceLeadTime: true,
@@ -129,7 +130,7 @@ export async function rescheduleByCustomer(token: string, dateIso: string, minut
   if (!slot) return { ok: false, error: "Taj termin više nije slobodan. Izaberite drugi." };
 
   const startTime = localToUtc(dateIso, minute, TIME_ZONE);
-  const endTime = new Date(startTime.getTime() + (a.endTime.getTime() - a.startTime.getTime()));
+  const endTime = new Date(startTime.getTime() + lengthMs);
   const oldDayIso = formatLocalDateIso(a.startTime, TIME_ZONE);
   const workerIds = slot.workerIds.includes(a.workerId)
     ? [a.workerId, ...slot.workerIds.filter((w) => w !== a.workerId)]

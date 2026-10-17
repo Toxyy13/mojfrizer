@@ -4,7 +4,7 @@ import { logout } from "@/app/prijava/actions";
 import { unreadForSalon } from "@/lib/chat";
 import { Logo } from "./Logo";
 
-export type AdminTab = "raspored" | "poruke" | "musterije" | "izvestaji" | "podesavanja" | "qr";
+type AdminTab = "raspored" | "poruke" | "musterije" | "izvestaji" | "podesavanja" | "qr";
 
 interface AdminShellProps {
   salon: { id: string; name: string; slug: string; ownerId: string };

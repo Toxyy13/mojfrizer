@@ -4,8 +4,7 @@ export function rsdToPara(rsd: number): number {
 }
 
 export function formatRsd(para: number): string {
-  const rsd = para / 100;
-  return `${new Intl.NumberFormat("sr-Latn-RS", { maximumFractionDigits: 0 }).format(rsd)} RSD`;
+  return `${new Intl.NumberFormat("sr-Latn-RS", { maximumFractionDigits: 0 }).format(para / 100)} RSD`;
 }
 
 /** Price-list label: free services show as "Gratis". */

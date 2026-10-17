@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import type { SlotsResponse } from "@/app/api/salons/[slug]/slots/route";
+import { minutesToHHMM as hhmm } from "@/lib/time";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -14,13 +15,7 @@ interface ManageBookingProps {
   reschedule: (dateIso: string, minute: number) => Promise<Result>;
 }
 
-function hhmm(minute: number): string {
-  return `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
-}
-
-const chip = "chip";
 const chipOn = "border-burgundy bg-burgundy text-white hover:border-burgundy";
-const chipOff = "";
 
 /** Cancel or move a booking from the customer's manage link. */
 export function ManageBooking({ slug, token, days, cancel, reschedule }: ManageBookingProps) {
@@ -109,7 +104,7 @@ export function ManageBooking({ slug, token, days, cancel, reschedule }: ManageB
                   type="button"
                   disabled={d.closed}
                   onClick={() => setDateIso(d.iso)}
-                  className={`${chip} ${dateIso === d.iso ? chipOn : chipOff}`}
+                  className={`chip ${dateIso === d.iso ? chipOn : ""}`}
                 >
                   {d.label}
                 </button>
@@ -123,7 +118,7 @@ export function ManageBooking({ slug, token, days, cancel, reschedule }: ManageB
               {slots?.length === 0 && <p className="mt-3 text-sm text-muted">Tog dana nema slobodnih termina.</p>}
               <div className="mt-3 flex flex-wrap gap-2">
                 {slots?.map((m) => (
-                  <button key={m} type="button" onClick={() => setMinute(m)} className={`${chip} ${minute === m ? chipOn : chipOff}`}>
+                  <button key={m} type="button" onClick={() => setMinute(m)} className={`chip ${minute === m ? chipOn : ""}`}>
                     {hhmm(m)}
                   </button>
                 ))}

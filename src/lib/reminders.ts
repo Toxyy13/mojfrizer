@@ -68,7 +68,7 @@ export async function sendDueReminders(now: Date = new Date()): Promise<Reminder
           `Zdravo ${a.client.name},`,
           "",
           `podsećamo vas na termin u salonu ${a.salon.name}:`,
-          `${whenFormat.format(a.startTime)}`,
+          whenFormat.format(a.startTime),
           `Usluga: ${servicesLabel(a)} (${a.worker.displayName})`,
           `Adresa: ${fullAddress(a.salon)}`,
           a.salon.phone ? `Ako ne možete da dođete, javite se salonu: ${a.salon.phone}` : "",

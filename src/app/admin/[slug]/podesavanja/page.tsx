@@ -68,6 +68,13 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
   ]);
   const serviceName = new Map(services.map((s) => [s.id, s.name]));
   const activeServices = services.filter((s) => s.isActive);
+  const workerOptions = workers
+    .filter((w) => w.isActive)
+    .map((w) => (
+      <option key={w.id} value={w.id}>
+        {w.displayName}
+      </option>
+    ));
 
   return (
     <AdminShell salon={salon} user={user} active="podesavanja">
@@ -199,20 +206,13 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
         </form>
         <ul className="mt-6 divide-y divide-line border-y border-line">
           {daysOff.length === 0 && <li className="py-4 text-sm text-muted">Nema zakazanih neradnih dana.</li>}
-          {daysOff.map((d) => {
-            const iso = d.date.toISOString().slice(0, 10);
-            const [y, m, day] = iso.split("-");
-            return (
-              <li key={d.id} className="flex items-baseline gap-4 py-3 text-sm">
-                <span className="font-medium tabular-nums">{`${Number(day)}.${Number(m)}.${y}.`}</span>
-                <span className="text-muted">{d.reason ?? ""}</span>
-                <form action={removeDayOff.bind(null, salon.slug)} className="ml-auto">
-                  <input type="hidden" name="id" value={d.id} />
-                  <button className={LINK_BUTTON}>Ukloni</button>
-                </form>
-              </li>
-            );
-          })}
+          {daysOff.map((d) => (
+            <li key={d.id} className="flex items-baseline gap-4 py-3 text-sm">
+              <span className="font-medium tabular-nums">{shortDateIso(d.date.toISOString().slice(0, 10))}</span>
+              <span className="text-muted">{d.reason ?? ""}</span>
+              <RemoveForm action={removeDayOff.bind(null, salon.slug)} id={d.id} />
+            </li>
+          ))}
         </ul>
       </Section>
 
@@ -247,13 +247,7 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
           <label>
             <span className={LABEL}>Radnik</span>
             <select name="workerId" required className={INPUT}>
-              {workers
-                .filter((w) => w.isActive)
-                .map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.displayName}
-                  </option>
-                ))}
+              {workerOptions}
             </select>
           </label>
           <label>
@@ -299,10 +293,7 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
                 {b.date ? shortDateIso(b.date.toISOString().slice(0, 10)) : b.weekdays.map((d) => WEEKDAYS_SR[d]?.slice(0, 3)).join(", ")}
                 {b.label ? ` · ${b.label}` : ""}
               </span>
-              <form action={removeWorkerBreak.bind(null, salon.slug)} className="ml-auto">
-                <input type="hidden" name="id" value={b.id} />
-                <button className={LINK_BUTTON}>Ukloni</button>
-              </form>
+              <RemoveForm action={removeWorkerBreak.bind(null, salon.slug)} id={b.id} />
             </li>
           ))}
         </ul>
@@ -317,13 +308,7 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
           <label>
             <span className={LABEL}>Radnik</span>
             <select name="workerId" required className={INPUT}>
-              {workers
-                .filter((w) => w.isActive)
-                .map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.displayName}
-                  </option>
-                ))}
+              {workerOptions}
             </select>
           </label>
           <label>
@@ -357,10 +342,7 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
               <span className="font-medium">{t.worker.displayName}</span>
               <span className="font-mono">{describeRange(t.startTime, t.endTime)}</span>
               <span className="text-muted">{t.reason ?? ""}</span>
-              <form action={removeWorkerTimeOff.bind(null, salon.slug)} className="ml-auto">
-                <input type="hidden" name="id" value={t.id} />
-                <button className={LINK_BUTTON}>Ukloni</button>
-              </form>
+              <RemoveForm action={removeWorkerTimeOff.bind(null, salon.slug)} id={t.id} />
             </li>
           ))}
         </ul>
@@ -463,6 +445,15 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
       </div>
       </div>
     </AdminShell>
+  );
+}
+
+function RemoveForm({ action, id }: { action: (formData: FormData) => Promise<void>; id: string }) {
+  return (
+    <form action={action} className="ml-auto">
+      <input type="hidden" name="id" value={id} />
+      <button className={LINK_BUTTON}>Ukloni</button>
+    </form>
   );
 }
 

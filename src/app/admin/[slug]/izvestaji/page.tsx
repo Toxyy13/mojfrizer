@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { AdminShell } from "@/components/AdminShell";
+import { Stat } from "@/components/Stat";
 import { requireSalonOwner } from "@/lib/access";
 import { db } from "@/lib/db";
 import { formatRating, getSalonRating, ratingCountLabel } from "@/lib/reviews";
 import { formatRsd } from "@/lib/money";
-import { getMonthReport, isValidMonthIso, shiftMonth, type ReportRow } from "@/lib/reports";
+import { shiftMonthIso } from "@/lib/platformStats";
+import { getMonthReport, isValidMonthIso, type ReportRow } from "@/lib/reports";
 import { TIME_ZONE, todayIso } from "@/lib/time";
 import { servicesLabel } from "@/lib/visit";
 
@@ -57,12 +59,12 @@ export default async function ReportsPage({ params, searchParams }: PageProps) {
       </header>
 
       <nav className="mt-8 flex items-center gap-4" aria-label="Mesec">
-        <Link href={`?mesec=${shiftMonth(monthIso, -1)}`} aria-label="Prethodni mesec" className="btn-ghost btn-sm">
+        <Link href={`?mesec=${shiftMonthIso(monthIso, -1)}`} aria-label="Prethodni mesec" className="btn-ghost btn-sm">
           ←
         </Link>
         <h2 className="font-serif text-3xl first-letter:uppercase">{monthLabel(monthIso)}</h2>
         {monthIso < current && (
-          <Link href={`?mesec=${shiftMonth(monthIso, 1)}`} aria-label="Sledeći mesec" className="btn-ghost btn-sm">
+          <Link href={`?mesec=${shiftMonthIso(monthIso, 1)}`} aria-label="Sledeći mesec" className="btn-ghost btn-sm">
             →
           </Link>
         )}
@@ -137,16 +139,6 @@ export default async function ReportsPage({ params, searchParams }: PageProps) {
       </section>
       </div>
     </AdminShell>
-  );
-}
-
-function Stat({ label, value, hint, warn = false }: { label: string; value: string; hint: string; warn?: boolean }) {
-  return (
-    <div className="bg-white p-5">
-      <p className="eyebrow">{label}</p>
-      <p className={`mt-2 font-serif text-2xl tabular-nums ${warn ? "text-burgundy" : ""}`}>{value}</p>
-      {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
-    </div>
   );
 }
 

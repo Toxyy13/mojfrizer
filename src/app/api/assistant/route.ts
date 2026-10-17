@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { apiError, readJson, type ApiErrorBody } from "@/lib/apiError";
 import { answerQuestion, assistantRequestSchema, recordAssistantUse } from "@/lib/assistant";
-
 import { consume, requestIp } from "@/lib/rateLimit";
 
 // Limits live in the database (shared by all instances) so one visitor can't run up the AI bill.
