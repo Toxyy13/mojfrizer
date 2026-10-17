@@ -8,6 +8,7 @@ import { AvatarPrompt } from "@/components/AvatarPrompt";
 import { shouldShowAvatarPrompt } from "@/lib/avatarPrompt";
 import { avatarUrl } from "@/lib/avatar";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { CLIENT_STATUS_LABEL } from "@/components/clientStatusLabel";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getSessionUser } from "@/lib/auth";
@@ -23,13 +24,6 @@ import { resendVerification } from "./actions";
 
 export const metadata: Metadata = { title: "Moj nalog · mojfrizer" };
 export const dynamic = "force-dynamic";
-
-const STATUS_LABEL: Record<AppointmentStatus, string> = {
-  BOOKED: "Zakazano",
-  COMPLETED: "Završeno",
-  CANCELLED: "Otkazano",
-  NO_SHOW: "Niste došli",
-};
 
 const dateFormat = new Intl.DateTimeFormat("sr-Latn-RS", {
   timeZone: TIME_ZONE,
@@ -100,7 +94,7 @@ function BookingList({ title, bookings, empty, upcoming }: { title: string; book
               </p>
             </div>
             <div className="shrink-0 text-right">
-              <span className={`badge ${STATUS_BADGE[b.status]}`}>{STATUS_LABEL[b.status]}</span>
+              <span className={`badge ${STATUS_BADGE[b.status]}`}>{CLIENT_STATUS_LABEL[b.status]}</span>
               <p className="mt-1 text-sm tabular-nums text-muted">{formatPrice(b.price)}</p>
               {b.status === "BOOKED" && (
                 <Link href={`/termin/${b.manageToken}`} className="link mt-1 inline-block text-xs text-muted">

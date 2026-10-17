@@ -47,7 +47,7 @@ export async function deleteAccount(userId: string): Promise<DeletionResult> {
 
 /** Everything we hold about one account, for the "download my data" link. */
 export async function exportAccountData(userId: string): Promise<Record<string, unknown> | null> {
-  const user = await db.user.findUnique({
+  return db.user.findUnique({
     where: { id: userId },
     select: {
       name: true,
@@ -65,5 +65,4 @@ export async function exportAccountData(userId: string): Promise<Record<string, 
       chatAsClient: { orderBy: { createdAt: "asc" }, select: { text: true, fromSalon: true, createdAt: true, salon: { select: { name: true } } } },
     },
   });
-  return user;
 }

@@ -69,8 +69,7 @@ export function isoWeekdayOf(dateIso: string): number {
 }
 
 export function todayIso(timeZone: string): string {
-  const p = zonedParts(new Date(), timeZone);
-  return `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
+  return formatLocalDateIso(new Date(), timeZone);
 }
 
 export function addDaysIso(dateIso: string, days: number): string {

@@ -8,15 +8,13 @@ interface ProfileFormProps {
   phone: string;
 }
 
-const input = "field";
-
 export function ProfileForm({ name, phone }: ProfileFormProps) {
   const [state, action, pending] = useActionState<ProfileState, FormData>(updateProfile, { error: null });
   return (
     <form action={action} className="mt-8 grid gap-5">
       <label className="block">
         <span className="field-label">Ime i prezime</span>
-        <input name="name" required autoComplete="name" defaultValue={state.values?.name ?? name} className={input} />
+        <input name="name" required autoComplete="name" defaultValue={state.values?.name ?? name} className="field" />
       </label>
       <label className="block">
         <span className="field-label">Broj telefona (nije obavezno)</span>
@@ -26,7 +24,7 @@ export function ProfileForm({ name, phone }: ProfileFormProps) {
           autoComplete="tel"
           defaultValue={state.values?.phone ?? phone}
           placeholder="06x xxx xxxx"
-          className={input}
+          className="field"
         />
         <span className="field-hint">
           Salon vas zove na ovaj broj ako se nešto desi sa terminom.

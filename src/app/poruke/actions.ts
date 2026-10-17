@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { findViewableSalon } from "@/lib/salonVisibility";
 import { addMessage, messageSchema } from "@/lib/chat";
-import { db } from "@/lib/db";
 import { consume } from "@/lib/rateLimit";
 
 /** A logged-in customer writes to a salon. */
