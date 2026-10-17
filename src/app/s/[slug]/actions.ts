@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
-import { findViewableSalon } from "@/lib/salonVisibility";
+import { isSalonRole, findViewableSalon } from "@/lib/salonVisibility";
 import { bookingInputSchema, createAppointment, type BookingResult } from "@/lib/booking";
 import { isBlockedOnline } from "@/lib/clients";
 import { sendBookingConfirmation } from "@/lib/manageBooking";
@@ -24,6 +24,7 @@ export async function bookOnline(slug: string, raw: unknown): Promise<BookingRes
     if (!salon) return { ok: false, error: "Salon nije pronađen." };
     // Guests can book with just name and phone; a logged-in customer gets the booking on their account.
     const user = await getSessionUser();
+    if (isSalonRole(user?.role)) return { ok: false, error: "Zakazivanje je za mušterije. Termine salona upisujete u adminu." };
     const clientId = user?.role === "CLIENT" ? user.id : null;
     const limited = await checkVisitorLimits("book", parsed.data.clientPhone);
     if (limited) return { ok: false, error: limited };
@@ -53,6 +54,7 @@ export async function requestUrgent(slug: string, raw: unknown): Promise<ActionR
     const salon = await findViewableSalon(slug);
     if (!salon) return { ok: false, error: "Salon nije pronađen." };
     const user = await getSessionUser();
+    if (isSalonRole(user?.role)) return { ok: false, error: "Zakazivanje je za mušterije. Termine salona upisujete u adminu." };
     const clientId = user?.role === "CLIENT" ? user.id : null;
     const limited = await checkVisitorLimits("urgent", parsed.data.clientPhone);
     if (limited) return { ok: false, error: limited };
