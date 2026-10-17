@@ -6,7 +6,7 @@ import { db, systemDb } from "@/lib/db";
 import { requireSalonOwner } from "@/lib/access";
 import { appointmentsInBreak } from "@/lib/breaks";
 import { rsdToPara } from "@/lib/money";
-import { MAX_PASSWORD_LENGTH, hashPassword } from "@/lib/auth";
+import { MAX_PASSWORD_LENGTH, hashPassword, revokeSessions } from "@/lib/auth";
 import { consume } from "@/lib/rateLimit";
 import { SOCIAL_LABELS, SOCIAL_NETWORKS, normalizeSocial } from "@/lib/socialLinks";
 import { formatPhone, looksLikeEmail, normalizePhone } from "@/lib/phone";
@@ -235,6 +235,19 @@ export async function createWorkerLogin(slug: string, formData: FormData): Promi
   });
   await db.workerProfile.update({ where: { id: worker.id }, data: { userId: user.id } });
   done(slug, "radnici", `Nalog za ${worker.displayName} je napravljen (${email}).`);
+}
+
+/** Owner sets a new password for a worker's login and signs that worker out everywhere. */
+export async function resetWorkerPassword(slug: string, formData: FormData): Promise<void> {
+  const { salon } = await requireSalonOwner(slug);
+  const password = String(formData.get("password") ?? "");
+  const worker = await db.workerProfile.findFirst({ where: { id: String(formData.get("workerId") ?? ""), salonId: salon.id } });
+  if (!worker?.userId || worker.userId === salon.ownerId) back(slug, "radnici", { error: "Radnik nema nalog." });
+  if (password.length < 8 || password.length > MAX_PASSWORD_LENGTH) back(slug, "radnici", { error: `Lozinka mora imati 8 do ${MAX_PASSWORD_LENGTH} znakova.` });
+  // The login belongs to another user row, which the owner cannot see under RLS.
+  await systemDb.user.update({ where: { id: worker.userId }, data: { passwordHash: await hashPassword(password) } });
+  await revokeSessions(worker.userId);
+  done(slug, "radnici", `Nova lozinka za ${worker.displayName} je postavljena.`);
 }
 
 /** Unlinks a worker's login; their past appointments stay. */

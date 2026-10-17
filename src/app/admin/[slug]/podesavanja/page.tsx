@@ -11,6 +11,7 @@ import {
   addWorkerTimeOff,
   createWorkerLogin,
   removeWorkerLogin,
+  resetWorkerPassword,
   removeWorkerBreak,
   removeWorkerTimeOff,
   removeDayOff,
@@ -586,11 +587,18 @@ function WorkerLogin({
   if (isOwner) return <p className="mt-2 text-sm text-muted">Ovo je nalog vlasnika salona.</p>;
   if (worker.userId) {
     return (
+      <>
       <form action={removeWorkerLogin.bind(null, slug)} className="mt-2 flex flex-wrap items-center gap-3 text-sm">
         <input type="hidden" name="workerId" value={worker.id} />
         <span className="text-muted">Nalog: {worker.user?.email ?? "bez emaila"} (vidi samo svoj raspored)</span>
         <button className={LINK_BUTTON}>Ukloni nalog</button>
       </form>
+      <form action={resetWorkerPassword.bind(null, slug)} className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+        <input type="hidden" name="workerId" value={worker.id} />
+        <input name="password" type="password" required minLength={8} autoComplete="new-password" placeholder="Nova lozinka" aria-label="Nova lozinka radnika" className={INPUT} />
+        <button className={LINK_BUTTON}>Postavi novu lozinku</button>
+      </form>
+      </>
     );
   }
   return (
