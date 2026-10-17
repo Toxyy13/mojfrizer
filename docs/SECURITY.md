@@ -12,7 +12,7 @@ Kratak pregled zaštita i pravila za novi kod. Tenant izolacija (RLS) je opisana
 - Novi javni endpoint ili akcija koja šalje mejl, piše u bazu ili zove plaćeni servis MORA da ima `consume(...)`.
 
 ## Sesije i lozinke
-- Kolačić `mf_session`: JWT (HS256), httpOnly, sameSite=lax, secure u produkciji, 7 dana. `getSessionUser()` svaki put čita nalog iz baze (uloga, postojanje) i odbija kolačiće izdate pre `User.sessionsValidAfter`. Posle promene ili reseta lozinke pozvati `revokeSessions(userId)`.
+- Kolačić `mf_session`: JWT (HS256), httpOnly, sameSite=lax, secure u produkciji, 7 dana (30 dana uz „Zapamti me” na prijavi; developer nalog uvek 7). `getSessionUser()` svaki put čita nalog iz baze (uloga, postojanje) i odbija kolačiće izdate pre `User.sessionsValidAfter`. Posle promene ili reseta lozinke pozvati `revokeSessions(userId)`.
 - Lozinke: bcrypt cost 12, najviše 72 znaka. Tokeni za reset/verifikaciju: 256 bita, čuva se samo hash, jednokratni, 1 h / 48 h.
 - Google prijava: state + PKCE. Pri povezivanju sa postojećim nalogom čiji email nije potvrđen briše se lozinka (neko je mogao da registruje tuđu adresu).
 
