@@ -2,6 +2,7 @@ import { AdminShell } from "@/components/AdminShell";
 import type { Service, WorkerProfile, WorkingHours } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireSalonOwner } from "@/lib/access";
+import { SOCIAL_LABELS, SOCIAL_NETWORKS } from "@/lib/socialLinks";
 import { formatServicePrice } from "@/lib/money";
 import { TIME_ZONE, WEEKDAYS_SR, formatLocalDateIso, formatLocalTime, minutesToHHMM, todayIso } from "@/lib/time";
 import {
@@ -10,6 +11,7 @@ import {
   addWorkerTimeOff,
   createWorkerLogin,
   removeWorkerLogin,
+  resetWorkerPassword,
   removeWorkerBreak,
   removeWorkerTimeOff,
   removeDayOff,
@@ -366,6 +368,20 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
             <span className={LABEL}>Grad</span>
             <input name="city" defaultValue={salon.city} required maxLength={60} className={INPUT} />
           </label>
+          {SOCIAL_NETWORKS.map((network) => (
+            <label key={network}>
+              <span className={LABEL}>{SOCIAL_LABELS[network]} (opciono)</span>
+              <input
+                name={network}
+                defaultValue={salon[`${network}Url` as const] ?? ""}
+                placeholder="@korisnicko_ime ili link"
+                maxLength={200}
+                autoCapitalize="none"
+                autoCorrect="off"
+                className={INPUT}
+              />
+            </label>
+          ))}
           <label className="md:col-span-2">
             <span className={LABEL}>Opis (opciono)</span>
             <textarea name="description" defaultValue={salon.description ?? ""} rows={3} maxLength={1000} className={INPUT} />
@@ -571,11 +587,18 @@ function WorkerLogin({
   if (isOwner) return <p className="mt-2 text-sm text-muted">Ovo je nalog vlasnika salona.</p>;
   if (worker.userId) {
     return (
+      <>
       <form action={removeWorkerLogin.bind(null, slug)} className="mt-2 flex flex-wrap items-center gap-3 text-sm">
         <input type="hidden" name="workerId" value={worker.id} />
         <span className="text-muted">Nalog: {worker.user?.email ?? "bez emaila"} (vidi samo svoj raspored)</span>
         <button className={LINK_BUTTON}>Ukloni nalog</button>
       </form>
+      <form action={resetWorkerPassword.bind(null, slug)} className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+        <input type="hidden" name="workerId" value={worker.id} />
+        <input name="password" type="password" required minLength={8} autoComplete="new-password" placeholder="Nova lozinka" aria-label="Nova lozinka radnika" className={INPUT} />
+        <button className={LINK_BUTTON}>Postavi novu lozinku</button>
+      </form>
+      </>
     );
   }
   return (

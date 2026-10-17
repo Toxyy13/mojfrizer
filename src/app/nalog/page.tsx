@@ -12,6 +12,7 @@ import { CLIENT_STATUS_LABEL } from "@/components/clientStatusLabel";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getSessionUser } from "@/lib/auth";
+import { isSalonRole } from "@/lib/salonVisibility";
 import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/money";
 import { formatPhone } from "@/lib/phone";
@@ -125,6 +126,7 @@ function BookingList({ title, bookings, empty, upcoming }: { title: string; book
 export default async function AccountPage() {
   const session = await getSessionUser();
   if (!session) redirect("/prijava?next=/nalog");
+  if (isSalonRole(session.role)) redirect("/admin");
 
   const user = await db.user.findUnique({
     where: { id: session.id },

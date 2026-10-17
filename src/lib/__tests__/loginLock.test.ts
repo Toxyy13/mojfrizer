@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 process.env.AUTH_SECRET ??= "test-secret-at-least-32-characters-long!!";
 
 vi.mock("next/headers", () => ({
-  headers: async () => new Headers({ "x-real-ip": "203.0.113.7" }),
+  headers: async () => new Headers({ "x-real-ip": "203.0.113.7", "user-agent": "Mozilla/5.0 test" }),
   cookies: async () => ({ set: () => undefined, delete: () => undefined, get: () => undefined }),
 }));
 vi.mock("next/navigation", () => ({
@@ -35,6 +35,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await systemDb.rateLimit.deleteMany({ where: { key: { contains: email } } });
   await systemDb.rateLimit.deleteMany({ where: { key: "login:ip:203.0.113.7" } });
+  await systemDb.rateLimit.deleteMany({ where: { key: "login:ipfail:203.0.113.7" } });
   await systemDb.user.deleteMany({ where: { id: `lock_${run}` } });
 });
 

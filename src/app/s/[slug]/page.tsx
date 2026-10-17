@@ -17,6 +17,7 @@ import { StickyBookBar } from "@/components/StickyBookBar";
 import { getSessionUser } from "@/lib/auth";
 import { canViewSalon } from "@/lib/salonVisibility";
 import { formatRating, getSalonRating, ratingCountLabel } from "@/lib/reviews";
+import { SocialLinks } from "@/components/SocialLinks";
 import { formatPhone } from "@/lib/phone";
 import { bookOnline, joinSalonWaitlist, requestUrgent, startUrgentBooking } from "./actions";
 
@@ -146,6 +147,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
                     {salon.phone}
                   </a>
                 )}
+                <SocialLinks instagram={salon.instagramUrl} facebook={salon.facebookUrl} tiktok={salon.tiktokUrl} />
               </div>
               <a href={mapsUrl} target="_blank" rel="noreferrer" className="btn-secondary btn-sm">
                 Uputstva do salona ↗

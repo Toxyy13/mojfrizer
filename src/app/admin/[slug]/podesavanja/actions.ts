@@ -6,8 +6,9 @@ import { db, systemDb } from "@/lib/db";
 import { requireSalonOwner } from "@/lib/access";
 import { appointmentsInBreak } from "@/lib/breaks";
 import { rsdToPara } from "@/lib/money";
-import { MAX_PASSWORD_LENGTH, hashPassword } from "@/lib/auth";
+import { MAX_PASSWORD_LENGTH, hashPassword, revokeSessions } from "@/lib/auth";
 import { consume } from "@/lib/rateLimit";
+import { SOCIAL_LABELS, SOCIAL_NETWORKS, normalizeSocial } from "@/lib/socialLinks";
 import { formatPhone, looksLikeEmail, normalizePhone } from "@/lib/phone";
 import {
   MAX_DAYS_OFF_RANGE,
@@ -44,18 +45,28 @@ export async function saveSalonInfo(slug: string, formData: FormData): Promise<v
     address: formData.get("address") ?? "",
     city: formData.get("city") ?? "",
     phone: formData.get("phone") ?? "",
+    instagram: formData.get("instagram") ?? "",
+    facebook: formData.get("facebook") ?? "",
+    tiktok: formData.get("tiktok") ?? "",
     slotStepMinutes: formData.get("slotStepMinutes") ?? "",
     cancelCutoffHours: formData.get("cancelCutoffHours") ?? "",
     urgentSurchargeRsd: formData.get("urgentSurchargeRsd") || 0,
   });
   if (!parsed.success) back(slug, "salon", { error: parsed.error.issues[0]?.message ?? "Neispravni podaci" });
-  const { phone: rawPhone, description, urgentSurchargeRsd, ...rest } = parsed.data;
+  const { phone: rawPhone, description, urgentSurchargeRsd, instagram, facebook, tiktok, ...rest } = parsed.data;
+  const social = { instagram, facebook, tiktok };
+  const links: Record<string, string> = {};
+  for (const network of SOCIAL_NETWORKS) {
+    const normalized = normalizeSocial(network, social[network]);
+    if (normalized === null) back(slug, "salon", { error: `${SOCIAL_LABELS[network]}: upišite @korisničko_ime ili link sa ${SOCIAL_LABELS[network]} naloga.` });
+    links[network] = normalized;
+  }
   const phone = rawPhone ? normalizePhone(rawPhone) : null;
   if (rawPhone && !phone) back(slug, "salon", { error: "Broj telefona nije ispravan, npr. 018 123 456." });
   try {
     await db.salon.update({
       where: { id: salon.id },
-      data: { ...rest, urgentSurcharge: rsdToPara(urgentSurchargeRsd), description: description || null, phone: phone ? formatPhone(phone) : null },
+      data: { ...rest, urgentSurcharge: rsdToPara(urgentSurchargeRsd), description: description || null, instagramUrl: links.instagram || null, facebookUrl: links.facebook || null, tiktokUrl: links.tiktok || null, phone: phone ? formatPhone(phone) : null },
     });
   } catch (error) {
     console.error(error);
@@ -224,6 +235,19 @@ export async function createWorkerLogin(slug: string, formData: FormData): Promi
   });
   await db.workerProfile.update({ where: { id: worker.id }, data: { userId: user.id } });
   done(slug, "radnici", `Nalog za ${worker.displayName} je napravljen (${email}).`);
+}
+
+/** Owner sets a new password for a worker's login and signs that worker out everywhere. */
+export async function resetWorkerPassword(slug: string, formData: FormData): Promise<void> {
+  const { salon } = await requireSalonOwner(slug);
+  const password = String(formData.get("password") ?? "");
+  const worker = await db.workerProfile.findFirst({ where: { id: String(formData.get("workerId") ?? ""), salonId: salon.id } });
+  if (!worker?.userId || worker.userId === salon.ownerId) back(slug, "radnici", { error: "Radnik nema nalog." });
+  if (password.length < 8 || password.length > MAX_PASSWORD_LENGTH) back(slug, "radnici", { error: `Lozinka mora imati 8 do ${MAX_PASSWORD_LENGTH} znakova.` });
+  // The login belongs to another user row, which the owner cannot see under RLS.
+  await systemDb.user.update({ where: { id: worker.userId }, data: { passwordHash: await hashPassword(password) } });
+  await revokeSessions(worker.userId);
+  done(slug, "radnici", `Nova lozinka za ${worker.displayName} je postavljena.`);
 }
 
 /** Unlinks a worker's login; their past appointments stay. */

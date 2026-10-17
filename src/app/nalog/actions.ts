@@ -83,6 +83,7 @@ export async function setFavoriteSalon(formData: FormData): Promise<void> {
 
   const salonId = String(formData.get("salonId") ?? "");
   try {
+    if (user.role !== "CLIENT") return;
     if (salonId) {
       const salon = await db.salon.findFirst({ where: { id: salonId, isActive: true }, select: { id: true } });
       if (!salon || !(await canViewSalon(salon.id, user))) return;

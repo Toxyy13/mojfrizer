@@ -118,13 +118,34 @@ export async function rescheduleByCustomer(token: string, dateIso: string, minut
   if (!canChangeOnline(a)) {
     return { ok: false, error: "Termin više ne može da se pomeri preko sajta. Pozovite salon." };
   }
+  const result = await moveBooking(a, dateIso, minute, { enforceLeadTime: true, onlyWorkerId: null });
+  if (result.ok) {
+    await notifySalon(a, `Pomeren termin: ${customerName(a)}`, [
+      `${customerName(a)} je pomerio/la termin (${servicesLabel(a)}):`,
+      `sa: ${appointmentWhenFormat.format(a.startTime)}`,
+      `na: ${appointmentWhenFormat.format(localToUtc(dateIso, minute, TIME_ZONE))}`,
+    ]);
+  }
+  return result;
+}
+
+/**
+ * Moves a booking to a free start time, keeping its length. Used by the customer link and by salon staff.
+ * With onlyWorkerId (a staff login) the booking stays with that hairdresser.
+ */
+export async function moveBooking(
+  a: Pick<ManagedAppointment, "id" | "salonId" | "workerId" | "startTime" | "endTime">,
+  dateIso: string,
+  minute: number,
+  opts: { enforceLeadTime: boolean; onlyWorkerId: string | null },
+): Promise<ManageResult> {
   const lengthMs = a.endTime.getTime() - a.startTime.getTime();
   const slots = await getAvailableSlots({
     salonId: a.salonId,
     durationMinutes: Math.round(lengthMs / 60_000),
     dateIso,
-    workerId: null,
-    enforceLeadTime: true,
+    workerId: opts.onlyWorkerId,
+    enforceLeadTime: opts.enforceLeadTime,
   });
   const slot = slots.find((s) => s.minute === minute);
   if (!slot) return { ok: false, error: "Taj termin više nije slobodan. Izaberite drugi." };
@@ -164,11 +185,6 @@ export async function rescheduleByCustomer(token: string, dateIso: string, minut
       await db.$transaction((tx) => applyComboPricing(tx, a.id));
       if (oldDayIso !== dateIso) await repriceDay(a.salonId, oldDayIso, a.id);
       await notifyWaitlist(a.salonId, oldDayIso);
-      await notifySalon(a, `Pomeren termin: ${customerName(a)}`, [
-        `${customerName(a)} je pomerio/la termin (${servicesLabel(a)}):`,
-        `sa: ${appointmentWhenFormat.format(a.startTime)}`,
-        `na: ${appointmentWhenFormat.format(startTime)}`,
-      ]);
       return { ok: true };
     } catch (error) {
       if (!isConflict(error)) throw error;

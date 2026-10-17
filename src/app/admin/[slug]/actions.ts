@@ -6,8 +6,9 @@ import type { AppointmentStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireSalonAccess, requireSalonOwner } from "@/lib/access";
 import { applyComboPricing } from "@/lib/comboPricing";
-import { TIME_ZONE, formatLocalDateIso } from "@/lib/time";
+import { TIME_ZONE, formatLocalDateIso, isValidDateIso } from "@/lib/time";
 import { notifyWaitlist } from "@/lib/waitlist";
+import { moveBooking } from "@/lib/manageBooking";
 import { salonBookingInputSchema, createAppointment, type BookingResult } from "@/lib/booking";
 import { setUrgentRequestStatus, swapForUrgentRequest, swapSchema } from "@/lib/urgent";
 
@@ -65,6 +66,27 @@ export async function setAppointmentStatus(slug: string, formData: FormData): Pr
   revalidatePath(`/admin/${slug}`);
   // The owner is told why the appointment stayed cancelled instead of nothing happening.
   if (overlap) redirect(`/admin/${slug}?zauzeto=1`);
+}
+
+/** Moves a booked appointment to another free time. Staff move only their own; the owner any (and may change hairdresser if the old one is busy). */
+export async function moveAppointment(slug: string, formData: FormData): Promise<void> {
+  const { salon, staffWorkerId } = await requireSalonAccess(slug);
+  const dateIso = String(formData.get("date") ?? "");
+  const [h, m] = String(formData.get("time") ?? "").split(":").map(Number);
+  const appointment = await db.appointment.findFirst({
+    where: { id: String(formData.get("id") ?? ""), salonId: salon.id, status: "BOOKED", ...(staffWorkerId ? { workerId: staffWorkerId } : {}) },
+    select: { id: true, salonId: true, workerId: true, startTime: true, endTime: true },
+  });
+  let error = "Termin nije pronađen.";
+  if (appointment && isValidDateIso(dateIso) && Number.isInteger(h) && Number.isInteger(m)) {
+    const result = await moveBooking(appointment, dateIso, h * 60 + m, { enforceLeadTime: false, onlyWorkerId: staffWorkerId });
+    if (result.ok) {
+      revalidatePath(`/admin/${slug}`);
+      redirect(`/admin/${slug}?date=${dateIso}`);
+    }
+    error = result.error;
+  }
+  redirect(`/admin/${slug}?date=${formatLocalDateIso(appointment?.startTime ?? new Date(), TIME_ZONE)}&greska=${encodeURIComponent(error)}`);
 }
 
 export interface SwapState {

@@ -17,8 +17,14 @@ export interface ViewFacts {
   isMember: boolean;
 }
 
-/** Pure rule: public salons are open to everyone; private ones only to logged-in people connected to them. */
+/** Salon logins (owner, hairdresser) work in their own salon only; they have no customer side of the platform. */
+export function isSalonRole(role: string | undefined): boolean {
+  return role === "ADMIN" || role === "WORKER";
+}
+
+/** Pure rule: salon logins open only their own salon; public salons are open to everyone else; private ones only to logged-in people connected to them. */
 export function decideViewAccess(facts: ViewFacts, user: Pick<SessionUser, "role"> | null): boolean {
+  if (user && isSalonRole(user.role)) return facts.isStaff;
   if (facts.visibility === SalonVisibility.PUBLIC) return true;
   if (!user) return false;
   return user.role === "DEVELOPER" || facts.isStaff || facts.isMember;

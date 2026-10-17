@@ -74,6 +74,16 @@ describe("decideViewAccess", () => {
     expect(decideViewAccess({ visibility: "PRIVATE", isStaff: false, isMember: false }, { role: "CLIENT" })).toBe(false);
     expect(decideViewAccess({ visibility: "PRIVATE", isStaff: false, isMember: true }, { role: "CLIENT" })).toBe(true);
   });
+
+  it("keeps salon logins in their own salon", async () => {
+    const { decideViewAccess } = await import("../salonVisibility");
+    for (const role of ["ADMIN", "WORKER"] as const) {
+      expect(decideViewAccess({ visibility: "PUBLIC", isStaff: false, isMember: false }, { role })).toBe(false);
+      expect(decideViewAccess({ visibility: "PUBLIC", isStaff: false, isMember: true }, { role })).toBe(false);
+      expect(decideViewAccess({ visibility: "PRIVATE", isStaff: true, isMember: false }, { role })).toBe(true);
+    }
+    expect(decideViewAccess({ visibility: "PUBLIC", isStaff: false, isMember: false }, { role: "DEVELOPER" })).toBe(true);
+  });
 });
 
 describe("QR token", () => {

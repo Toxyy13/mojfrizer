@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { matchesQuery } from "./searchText";
 import { db, systemDb } from "./db";
-import { PUBLIC_SALONS, canViewSalon } from "./salonVisibility";
+import { PUBLIC_SALONS, canViewSalon, isSalonRole } from "./salonVisibility";
 import { getSessionUser } from "./auth";
 import { getAvailableSlots } from "./booking";
 import { formatServicePrice } from "./money";
@@ -195,9 +195,13 @@ export async function answerQuestion(request: AssistantRequest): Promise<Assista
     return { ok: false, status: 503, error: "Asistent još nije uključen. Pozovite salon ili pošaljite poruku." };
   }
 
+  const asker = await getSessionUser();
+  // Salon logins get no platform-wide salon search; with a slug, canViewSalon limits them to their own salon.
+  if (isSalonRole(asker?.role) && !request.slug) return { ok: false, status: 403, error: "Zabranjeno." };
+
   const found = request.slug ? await loadSalon(request.slug) : null;
   // A private salon is invisible to the assistant unless this visitor may open it.
-  const salon = found && (await canViewSalon(found.id, await getSessionUser())) ? found : null;
+  const salon = found && (await canViewSalon(found.id, asker)) ? found : null;
   if (request.slug && !salon) return { ok: false, status: 404, error: "Salon nije pronađen" };
 
   const today = todayIso(TIME_ZONE);

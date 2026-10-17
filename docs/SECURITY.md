@@ -5,6 +5,7 @@ Kratak pregled zaštita i pravila za novi kod. Tenant izolacija (RLS) je opisana
 ## Zaštita od zloupotrebe (brute force, spam, trošak)
 - `src/lib/rateLimit.ts`: brojači u PostgreSQL tabeli `rate_limits` (važe za sve Vercel instance). Funkcije `consume` (broji i proverava), `isBlocked` + `recordHit` (samo neuspesi), `clearLimit`. IP dolazi iz `x-vercel-forwarded-for`.
 - Prijava: 5 pogrešnih lozinki za isti nalog = čekanje 15 min uz poruku; 30 pokušaja po IP adresi na 10 min; nepostojeći nalog troši isto vreme kao pogrešna lozinka.
+- Prva provera prijave (`src/lib/loginRisk.ts`, `assessLogin`): bodovi iz user-agenta, poznatog uređaja (kolačić `mf_dev`, HMAC naloga), pogrešnih lozinki po nalogu i po IP. `no_risk` prolazi, `risky` traži Cloudflare Turnstile, `dangerous` se odbija opštom porukom (pravi razlog ide u log). Developer nalog ima strože pragove. Captcha radi samo kad su postavljeni `NEXT_PUBLIC_TURNSTILE_SITE_KEY` i `TURNSTILE_SECRET_KEY`; bez njih `risky` prolazi, a važe lockout i limiti.
 - Registracija 5/sat po IP, reset lozinke 5/15 min po IP i 3/sat po emailu (odgovor je uvek isti), honeypot polje `mf_hp` u `AuthForm`.
 - Zakazivanje i hitni zahtevi: limit po IP i telefonu; najviše 5 aktivnih online termina i 3 otvorena hitna zahteva po osobi u salonu (`src/lib/bookingGuard.ts`).
 - Chat, lista čekanja, upravljanje terminom, upload slike, slobodni termini, Google prijava imaju svoje limite.
@@ -12,7 +13,7 @@ Kratak pregled zaštita i pravila za novi kod. Tenant izolacija (RLS) je opisana
 - Novi javni endpoint ili akcija koja šalje mejl, piše u bazu ili zove plaćeni servis MORA da ima `consume(...)`.
 
 ## Sesije i lozinke
-- Kolačić `mf_session`: JWT (HS256), httpOnly, sameSite=lax, secure u produkciji, 7 dana. `getSessionUser()` svaki put čita nalog iz baze (uloga, postojanje) i odbija kolačiće izdate pre `User.sessionsValidAfter`. Posle promene ili reseta lozinke pozvati `revokeSessions(userId)`.
+- Kolačić `mf_session`: JWT (HS256), httpOnly, sameSite=lax, secure u produkciji, 7 dana (30 dana uz „Zapamti me” na prijavi; developer nalog uvek 7). `getSessionUser()` svaki put čita nalog iz baze (uloga, postojanje) i odbija kolačiće izdate pre `User.sessionsValidAfter`. Posle promene ili reseta lozinke pozvati `revokeSessions(userId)`.
 - Lozinke: bcrypt cost 12, najviše 72 znaka. Tokeni za reset/verifikaciju: 256 bita, čuva se samo hash, jednokratni, 1 h / 48 h.
 - Google prijava: state + PKCE. Pri povezivanju sa postojećim nalogom čiji email nije potvrđen briše se lozinka (neko je mogao da registruje tuđu adresu).
 

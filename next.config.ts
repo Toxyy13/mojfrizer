@@ -6,12 +6,12 @@ const isDev = process.env.NODE_ENV !== "production";
 // styles; everything else is limited to this site. The only third party is the Google Maps embed (after consent).
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
   "connect-src 'self'",
-  "frame-src https://maps.google.com https://www.google.com",
+  "frame-src https://maps.google.com https://www.google.com https://challenges.cloudflare.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -28,13 +28,21 @@ const securityHeaders = [
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
   { key: "X-DNS-Prefetch-Control", value: "off" },
+  { key: "Cross-Origin-Resource-Policy", value: "same-site" },
 ];
+
+// Private areas and the API never belong in a search index.
+const noIndex = [{ key: "X-Robots-Tag", value: "noindex, nofollow" }];
+const privatePaths = ["admin", "razvoj", "nalog", "poruke", "api", "nova-lozinka", "potvrda-emaila", "termin", "q", "dodaj-salon"];
 
 const nextConfig: NextConfig = {
   // Don't advertise the framework.
   poweredByHeader: false,
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      ...privatePaths.map((path) => ({ source: `/${path}/:rest*`, headers: noIndex })),
+    ];
   },
 };
 

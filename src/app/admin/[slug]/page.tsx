@@ -14,7 +14,7 @@ import { toBookingServices, toBookingWorkers, upcomingDays } from "@/lib/salonVi
 import { BookingForm } from "@/components/BookingForm";
 import { AdminShell } from "@/components/AdminShell";
 import { breakIntervalsForDay } from "@/lib/breaks";
-import { bookForClient, closeUrgentRequest, setAppointmentStatus, swapForUrgent } from "./actions";
+import { bookForClient, closeUrgentRequest, moveAppointment, setAppointmentStatus, swapForUrgent } from "./actions";
 import { UrgentRequests, type UrgentRequestView } from "./UrgentRequests";
 import { appointmentServicesInclude, resolveVisit, servicesLabel, visitItemPrices } from "@/lib/visit";
 
@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ date?: string; zauzeto?: string }>;
+  searchParams: Promise<{ date?: string; zauzeto?: string; greska?: string }>;
 }
 
 const STATUS_LABEL: Record<AppointmentStatus, string> = {
@@ -76,6 +76,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
   ]);
 
   const statusAction = setAppointmentStatus.bind(null, slug);
+  const moveAction = moveAppointment.bind(null, slug);
   const activeCount = appointments.filter((a) => a.status === "BOOKED").length;
   const flags = await clientFlags(salon.id, appointments.map(clientKeyOf));
   const dayBreaks = breakIntervalsForDay(breakRules, dateIso);
@@ -85,6 +86,11 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
       {sp.zauzeto && (
         <p className="alert-error mb-3" role="alert">
           Termin nije vraćen: u to vreme frizer već ima drugi termin. Otkazani termin ostaje otkazan.
+        </p>
+      )}
+      {sp.greska && (
+        <p className="alert-error mb-3" role="alert">
+          Termin nije pomeren: {sp.greska}
         </p>
       )}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4" aria-label="Pregled">
@@ -127,6 +133,28 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
           swap={swapForUrgent.bind(null, slug)}
           close={closeUrgentRequest.bind(null, slug)}
         />
+      )}
+
+      {!isStaff && workers.length > 1 && (
+        <section className="card mt-6 p-5" aria-label="Dostupnost radnika">
+          <h2 className="eyebrow">Dostupnost radnika</h2>
+          <ul className="mt-3 grid gap-2 text-sm md:grid-cols-2">
+            {workers.map((w) => {
+              const range = (from: Date, to: Date) =>
+                from <= dayStart && to >= dayEnd ? "odsutan/na ceo dan" : `${formatLocalTime(from < dayStart ? dayStart : from, TIME_ZONE)}–${to >= dayEnd ? "24:00" : formatLocalTime(to, TIME_ZONE)}`;
+              const notes = [
+                ...timeOff.filter((t) => t.workerId === w.id).map((t) => `odsustvo ${range(t.startTime, t.endTime)}`),
+                ...dayBreaks.filter((b) => b.workerId === w.id).map((b) => `pauza ${range(b.startTime, b.endTime)}`),
+              ];
+              return (
+                <li key={w.id} className="flex justify-between gap-3">
+                  <span className="font-medium">{w.displayName}</span>
+                  <span className={notes.length ? "text-burgundy" : "text-forest"}>{notes.length ? notes.join(", ") : "dostupan/na"}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       )}
 
       <section className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_26rem]">
@@ -196,6 +224,17 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
                           </p>
                           {a.note && <p className="mt-2 rounded-lg bg-cream px-3 py-2 text-xs text-muted">„{a.note}”</p>}
                           {flag?.note && <p className="mt-2 text-xs text-muted">Beleška: {flag.note}</p>}
+                          {a.status === "BOOKED" && (
+                            <details className="mt-3 text-sm">
+                              <summary className="link cursor-pointer">Pomeri</summary>
+                              <form action={moveAction} className="mt-2 flex flex-wrap items-end gap-2">
+                                <input type="hidden" name="id" value={a.id} />
+                                <input name="date" type="date" required defaultValue={dateIso} className="field w-auto" aria-label="Datum" />
+                                <input name="time" type="time" required step={salon.slotStepMinutes * 60} defaultValue={formatLocalTime(a.startTime, TIME_ZONE)} className="field w-auto" aria-label="Vreme" />
+                                <button className="btn-secondary btn-sm">Pomeri termin</button>
+                              </form>
+                            </details>
+                          )}
                           <div className="mt-3 flex flex-wrap gap-2">
                             {a.status === "BOOKED" ? (
                               <>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth";
+import { isSalonRole } from "@/lib/salonVisibility";
 import { Logo } from "./Logo";
 
 /**
@@ -15,9 +16,11 @@ export async function SiteHeader({ generic = false }: { generic?: boolean }) {
       <nav className="page flex h-16 items-center justify-between gap-4" aria-label="Glavna navigacija">
         <Logo />
         <div className="flex items-center gap-1 sm:gap-2">
-          <Link href="/#saloni" className="btn-ghost hidden sm:inline-flex">
-            Saloni
-          </Link>
+          {!isSalonRole(user?.role) && (
+            <Link href="/#saloni" className="btn-ghost hidden sm:inline-flex">
+              Saloni
+            </Link>
+          )}
           {user ? (
             <Link href={user.role === "CLIENT" ? "/nalog" : user.role === "DEVELOPER" ? "/razvoj" : "/admin"} className="btn-secondary btn-sm">
               <span
