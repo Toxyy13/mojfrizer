@@ -81,6 +81,8 @@ export async function setFavoriteSalon(formData: FormData): Promise<void> {
   const user = await getSessionUser();
   if (!user) redirect(`/prijava?next=${encodeURIComponent(returnTo)}`);
 
+  if (user.role !== "CLIENT") return;
+
   const salonId = String(formData.get("salonId") ?? "");
   try {
     if (salonId) {

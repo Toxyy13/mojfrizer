@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { matchesQuery } from "./searchText";
 import { db, systemDb } from "./db";
-import { PUBLIC_SALONS, canViewSalon } from "./salonVisibility";
+import { PUBLIC_SALONS, canViewSalon, isSalonRole } from "./salonVisibility";
 import { getSessionUser } from "./auth";
 import { getAvailableSlots } from "./booking";
 import { formatServicePrice } from "./money";
@@ -194,6 +194,10 @@ export async function answerQuestion(request: AssistantRequest): Promise<Assista
   if (!process.env.ANTHROPIC_API_KEY) {
     return { ok: false, status: 503, error: "Asistent još nije uključen. Pozovite salon ili pošaljite poruku." };
   }
+
+  // Salon logins don't use the customer assistant, and it must not become a way to search other salons.
+  const asker = await getSessionUser();
+  if (asker && isSalonRole(asker.role) && !request.slug) return { ok: false, status: 403, error: "Zabranjeno." };
 
   const found = request.slug ? await loadSalon(request.slug) : null;
   // A private salon is invisible to the assistant unless this visitor may open it.
