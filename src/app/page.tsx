@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { SiteFooter } from "@/components/SiteFooter";
 import { HeroSpotlight } from "@/components/HeroSpotlight";
@@ -7,7 +8,7 @@ import { AvatarPrompt } from "@/components/AvatarPrompt";
 import { shouldShowAvatarPrompt } from "@/lib/avatarPrompt";
 import { SiteHeader } from "@/components/SiteHeader";
 import { AssistantWidget } from "@/components/AssistantWidget";
-import { PUBLIC_SALONS, canViewSalon } from "@/lib/salonVisibility";
+import { PUBLIC_SALONS, canViewSalon, isSalonRole } from "@/lib/salonVisibility";
 import { getSessionUser } from "@/lib/auth";
 import { matchesQuery } from "@/lib/searchText";
 import { db } from "@/lib/db";
@@ -58,6 +59,7 @@ function initials(name: string): string {
 export default async function HomePage({ searchParams }: HomeProps) {
   const q = ((await searchParams).q ?? "").trim().slice(0, 60);
   const user = await getSessionUser();
+  if (isSalonRole(user?.role)) redirect("/admin");
 
   const [allSalons, me] = await Promise.all([
     db.salon.findMany({
