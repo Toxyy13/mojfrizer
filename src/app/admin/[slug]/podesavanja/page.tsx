@@ -2,6 +2,7 @@ import { AdminShell } from "@/components/AdminShell";
 import type { Service, WorkerProfile, WorkingHours } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireSalonOwner } from "@/lib/access";
+import { SOCIAL_LABELS, SOCIAL_NETWORKS } from "@/lib/socialLinks";
 import { formatServicePrice } from "@/lib/money";
 import { TIME_ZONE, WEEKDAYS_SR, formatLocalDateIso, formatLocalTime, minutesToHHMM, todayIso } from "@/lib/time";
 import {
@@ -366,6 +367,20 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
             <span className={LABEL}>Grad</span>
             <input name="city" defaultValue={salon.city} required maxLength={60} className={INPUT} />
           </label>
+          {SOCIAL_NETWORKS.map((network) => (
+            <label key={network}>
+              <span className={LABEL}>{SOCIAL_LABELS[network]} (opciono)</span>
+              <input
+                name={network}
+                defaultValue={salon[`${network}Url` as const] ?? ""}
+                placeholder="@korisnicko_ime ili link"
+                maxLength={200}
+                autoCapitalize="none"
+                autoCorrect="off"
+                className={INPUT}
+              />
+            </label>
+          ))}
           <label className="md:col-span-2">
             <span className={LABEL}>Opis (opciono)</span>
             <textarea name="description" defaultValue={salon.description ?? ""} rows={3} maxLength={1000} className={INPUT} />

@@ -95,6 +95,10 @@ model Salon {
   city        String
   address     String
   phone       String?
+  // Public social profiles, canonical https URLs (see src/lib/socialLinks.ts).
+  instagramUrl String?
+  facebookUrl  String?
+  tiktokUrl    String?
   // Calendar grid for booking slots, in minutes.
   slotStepMinutes Int  @default(15)
   // Customers can cancel or move a booking online until this many hours before it starts.
