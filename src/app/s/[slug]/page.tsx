@@ -15,7 +15,8 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StickyBookBar } from "@/components/StickyBookBar";
 import { getSessionUser } from "@/lib/auth";
-import { canViewSalon } from "@/lib/salonVisibility";
+import { canViewSalon, isSalonRole } from "@/lib/salonVisibility";
+import { logout } from "@/app/prijava/actions";
 import { formatRating, getSalonRating, ratingCountLabel } from "@/lib/reviews";
 import { SocialLinks } from "@/components/SocialLinks";
 import { formatPhone } from "@/lib/phone";
@@ -74,7 +75,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
     canViewOnce(salon.id, session),
     getSalonRating(salon.id),
     db.review.findMany({ where: { salonId: salon.id }, orderBy: { createdAt: "desc" }, take: 6 }),
-    session ? db.user.findUnique({ where: { id: session.id }, select: { name: true, phone: true, favoriteSalonId: true } }) : null,
+    session?.role === "CLIENT" ? db.user.findUnique({ where: { id: session.id }, select: { name: true, phone: true, favoriteSalonId: true } }) : null,
   ]);
   if (!canView) notFound();
 
@@ -89,11 +90,28 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
   const bookingServices = toBookingServices(salon.services);
   const bookingWorkers = toBookingWorkers(salon.workers);
   const bookingDays = upcomingDays(salon.workingHours, salon.daysOff, 14);
+  // A salon login sees the page exactly as a guest does (that is the customer's view), plus a bar to leave it.
+  const salonLogin = isSalonRole(session?.role);
   const cheapest = salon.services.reduce<number | null>((min, s) => (min === null || s.price < min ? s.price : min), null);
 
   return (
     <>
       <SiteHeader />
+      {salonLogin && (
+        <div className="border-b border-line bg-burgundy-soft">
+          <div className="page flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
+            <p>Prijavljeni ste kao salon. Ovo je stranica kakvu vide mušterije.</p>
+            <div className="flex items-center gap-2">
+              <Link href="/admin" className="btn-primary btn-sm">
+                Otvori admin
+              </Link>
+              <form action={logout}>
+                <button className="btn-secondary btn-sm">Odjava</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
       <main id="sadrzaj" tabIndex={-1} className="pb-24 md:pb-0">
         <section className="page pt-10 pb-10 sm:pt-16">
           <div className="animate-rise">
@@ -256,7 +274,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
                 workers={bookingWorkers}
                 days={bookingDays}
                 surcharge={salon.urgentSurcharge}
-                viewer={!session ? "guest" : session.role === "CLIENT" ? "client" : "other"}
+                viewer={!session || salonLogin ? "guest" : session.role === "CLIENT" ? "client" : "other"}
                 start={startUrgentBooking.bind(null, salon.slug)}
               />
               <BookingForm
