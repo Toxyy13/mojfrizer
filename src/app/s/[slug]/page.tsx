@@ -75,7 +75,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
     canViewOnce(salon.id, session),
     getSalonRating(salon.id),
     db.review.findMany({ where: { salonId: salon.id }, orderBy: { createdAt: "desc" }, take: 6 }),
-    session ? db.user.findUnique({ where: { id: session.id }, select: { name: true, phone: true, favoriteSalonId: true } }) : null,
+    session?.role === "CLIENT" ? db.user.findUnique({ where: { id: session.id }, select: { name: true, phone: true, favoriteSalonId: true } }) : null,
   ]);
   if (!canView) notFound();
 
@@ -90,7 +90,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
   const bookingServices = toBookingServices(salon.services);
   const bookingWorkers = toBookingWorkers(salon.workers);
   const bookingDays = upcomingDays(salon.workingHours, salon.daysOff, 14);
-  // A salon login looks at the page like a visitor would, but has no customer side: no booking, chat or favorites.
+  // A salon login sees the page exactly as a guest does (that is the customer's view), plus a bar to leave it.
   const salonLogin = isSalonRole(session?.role);
   const cheapest = salon.services.reduce<number | null>((min, s) => (min === null || s.price < min ? s.price : min), null);
 
@@ -100,7 +100,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
       {salonLogin && (
         <div className="border-b border-line bg-burgundy-soft">
           <div className="page flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
-            <p>Prijavljeni ste kao salon, ovo je pregled javne stranice. Zakazivanje i poruke su samo za mušterije.</p>
+            <p>Prijavljeni ste kao salon. Ovo je stranica kakvu vide mušterije.</p>
             <div className="flex items-center gap-2">
               <Link href="/admin" className="btn-primary btn-sm">
                 Otvori admin
@@ -131,28 +131,26 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
             <p className="mt-4 text-lg text-muted">{salon.description ?? fullAddress}</p>
           </div>
 
-          {!salonLogin && (
-            <div className="mt-8 flex flex-wrap items-center gap-2">
-              <a href="#zakazivanje" className="btn-primary px-8">
-                Zakaži termin
+          <div className="mt-8 flex flex-wrap items-center gap-2">
+            <a href="#zakazivanje" className="btn-primary px-8">
+              Zakaži termin
+            </a>
+            <Link href={`/poruke/${salon.slug}`} className="btn-secondary">
+              Pošalji poruku
+            </Link>
+            {salon.phone && (
+              <a href={`tel:${tel}`} className="btn-secondary">
+                Pozovi
               </a>
-              <Link href={`/poruke/${salon.slug}`} className="btn-secondary">
-                Pošalji poruku
+            )}
+            {customer ? (
+              <FavoriteButton salonId={salon.id} isFavorite={customer.favoriteSalonId === salon.id} returnTo={`/s/${salon.slug}`} />
+            ) : (
+              <Link href={`/prijava?next=/s/${salon.slug}`} className="btn-ghost">
+                ♡ Prijavite se da sačuvate salon
               </Link>
-              {salon.phone && (
-                <a href={`tel:${tel}`} className="btn-secondary">
-                  Pozovi
-                </a>
-              )}
-              {customer ? (
-                <FavoriteButton salonId={salon.id} isFavorite={customer.favoriteSalonId === salon.id} returnTo={`/s/${salon.slug}`} />
-              ) : (
-                <Link href={`/prijava?next=/s/${salon.slug}`} className="btn-ghost">
-                  ♡ Prijavite se da sačuvate salon
-                </Link>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </section>
 
         <section className="page reveal grid gap-3 md:grid-cols-3" aria-label="Informacije">
@@ -257,52 +255,50 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
           </section>
         )}
 
-        {!salonLogin && (
-          <section id="zakazivanje" className="page mt-24 scroll-mt-20" aria-labelledby="zakazi-naslov">
-            <div className="card grid gap-10 p-5 sm:p-8 md:grid-cols-[1fr_2fr] md:p-10">
-              <div>
-                <p className="eyebrow">Online zakazivanje</p>
-                <h2 id="zakazi-naslov" className="mt-3 font-serif text-5xl font-bold leading-none sm:text-6xl">
-                  Zakažite termin
-                </h2>
-                <p className="mt-4 text-sm text-muted">
-                  Izaberite uslugu, dan i slobodno vreme. Ako vam je lakše, pozovite nas
-                  {salon.phone ? ` na ${salon.phone}` : ""} i zakazaćemo umesto vas.
-                </p>
-              </div>
-              <div className="grid min-w-0 gap-8">
-                <UrgentBookingCard
-                  slug={salon.slug}
-                  services={bookingServices}
-                  workers={bookingWorkers}
-                  days={bookingDays}
-                  surcharge={salon.urgentSurcharge}
-                  viewer={!session ? "guest" : session.role === "CLIENT" ? "client" : "other"}
-                  start={startUrgentBooking.bind(null, salon.slug)}
-                />
-                <BookingForm
-                  slug={salon.slug}
-                  mode="public"
-                  services={bookingServices}
-                  workers={bookingWorkers}
-                  days={bookingDays}
-                  submit={bookOnline.bind(null, salon.slug)}
-                  initialClient={customer ? { name: customer.name, phone: customer.phone ? formatPhone(customer.phone) : "" } : undefined}
-                  requestUrgent={requestUrgent.bind(null, salon.slug)}
-                  urgentSurcharge={salon.urgentSurcharge}
-                  joinWaitlist={joinSalonWaitlist.bind(null, salon.slug)}
-                  initialServiceIds={preselect.usluga?.split(",").filter(Boolean)}
-                  combos={salon.serviceCombos}
-                  initialWorkerId={preselect.frizer}
-                />
-              </div>
+        <section id="zakazivanje" className="page mt-24 scroll-mt-20" aria-labelledby="zakazi-naslov">
+          <div className="card grid gap-10 p-5 sm:p-8 md:grid-cols-[1fr_2fr] md:p-10">
+            <div>
+              <p className="eyebrow">Online zakazivanje</p>
+              <h2 id="zakazi-naslov" className="mt-3 font-serif text-5xl font-bold leading-none sm:text-6xl">
+                Zakažite termin
+              </h2>
+              <p className="mt-4 text-sm text-muted">
+                Izaberite uslugu, dan i slobodno vreme. Ako vam je lakše, pozovite nas
+                {salon.phone ? ` na ${salon.phone}` : ""} i zakazaćemo umesto vas.
+              </p>
             </div>
-          </section>
-        )}
+            <div className="grid min-w-0 gap-8">
+              <UrgentBookingCard
+                slug={salon.slug}
+                services={bookingServices}
+                workers={bookingWorkers}
+                days={bookingDays}
+                surcharge={salon.urgentSurcharge}
+                viewer={!session || salonLogin ? "guest" : session.role === "CLIENT" ? "client" : "other"}
+                start={startUrgentBooking.bind(null, salon.slug)}
+              />
+              <BookingForm
+                slug={salon.slug}
+                mode="public"
+                services={bookingServices}
+                workers={bookingWorkers}
+                days={bookingDays}
+                submit={bookOnline.bind(null, salon.slug)}
+                initialClient={customer ? { name: customer.name, phone: customer.phone ? formatPhone(customer.phone) : "" } : undefined}
+                requestUrgent={requestUrgent.bind(null, salon.slug)}
+                urgentSurcharge={salon.urgentSurcharge}
+                joinWaitlist={joinSalonWaitlist.bind(null, salon.slug)}
+                initialServiceIds={preselect.usluga?.split(",").filter(Boolean)}
+                combos={salon.serviceCombos}
+                initialWorkerId={preselect.frizer}
+              />
+            </div>
+          </div>
+        </section>
       </main>
       <SiteFooter />
-      {!salonLogin && <StickyBookBar targetId="zakazivanje" label="Zakaži termin" hint={openNow.label} />}
-      {!salonLogin && <AssistantWidget slug={salon.slug} salonName={salon.name} />}
+      <StickyBookBar targetId="zakazivanje" label="Zakaži termin" hint={openNow.label} />
+      <AssistantWidget slug={salon.slug} salonName={salon.name} />
     </>
   );
 }
