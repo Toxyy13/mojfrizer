@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useState, type ReactNode } from "react";
 import { Turnstile } from "@/components/Turnstile";
 import type { FormState } from "@/app/prijava/actions";
@@ -99,6 +100,11 @@ export function AuthForm({ action, fields, submitLabel, pendingLabel, next, hidd
         <p className="alert-error" role="alert">
           {state.error}
         </p>
+      )}
+      {state.unverified && (
+        <Link href="/potvrda-emaila/ponovo" className="btn-secondary w-full">
+          Pošalji ponovo mejl
+        </Link>
       )}
       {state.notice && (
         <p className="rounded-xl bg-forest-soft px-4 py-3 text-sm text-forest" role="status">

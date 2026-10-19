@@ -11,7 +11,7 @@ import { login } from "./actions";
 export const metadata: Metadata = { title: "Prijava · mojfrizer" };
 
 interface PageProps {
-  searchParams: Promise<{ next?: string; greska?: string; lozinka?: string }>;
+  searchParams: Promise<{ next?: string; greska?: string; lozinka?: string; potvrda?: string }>;
 }
 
 export default async function LoginPage({ searchParams }: PageProps) {
@@ -37,6 +37,14 @@ export default async function LoginPage({ searchParams }: PageProps) {
       {params.greska === "google" && (
         <p className="alert-error mb-6" role="alert">
           Prijava preko Google naloga nije uspela. Pokušajte ponovo ili se prijavite emailom.
+        </p>
+      )}
+      {params.potvrda === "poslata" && (
+        <p className="mb-6 rounded-xl bg-forest-soft px-4 py-3 text-sm text-forest" role="status">
+          Nalog je napravljen. Poslali smo vam mejl: kliknite na link u njemu da potvrdite email, pa se prijavite.{" "}
+          <Link href="/potvrda-emaila/ponovo" className="font-medium underline">
+            Nije stigao?
+          </Link>
         </p>
       )}
       {params.lozinka === "nova" && (

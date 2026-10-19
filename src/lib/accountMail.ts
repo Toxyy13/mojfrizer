@@ -19,7 +19,7 @@ export async function sendVerificationMail(userId: string): Promise<boolean> {
       "potvrdite email adresu klikom na link (važi 48 sati):",
       `${appUrl()}/potvrda-emaila?token=${token}`,
       "",
-      "Tek posle potvrde šaljemo podsetnike za termine na ovu adresu.",
+      "Dok ne potvrdite adresu, ne možete da se prijavite na nalog.",
       "Ako niste pravili nalog na mojfrizer.com, ignorišite ovaj mejl.",
     ].join("\n"),
   });

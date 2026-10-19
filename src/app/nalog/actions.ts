@@ -10,7 +10,7 @@ import { MAX_PASSWORD_LENGTH, getSessionUser, hashPassword, revokeSessions, star
 import { consumeToken } from "@/lib/emailTokens";
 import { db, systemDb } from "@/lib/db";
 import { TERMS_VERSION } from "@/lib/company";
-import { safeNextPath } from "@/lib/landing";
+import { landingPathFor, safeNextPath } from "@/lib/landing";
 import { canViewSalon } from "@/lib/salonVisibility";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import { clearLimit, clearLimitPrefix, consume, isBlocked, keyPart, recordHit, requestIp, waitMessage } from "@/lib/rateLimit";
@@ -61,8 +61,8 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
       data: { name, email: email.data, phone, passwordHash: await hashPassword(password), role: Role.CLIENT, termsAcceptedAt: new Date(), termsVersion: TERMS_VERSION },
       select: { id: true, email: true, name: true, role: true },
     });
-    await startSession(user);
-    // A failing mail provider must not block registration; the account page can resend it.
+    // No session yet: the account works after the link in the mail is clicked. A failing mail provider must not
+    // block registration; the login form can send the mail again.
     await sendVerificationMail(user.id).catch((mailError: unknown) => console.error(mailError));
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -72,7 +72,53 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
     console.error(error);
     return { error: "Greška pri registraciji. Pokušajte ponovo.", values };
   }
-  redirect(safeNextPath(formData.get("next")) ?? "/");
+  const next = safeNextPath(formData.get("next"));
+  redirect(`/prijava?potvrda=poslata${next ? `&next=${encodeURIComponent(next)}` : ""}`);
+}
+
+const VERIFY_NOTICE = "Ako nalog sa tom adresom čeka potvrdu, poslali smo vam novi mejl.";
+
+/** "Pošalji ponovo mejl" for accounts that can't log in yet. Always answers the same, like the password reset. */
+export async function requestVerificationMail(_prev: FormState, formData: FormData): Promise<FormState> {
+  const email = emailSchema.safeParse(String(formData.get("email") ?? ""));
+  if (!email.success) return { error: "Upišite ispravnu email adresu.", values: { email: String(formData.get("email") ?? "") } };
+  if (String(formData.get("mf_hp") ?? "") !== "") return { error: null, notice: VERIFY_NOTICE };
+  const limited = await consume([
+    { key: `verify:ip:${await requestIp()}`, limit: 5, windowSec: 900 },
+    { key: `verify:email:${keyPart(email.data)}`, limit: 3, windowSec: 3600 },
+  ]);
+  if (!limited.ok) return { error: null, notice: VERIFY_NOTICE };
+  try {
+    const user = await systemDb.user.findUnique({ where: { email: email.data }, select: { id: true } });
+    if (user) await sendVerificationMail(user.id);
+  } catch (error) {
+    console.error(error);
+  }
+  return { error: null, notice: VERIFY_NOTICE };
+}
+
+/** The button on the confirmation page: uses the mailed token up, confirms the email and logs the user in. */
+export async function confirmEmail(formData: FormData): Promise<void> {
+  const token = String(formData.get("token") ?? "");
+  const limited = await consume([{ key: `verify-use:ip:${await requestIp()}`, limit: 20, windowSec: 900 }]);
+  let target = "/potvrda-emaila?token=";
+  if (limited.ok) {
+    try {
+      const used = await consumeToken(token, "VERIFY_EMAIL");
+      if (used) {
+        const user = await systemDb.user.update({
+          where: { id: used.userId },
+          data: { emailVerifiedAt: new Date() },
+          select: { id: true, email: true, name: true, role: true },
+        });
+        await startSession(user);
+        target = await landingPathFor(user);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  redirect(target);
 }
 
 /** Marks a salon as favorite, or clears the favorite when salonId is empty. */
