@@ -113,23 +113,29 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
         </div>
       )}
       <main id="sadrzaj" tabIndex={-1} className="pb-24 md:pb-0">
-        <section className="page pt-10 pb-10 sm:pt-16">
-          <div className="animate-rise">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="eyebrow">Frizerski salon · {salon.city}</span>
-              {rating.count > 0 && (
-                <a href="#ocene" className="badge bg-burgundy-soft text-burgundy">
-                  ★ {formatRating(rating.average)} · {ratingCountLabel(rating.count)}
-                </a>
-              )}
-              <span className={`badge ${openNow.open ? "bg-forest-soft text-forest" : "bg-sand text-muted"}`}>
-                <span aria-hidden className={`mr-1.5 size-1.5 rounded-full ${openNow.open ? "bg-forest" : "bg-muted"}`} />
-                {openNow.label}
-              </span>
-            </div>
-            <h1 className="mt-4 font-serif text-[clamp(3.25rem,13vw,9rem)] font-extrabold leading-[0.9] tracking-[-0.04em]">{salon.name}</h1>
-            <p className="mt-4 text-lg text-muted">{salon.description ?? fullAddress}</p>
+        <div aria-hidden className="awning" />
+        <section className="page pt-8 pb-10 sm:pt-12">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="eyebrow">Frizerski salon · {salon.city}</span>
+            {rating.count > 0 && (
+              <a href="#ocene" className="badge border border-burgundy/40 bg-burgundy-soft text-burgundy">
+                ★ {formatRating(rating.average)} · {ratingCountLabel(rating.count)}
+              </a>
+            )}
           </div>
+          <div className="mt-4 flex items-stretch gap-3 sm:gap-5">
+            <h1 className="sign-text min-w-0 flex-1 rounded-3xl bg-charcoal px-6 py-8 text-[clamp(2.5rem,9vw,6.5rem)] leading-[0.95] break-words shadow-[0_30px_60px_-30px_rgb(17_24_39/0.7)] sm:px-10 sm:py-12">
+              {salon.name}
+            </h1>
+            <div aria-hidden className="pole w-5 shrink-0 sm:w-8" />
+          </div>
+          <p className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-lg text-muted">
+            <span className={`badge ${openNow.open ? "bg-forest-soft text-forest" : "bg-sand text-muted"}`}>
+              <span aria-hidden className={`mr-1.5 size-2 rounded-full ${openNow.open ? "animate-pulse bg-forest" : "bg-muted"}`} />
+              {openNow.label}
+            </span>
+            <span className="max-w-2xl">{salon.description ?? fullAddress}</span>
+          </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-2">
             <a href="#zakazivanje" className="btn-primary px-8">
@@ -154,7 +160,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
         </section>
 
         <section className="page reveal grid gap-3 md:grid-cols-3" aria-label="Informacije">
-          <article className="card overflow-hidden md:col-span-2">
+          <article className="card-ink overflow-hidden md:col-span-2">
             <MapEmbed address={fullAddress} src={mapEmbedUrl} />
             <div className="flex flex-wrap items-end justify-between gap-4 p-5 sm:p-6">
               <div>
@@ -172,7 +178,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
               </a>
             </div>
           </article>
-          <aside className="card p-5 sm:p-6">
+          <aside className="card-ink p-5 sm:p-6">
             <h2 className="eyebrow">Radno vreme</h2>
             <dl className="mt-4 grid grid-cols-[1fr_auto] text-sm">
               {WEEK_ORDER.map((wd) => {
@@ -181,7 +187,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
                 return (
                   <div
                     key={wd}
-                    className={`col-span-2 grid grid-cols-subgrid rounded-lg px-3 py-2 ${isToday ? "bg-burgundy-soft font-medium text-burgundy" : ""}`}
+                    className={`col-span-2 grid grid-cols-subgrid rounded-lg px-3 py-2 ${isToday ? "bg-charcoal font-semibold text-white" : ""}`}
                   >
                     <dt>
                       {WEEKDAYS_SR[wd]}
@@ -202,25 +208,25 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
         <section className="page reveal mt-24 grid gap-8 md:grid-cols-[1fr_2fr]" aria-labelledby="cenovnik">
           <div>
             <p className="eyebrow">Usluge</p>
-            <h2 id="cenovnik" className="mt-3 font-serif text-5xl font-bold leading-none sm:text-7xl">
+            <h2 id="cenovnik" className="mt-3 font-serif text-5xl leading-none font-bold sm:text-7xl">
               Cenovnik
             </h2>
             {cheapest !== null && <p className="mt-3 text-muted">Usluge već od {formatPrice(cheapest)}.</p>}
           </div>
-          <div className="grid gap-8">
+          <div className="board grid gap-8 p-6 sm:p-10">
             {categories.map((category) => (
               <div key={category}>
-                <h3 className="eyebrow">{category}</h3>
-                <ul className="mt-2 divide-y divide-line border-y border-line">
+                <h3 className="font-serif text-xl tracking-[0.14em] text-[#f0b64a]">{category}</h3>
+                <ul className="mt-3 grid gap-4">
                   {salon.services
                     .filter((s) => serviceCategory(s) === category)
                     .map((s) => (
-                      <li key={s.id} className="flex items-baseline gap-4 py-4">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-lg">{s.name}</p>
-                          <p className="text-sm text-muted">{s.durationMinutes} min</p>
-                        </div>
-                        <p className="max-w-[45%] text-right font-medium tabular-nums">{formatServicePrice(s)}</p>
+                      <li key={s.id} className="board-row">
+                        <p className="text-lg font-medium">
+                          {s.name} <span className="ml-1 text-sm font-normal text-cream/60">{s.durationMinutes} min</span>
+                        </p>
+                        <span aria-hidden className="board-dots" />
+                        <p className="font-serif text-xl tabular-nums">{formatServicePrice(s)}</p>
                       </li>
                     ))}
                 </ul>
@@ -242,7 +248,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
             </div>
             <ul className="grid gap-3 sm:grid-cols-2">
               {reviews.map((r) => (
-                <li key={r.id} className="card p-5">
+                <li key={r.id} className="card-ink p-5 odd:-rotate-1 even:rotate-1">
                   <p className="text-burgundy" aria-label={`${r.rating} od 5`}>
                     {"★".repeat(r.rating)}
                     <span className="text-line">{"★".repeat(5 - r.rating)}</span>
@@ -256,7 +262,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
         )}
 
         <section id="zakazivanje" className="page mt-24 scroll-mt-20" aria-labelledby="zakazi-naslov">
-          <div className="card grid gap-10 p-5 sm:p-8 md:grid-cols-[1fr_2fr] md:p-10">
+          <div className="card-ink grid gap-10 p-5 sm:p-8 md:grid-cols-[1fr_2fr] md:p-10">
             <div>
               <p className="eyebrow">Online zakazivanje</p>
               <h2 id="zakazi-naslov" className="mt-3 font-serif text-5xl font-bold leading-none sm:text-6xl">

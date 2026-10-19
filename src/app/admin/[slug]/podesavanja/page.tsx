@@ -128,7 +128,7 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
             </li>
           ))}
         </ul>
-        <div className="mt-6 rounded-2xl bg-cream p-5">
+        <div className="mt-6 rounded-xl bg-cream p-5">
           <h3 className="font-serif text-2xl">Nova usluga</h3>
           <div className="mt-4">
             <ServiceForm slug={salon.slug} service={null} nextSortOrder={services.length} />
@@ -155,13 +155,13 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
             ))}
           </ul>
         )}
-        <form action={saveServiceCombo.bind(null, salon.slug)} className="mt-6 rounded-2xl bg-cream p-5">
+        <form action={saveServiceCombo.bind(null, salon.slug)} className="mt-6 rounded-xl bg-cream p-5">
           <h3 className="font-serif text-2xl">Nova kombinacija</h3>
           <fieldset className="mt-4 min-w-0">
             <legend className={LABEL}>Usluge (bar dve)</legend>
             <div className="mt-2 flex flex-wrap gap-2">
               {activeServices.map((s) => (
-                <label key={s.id} className="flex cursor-pointer items-center gap-2 rounded-full border border-line bg-white px-3 py-2 text-sm has-[:checked]:border-burgundy has-[:checked]:bg-burgundy-soft">
+                <label key={s.id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm has-[:checked]:border-burgundy has-[:checked]:bg-burgundy-soft">
                   <input type="checkbox" name="serviceIds" value={s.id} className="accent-burgundy" />
                   {s.name}
                 </label>
@@ -232,7 +232,7 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
             </li>
           ))}
         </ul>
-        <div className="mt-6 rounded-2xl bg-cream p-5">
+        <div className="mt-6 rounded-xl bg-cream p-5">
           <h3 className="font-serif text-2xl">Novi radnik</h3>
           <div className="mt-4">
             <WorkerForm slug={salon.slug} worker={null} />
@@ -264,7 +264,7 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
             <legend className={LABEL}>Ponavlja se svake nedelje</legend>
             <div className="mt-1 flex flex-wrap gap-2">
               {WEEKDAYS_SR.slice(1).map((name, i) => (
-                <label key={name} className="flex items-center gap-2 rounded-full border border-line px-3 py-1.5 text-sm">
+                <label key={name} className="flex items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-sm">
                   <input type="checkbox" name="weekdays" value={i + 1} />
                   {name.slice(0, 3)}
                 </label>

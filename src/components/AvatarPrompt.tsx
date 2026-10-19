@@ -6,7 +6,7 @@ export function AvatarPrompt({ className = "" }: { className?: string }) {
   return (
     <section
       aria-label="Dodajte profilnu sliku"
-      className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-burgundy-soft px-5 py-4 text-sm text-burgundy ${className}`}
+      className={`flex flex-wrap items-center justify-between gap-3 rounded-xl bg-burgundy-soft px-5 py-4 text-sm text-burgundy ${className}`}
     >
       <p className="min-w-0 flex-1">Dodajte profilnu sliku, da vas salon lakše prepozna kad dođete.</p>
       <div className="flex items-center gap-2">

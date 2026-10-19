@@ -1,18 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
+import { Manrope, Sora } from "next/font/google";
 import { CookieBanner } from "@/components/CookieBanner";
 import { appUrl } from "@/lib/appUrl";
 import "./globals.css";
 
-// Display: Bricolage Grotesque (variable width and weight, used for the big animated wordmark).
-// Body: Plus Jakarta Sans. Both ship latin-ext, so š, ž, č, ć, đ render natively.
-const display = Bricolage_Grotesque({
-  subsets: ["latin", "latin-ext"],
-  variable: "--font-display",
-  axes: ["opsz", "wdth"],
-});
-const body = Plus_Jakarta_Sans({ subsets: ["latin", "latin-ext"], variable: "--font-body" });
+// Headings: Sora (geometric, modern). Body: Manrope. Both ship latin-ext, so š, ž, č, ć, đ render natively.
+const display = Sora({ subsets: ["latin", "latin-ext"], variable: "--font-display" });
+const body = Manrope({ subsets: ["latin", "latin-ext"], variable: "--font-body" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl()),
@@ -22,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f8f4ee",
+  themeColor: "#f6f2ea",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

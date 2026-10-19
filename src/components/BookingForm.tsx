@@ -226,7 +226,7 @@ export function BookingForm({
 
   if (urgentSent) {
     return (
-      <div className="animate-rise rounded-2xl bg-burgundy-soft p-6 sm:p-10" role="status">
+      <div className="animate-rise rounded-xl bg-burgundy-soft p-6 sm:p-10" role="status">
         <p className="eyebrow text-burgundy">Hitan zahtev je poslat</p>
         <p className="mt-3 font-serif text-3xl sm:text-4xl">
           {servicesText}, {day?.label ?? dateIso}
@@ -248,7 +248,7 @@ export function BookingForm({
 
   if (result?.ok) {
     return (
-      <div className="animate-rise rounded-2xl bg-forest-soft p-6 sm:p-10" role="status">
+      <div className="animate-rise rounded-xl bg-forest-soft p-6 sm:p-10" role="status">
         <span aria-hidden className="grid size-12 place-items-center rounded-full bg-forest text-xl text-white">
           ✓
         </span>
@@ -493,7 +493,7 @@ export function BookingForm({
         </p>
       )}
 
-      <div className="grid gap-3 rounded-2xl bg-cream p-4 @md:grid-cols-[1fr_auto] @md:items-center">
+      <div className="grid gap-3 rounded-xl bg-cream p-4 @md:grid-cols-[1fr_auto] @md:items-center">
         <p className="text-sm text-muted" aria-live="polite">
           {hasService ? (
             <>

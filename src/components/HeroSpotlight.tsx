@@ -42,7 +42,7 @@ export function HeroSpotlight({ children, className = "" }: { children: ReactNod
   }, []);
 
   return (
-    <div ref={ref} className={`spotlight ${className}`}>
+    <div ref={ref} className={className}>
       {children}
     </div>
   );

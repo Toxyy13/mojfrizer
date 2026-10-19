@@ -82,7 +82,7 @@ export function UrgentBookingCard({ slug, services, workers, days, surcharge, vi
   };
 
   return (
-    <div id="hitno" className="scroll-mt-24 rounded-2xl border border-burgundy/30 bg-burgundy-soft/60 p-4 sm:p-5">
+    <div id="hitno" className="scroll-mt-24 rounded-xl border border-burgundy/30 bg-burgundy-soft/60 p-4 sm:p-5">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
         <div className="min-w-0 flex-1 basis-56">
           <p className="font-serif text-2xl leading-tight">Hitna rezervacija</p>
@@ -105,7 +105,7 @@ export function UrgentBookingCard({ slug, services, workers, days, surcharge, vi
             aria-modal="true"
             aria-label="Hitna rezervacija"
             onClick={(e) => e.stopPropagation()}
-            className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-cream p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:rounded-3xl sm:p-6"
+            className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-xl bg-cream p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:rounded-xl sm:p-6"
           >
             <div className="flex items-start justify-between gap-3">
               <p className="font-serif text-2xl leading-tight">Hitna rezervacija</p>
