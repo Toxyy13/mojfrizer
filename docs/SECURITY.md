@@ -15,7 +15,8 @@ Kratak pregled zaštita i pravila za novi kod. Tenant izolacija (RLS) je opisana
 ## Sesije i lozinke
 - Kolačić `mf_session`: JWT (HS256), httpOnly, sameSite=lax, secure u produkciji, 7 dana (30 dana uz „Zapamti me” na prijavi; developer nalog uvek 7). `getSessionUser()` svaki put čita nalog iz baze (uloga, postojanje) i odbija kolačiće izdate pre `User.sessionsValidAfter`. Posle promene ili reseta lozinke pozvati `revokeSessions(userId)`.
 - Lozinke: bcrypt cost 12, najviše 72 znaka. Tokeni za reset/verifikaciju: 256 bita, čuva se samo hash, jednokratni, 1 h / 48 h.
-- Google prijava: state + PKCE. Pri povezivanju sa postojećim nalogom čiji email nije potvrđen briše se lozinka (neko je mogao da registruje tuđu adresu).
+- `?next=` (`safeNextPath`) prima samo putanje bez `//`, `\\`, tabova i drugih kontrolnih znakova (preglednik ih briše pa bi `/<tab>/evil.com` postao `//evil.com`). JWT se proverava samo kao HS256.
+- Google prijava: state + PKCE; nikad ne otvara developer nalog (on ima samo lozinku + proveru rizika). Pri povezivanju sa postojećim nalogom čiji email nije potvrđen briše se lozinka (neko je mogao da registruje tuđu adresu).
 
 ## Zaglavlja
 `next.config.ts`: CSP, HSTS, X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy, COOP; `X-Powered-By` isključen. Nova spoljna adresa (skripta, slika, okvir) mora da se doda u CSP.

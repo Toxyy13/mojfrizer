@@ -4,6 +4,7 @@ import { FavoriteButton } from "@/components/FavoriteButton";
 import { SiteFooter } from "@/components/SiteFooter";
 import { HeroSpotlight } from "@/components/HeroSpotlight";
 import { Marquee } from "@/components/Marquee";
+import { ScissorsLine } from "@/components/ScissorsLine";
 import { AvatarPrompt } from "@/components/AvatarPrompt";
 import { shouldShowAvatarPrompt } from "@/lib/avatarPrompt";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -30,13 +31,13 @@ const STEPS: Array<{ title: string; text: string }> = [
 const TICKER = ["Zakazivanje u par klikova", "Bez poziva", "Podsetnik na email", "Radi na telefonu", "Besplatno za mušterije", "Lista čekanja za pune dane"];
 
 /** Splits a word into letters, each animating in with a stagger and reacting to hover. */
-function WordmarkLine({ text, start, accentLast = false }: { text: string; start: number; accentLast?: boolean }) {
+function WordmarkLine({ text, start, }: { text: string; start: number; accentLast?: boolean }) {
   return (
     <>
       {[...text].map((ch, i) => (
         <span
           key={i}
-          className={`wordmark-letter animate-letter ${accentLast && i === text.length - 1 ? "text-burgundy" : ""}`}
+          className="wordmark-letter animate-letter"
           style={{ animationDelay: `${(start + i) * 70}ms` }}
         >
           <span aria-hidden className="invisible">{ch}</span>
@@ -94,34 +95,36 @@ export default async function HomePage({ searchParams }: HomeProps) {
       <SiteHeader />
       <main id="sadrzaj" tabIndex={-1}>
         {showAvatarPrompt && <AvatarPrompt className="page mt-4" />}
-        <HeroSpotlight className="relative isolate overflow-hidden">
-          {/* Soft moving color fields behind the wordmark. */}
-          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-            <div className="animate-float absolute -top-24 -left-24 size-[28rem] rounded-full bg-burgundy/20 blur-3xl sm:size-[40rem]" />
-            <div className="animate-float-slow absolute top-1/3 -right-32 size-[24rem] rounded-full bg-[#e9b7a6]/50 blur-3xl sm:size-[34rem]" />
-          </div>
-
-          <div className="page pt-10 pb-14 sm:pt-16 sm:pb-24">
+        <div aria-hidden className="awning" />
+        <HeroSpotlight className="relative isolate">
+          <div className="page pt-8 pb-16 sm:pt-12 sm:pb-24">
             <p className="eyebrow animate-fade-up">Online zakazivanje kod frizera</p>
 
-            <h1 className="parallax-slow mt-4 select-none font-serif font-extrabold uppercase leading-[0.82] tracking-[-0.05em] text-charcoal" aria-label="Moj frizer">
-              <span aria-hidden className="block whitespace-nowrap text-[min(27vw,23rem)]">
-                <WordmarkLine text="Moj" start={0} />
-              </span>
-              <span aria-hidden className="block whitespace-nowrap text-[min(27vw,23rem)]">
-                <WordmarkLine text="Frizer" start={3} accentLast />
-              </span>
-            </h1>
+            <div className="mt-4 flex items-stretch gap-3 sm:gap-6">
+              
+              <h1
+                className="parallax-slow sign-text min-w-0 flex-1 rounded-3xl bg-charcoal px-4 py-5 leading-[0.9] shadow-[0_30px_60px_-30px_rgb(17_24_39/0.7)] select-none sm:px-8 sm:py-8"
+                aria-label="Moj frizer"
+              >
+                <span aria-hidden className="block whitespace-nowrap text-[min(13.5vw,10.5rem)]">
+                  <WordmarkLine text="Moj" start={0} />
+                </span>
+                <span aria-hidden className="block whitespace-nowrap text-[min(13.5vw,10.5rem)]">
+                  <WordmarkLine text="Frizer" start={3} />
+                </span>
+              </h1>
+              <div aria-hidden className="pole w-5 shrink-0 sm:w-10" />
+            </div>
 
             <div className="mt-10 grid items-end gap-8 md:grid-cols-[1.1fr_1fr]">
-              <p className="animate-fade-up text-xl text-muted [animation-delay:0.9s] sm:text-2xl">
+              <p className="animate-fade-up text-lg text-muted [animation-delay:0.9s] sm:text-xl">
                 Pronađite salon, izaberite slobodan termin i zakažite u par klikova.{" "}
-                <span className="text-charcoal">Bez poziva, u bilo koje doba dana.</span>
+                <span className="font-semibold text-charcoal">Bez poziva, u bilo koje doba dana.</span>
               </p>
               <form
                 role="search"
                 action="/#saloni"
-                className="animate-fade-up flex items-center gap-2 rounded-full border border-line bg-white p-1.5 pl-5 shadow-[0_20px_60px_-24px_rgb(107_29_47/0.45)] transition-all [animation-delay:1.1s] focus-within:border-burgundy focus-within:ring-4 focus-within:ring-burgundy/10"
+                className="animate-fade-up flex items-center gap-2 rounded-2xl border border-line bg-paper p-1.5 pl-4 shadow-[0_12px_32px_-16px_rgb(17_24_39/0.35)] transition-shadow [animation-delay:1.1s] focus-within:border-burgundy focus-within:ring-4 focus-within:ring-burgundy/12"
               >
                 <svg aria-hidden viewBox="0 0 24 24" className="size-5 shrink-0 text-muted" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="11" cy="11" r="7" />
@@ -138,7 +141,7 @@ export default async function HomePage({ searchParams }: HomeProps) {
                   placeholder="Naziv salona, grad ili ulica"
                   className="min-w-0 flex-1 bg-transparent py-2 text-base outline-none placeholder:text-muted"
                 />
-                <button className="btn-primary btn-shine shrink-0">Traži</button>
+                <button className="btn-primary shrink-0">Traži</button>
               </form>
             </div>
           </div>
@@ -146,12 +149,12 @@ export default async function HomePage({ searchParams }: HomeProps) {
 
         <Marquee items={TICKER} />
 
-        <section id="saloni" className="page scroll-mt-20 pt-16" aria-labelledby="saloni-naslov">
-          <div className="flex items-baseline justify-between gap-4 border-b border-line pb-4">
-            <h2 id="saloni-naslov" className="font-serif text-3xl sm:text-4xl">
+        <section id="saloni" className="page scroll-mt-20 pt-20" aria-labelledby="saloni-naslov">
+          <div className="flex items-end justify-between gap-4 border-b border-line pb-4">
+            <h2 id="saloni-naslov" className="font-serif text-4xl font-bold sm:text-6xl">
               {q ? `Rezultati za „${q}”` : "Saloni"}
             </h2>
-            <span className="text-sm text-muted">
+            <span className="pb-1 text-sm text-muted">
               {salons.length} {salons.length === 1 ? "salon" : "salona"}
               {q && (
                 <>
@@ -165,95 +168,98 @@ export default async function HomePage({ searchParams }: HomeProps) {
           </div>
 
           {favorite && !q && (
-            <div className="card mt-6 flex items-center gap-4 border-burgundy/30 p-4 sm:p-5">
-              <span aria-hidden className="grid size-14 shrink-0 place-items-center rounded-xl bg-burgundy text-white font-serif text-xl">
-                {initials(favorite.name)}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="eyebrow">Vaš omiljeni salon</p>
-                <Link href={`/s/${favorite.slug}`} className="block font-serif text-2xl leading-tight">
-                  {favorite.name}
-                </Link>
-                <p className="mt-1 truncate text-sm text-muted">{fullAddress(favorite)}</p>
+            <div className="ticket mt-8 bg-burgundy-soft">
+              <div className="ticket-stub">
+                <span aria-hidden className="grid size-12 place-items-center rounded-full border border-line bg-burgundy font-serif text-lg text-white">
+                  {initials(favorite.name)}
+                </span>
               </div>
-              <Link href={`/s/${favorite.slug}#zakazivanje`} className="btn-primary btn-sm">
-                Zakaži
-              </Link>
+              <div className="flex min-w-0 flex-1 items-center gap-4 p-4 sm:p-5">
+                <div className="min-w-0 flex-1">
+                  <p className="eyebrow">Vaš omiljeni salon</p>
+                  <Link href={`/s/${favorite.slug}`} className="block font-serif text-2xl leading-tight font-semibold">
+                    {favorite.name}
+                  </Link>
+                  <p className="mt-1 truncate text-sm text-muted">{fullAddress(favorite)}</p>
+                </div>
+                <Link href={`/s/${favorite.slug}#zakazivanje`} className="btn-primary btn-sm">
+                  Zakaži
+                </Link>
+              </div>
             </div>
           )}
 
           {salons.length === 0 && (
-            <div className="card mt-6 p-8 text-center">
-              <p className="font-serif text-2xl">Nema salona za „{q}”.</p>
+            <div className="card-ink mt-8 p-8 text-center">
+              <p className="font-serif text-3xl">Nema salona za „{q}”.</p>
               <p className="mt-2 text-sm text-muted">Probajte samo naziv grada, na primer „Niš”.</p>
             </div>
           )}
 
-          <ul className="mt-6 grid gap-3 md:grid-cols-2">
+          <ul className="mt-8 grid gap-6 md:grid-cols-2">
             {salons.map((s, i) => (
-              <li
-                key={s.id}
-                className={`card reveal group relative flex items-center gap-4 p-4 transition-all duration-300 ease-out hover:-translate-y-1 hover:border-burgundy/40 hover:shadow-[0_24px_50px_-28px_rgb(107_29_47/0.5)] sm:p-5 ${
-                  i === 0 && salons.length > 1 ? "md:col-span-2" : ""
-                }`}
-              >
-                <span
-                  aria-hidden
-                  className="grid size-14 shrink-0 place-items-center rounded-xl bg-burgundy-soft font-serif text-xl text-burgundy"
-                >
-                  {initials(s.name)}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <Link href={`/s/${s.slug}`} className="block font-serif text-2xl leading-tight after:absolute after:inset-0">
-                    {s.name}
-                  </Link>
-                  <p className="mt-1 truncate text-sm text-muted">
-                    {ratings.has(s.id) && (
-                      <span className="mr-2 text-burgundy">★ {formatRating(ratings.get(s.id)?.average ?? 0)}</span>
-                    )}
-                    {fullAddress(s)}
-                  </p>
-                </div>
-                <div className="relative z-10 flex shrink-0 items-center gap-2">
-                  {me && (
-                    <span className="hidden sm:block">
-                      <FavoriteButton salonId={s.id} isFavorite={me.favoriteSalonId === s.id} returnTo={returnTo} />
+              <li key={s.id} className={`reveal min-w-0 ${i === 0 && salons.length > 1 ? "md:col-span-2" : ""}`}>
+                <div className="ticket group relative">
+                  <div className="ticket-stub">
+                    <span aria-hidden className="grid size-14 place-items-center rounded-full border border-line bg-paper font-serif text-xl font-semibold text-burgundy transition-transform duration-300 group-hover:rotate-[-12deg] group-hover:scale-110">
+                      {initials(s.name)}
                     </span>
-                  )}
-                  <Link href={`/s/${s.slug}#zakazivanje`} className="btn-primary btn-sm">
-                    Zakaži
-                  </Link>
+                  </div>
+                  <div className="flex min-w-0 flex-1 items-center gap-4 p-4 sm:p-5">
+                    <div className="min-w-0 flex-1">
+                      <Link href={`/s/${s.slug}`} className="block font-serif text-2xl leading-tight font-semibold after:absolute after:inset-0 after:z-0 after:rounded-xl">
+                        {s.name}
+                      </Link>
+                      <p className="mt-1 truncate text-sm text-muted">
+                        {ratings.has(s.id) && (
+                          <span className="mr-2 font-semibold text-burgundy">★ {formatRating(ratings.get(s.id)?.average ?? 0)}</span>
+                        )}
+                        {fullAddress(s)}
+                      </p>
+                    </div>
+                    <div className="relative z-10 flex shrink-0 items-center gap-2">
+                      {me && (
+                        <span className="hidden sm:block">
+                          <FavoriteButton salonId={s.id} isFavorite={me.favoriteSalonId === s.id} returnTo={returnTo} />
+                        </span>
+                      )}
+                      <Link href={`/s/${s.slug}#zakazivanje`} className="btn-primary btn-sm">
+                        Zakaži
+                      </Link>
+                    </div>
+                  </div>
                 </div>
               </li>
             ))}
           </ul>
         </section>
 
-        <section className="page reveal mt-28 grid gap-10 md:grid-cols-[1fr_1.4fr]" aria-labelledby="kako-naslov">
-          <div>
+        <section className="page mt-28 grid gap-10 md:grid-cols-[1fr_1.3fr] md:items-center" aria-labelledby="kako-naslov">
+          <div className="reveal">
             <p className="eyebrow">Kako radi</p>
-            <h2 id="kako-naslov" className="mt-4 font-serif text-5xl font-bold leading-[0.95] sm:text-7xl">
-              Tri koraka do <em>novog izgleda</em>.
+            <h2 id="kako-naslov" className="mt-3 font-serif text-5xl leading-[0.95] font-bold sm:text-7xl">
+              Tri koraka do novog izgleda
             </h2>
+            <ScissorsLine />
           </div>
-          <ol className="border-t border-line">
+          <ol className="board p-6 sm:p-8">
             {STEPS.map((step, i) => (
-              <li key={step.title} className="reveal flex gap-6 border-b border-line py-7">
-                <span className="w-16 shrink-0 font-serif text-5xl font-bold text-burgundy/80">{String(i + 1).padStart(2, "0")}</span>
+              <li key={step.title} className="reveal flex gap-5 border-b border-dashed border-cream/20 py-5 last:border-b-0">
+                <span className="w-10 shrink-0 font-serif text-4xl leading-none font-bold text-[#f0b64a]">{i + 1}</span>
                 <div>
-                  <p className="text-lg font-medium">{step.title}</p>
-                  <p className="mt-1 text-muted">{step.text}</p>
+                  <p className="font-serif text-2xl leading-tight">{step.title}</p>
+                  <p className="mt-1 text-cream/75">{step.text}</p>
                 </div>
               </li>
             ))}
           </ol>
         </section>
 
-        <section className="page mt-28">
-          <div className="flex flex-col gap-4 border-y border-line py-8 sm:flex-row sm:items-center sm:justify-between">
+        <section className="page mt-24">
+          <div className="card-ink flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
             <div>
               <p className="eyebrow">Za salone</p>
-              <p className="mt-2 font-serif text-2xl sm:text-3xl">Imate frizerski salon?</p>
+              <p className="mt-1 font-serif text-3xl sm:text-4xl">Imate frizerski salon?</p>
             </div>
             <Link href="/dodaj-salon" className="btn-secondary shrink-0">Dodaj svoj salon</Link>
           </div>
@@ -261,14 +267,14 @@ export default async function HomePage({ searchParams }: HomeProps) {
 
         {!user && (
           <section className="page reveal-scale mt-16">
-            <div className="flex flex-col gap-6 rounded-[2rem] bg-charcoal p-8 text-white sm:p-12 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-6 rounded-3xl bg-burgundy p-8 text-white shadow-[0_30px_60px_-30px_rgb(17_24_39/0.7)] sm:p-12 md:flex-row md:items-center md:justify-between">
               <div className="max-w-lg">
-                <h2 className="font-serif text-4xl font-bold leading-none sm:text-6xl">Omiljeni salon uvek pri ruci.</h2>
-                <p className="mt-3 text-white/70">
+                <h2 className="font-serif text-4xl leading-none font-bold sm:text-6xl">Omiljeni salon uvek pri ruci</h2>
+                <p className="mt-3 text-white/85">
                   Sa nalogom vidite svoje termine, pišete salonu i posle prijave idete pravo na svoj salon.
                 </p>
               </div>
-              <Link href="/registracija" className="btn btn-shine shrink-0 bg-white text-charcoal hover:-translate-y-0.5 hover:bg-cream">
+              <Link href="/registracija" className="btn shrink-0 bg-paper text-charcoal hover:bg-cream">
                 Napravi besplatan nalog
               </Link>
             </div>

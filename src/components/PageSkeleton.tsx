@@ -3,7 +3,7 @@
  * from the CDN/prefetch while the database work finishes). Same colours and page width as the real pages.
  */
 export function PageSkeleton({ variant = "page" }: { variant?: "page" | "admin" }) {
-  const block = "animate-pulse rounded-2xl bg-sand";
+  const block = "animate-pulse rounded-xl bg-sand";
   return (
     <div role="status" aria-busy="true" aria-live="polite">
       <span className="sr-only">Učitavanje…</span>

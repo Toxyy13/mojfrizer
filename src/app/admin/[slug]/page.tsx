@@ -39,7 +39,7 @@ const STATUS_STYLE: Record<AppointmentStatus, { row: string; badge: string }> = 
   NO_SHOW: { row: "border-l-line opacity-75", badge: "bg-sand text-muted" },
 };
 
-const NOTE = "mt-4 rounded-2xl border border-dashed border-line bg-sand px-4 py-3 text-sm text-muted";
+const NOTE = "mt-4 rounded-xl border border-dashed border-line bg-sand px-4 py-3 text-sm text-muted";
 
 export default async function AdminSalonPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
@@ -189,7 +189,7 @@ export default async function AdminSalonPage({ params, searchParams }: PageProps
                     </p>
                   ))}
                 {list.length === 0 && (
-                  <p className="mt-4 rounded-2xl border border-dashed border-line p-6 text-center text-sm text-muted">
+                  <p className="mt-4 rounded-xl border border-dashed border-line p-6 text-center text-sm text-muted">
                     Nema termina za ovaj dan.
                   </p>
                 )}

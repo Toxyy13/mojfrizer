@@ -25,7 +25,7 @@ export function secretKey(): Uint8Array {
 export async function verifySessionToken(token: string | undefined): Promise<SessionClaims | null> {
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, secretKey());
+    const { payload } = await jwtVerify(token, secretKey(), { algorithms: ["HS256"] });
     if (typeof payload.sub !== "string") return null;
     const role = payload.role === "ADMIN" || payload.role === "WORKER" || payload.role === "DEVELOPER" ? payload.role : "CLIENT";
     const email = typeof payload.email === "string" ? payload.email : null;

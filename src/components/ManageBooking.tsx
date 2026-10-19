@@ -75,7 +75,7 @@ export function ManageBooking({ slug, token, days, cancel, reschedule }: ManageB
       )}
 
       {mode === "confirmCancel" && (
-        <div className="rounded-2xl border border-burgundy/30 bg-burgundy-soft p-5">
+        <div className="rounded-xl border border-burgundy/30 bg-burgundy-soft p-5">
           <p>Sigurno želite da otkažete termin?</p>
           <div className="mt-4 flex gap-4">
             <button

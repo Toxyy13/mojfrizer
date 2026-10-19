@@ -1,36 +1,52 @@
 @import "tailwindcss";
 
 /*
- * mojfrizer design system.
- * Direction: editorial minimalism (docs/DESIGN.md, A) made warm and touch-friendly:
- * cream canvas, white surfaces with thin borders, burgundy accent, serif headings.
- * New pages should use the utilities below (btn-primary, card, field, chip, eyebrow…)
- * instead of restyling buttons and inputs by hand.
+ * mojfrizer design system: modern barbershop.
+ * Warm off-white canvas, ink-blue text, barber red accent. Clean white surfaces with soft shadows, pill chips,
+ * rounded 12px buttons. The shop is only in a few real objects: barber pole, striped awning band, booking
+ * tickets, dark price board, scissors on a cut line.
+ * New pages use the utilities below (btn-primary, card, ticket, board, field, chip, eyebrow, pole...)
+ * instead of restyling things by hand.
  */
 @theme {
-  --color-cream: #f8f4ee;
-  --color-sand: #efe8dd;
-  --color-line: #e7e0d6;
-  --color-burgundy: #6b1d2f;
-  --color-burgundy-dark: #4f1522;
-  --color-burgundy-soft: #f5e9eb;
-  --color-charcoal: #1f1d1b;
-  --color-muted: #625d57;
-  --color-forest: #1b3a2b;
-  --color-forest-soft: #e6efe9;
-  --font-serif: var(--font-display), "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: var(--font-body), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-cream: #f6f2ea;
+  --color-sand: #ece5d8;
+  --color-line: #e3dccd;
+  --color-burgundy: #c62d24;
+  --color-burgundy-dark: #a3221b;
+  --color-burgundy-soft: #fbe8e4;
+  --color-charcoal: #111827;
+  --color-muted: #5d6270;
+  --color-forest: #166a47;
+  --color-forest-soft: #def2e8;
+  --color-navy: #234a8f;
+  --color-paper: #ffffff;
+  --font-serif: var(--font-display), "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-body), "Manrope", ui-sans-serif, system-ui, sans-serif;
   --animate-rise: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-marquee: marquee 38s linear infinite;
+  --animate-letter: letter 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  --animate-fade-up: fade-up 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-page: page-in 0.32s ease-out both;
 
   @keyframes rise {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes marquee {
+    to { transform: translateX(-50%); }
+  }
+  @keyframes letter {
+    from { opacity: 0; transform: translateY(60%) rotate(8deg); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes page-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
   }
 }
 
@@ -39,12 +55,15 @@
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
   }
+  body {
+    overflow-x: clip;
+  }
   ::selection {
     background: var(--color-burgundy);
     color: white;
   }
   :focus-visible {
-    outline: 2px solid var(--color-burgundy);
+    outline: 3px solid var(--color-navy);
     outline-offset: 2px;
   }
   /* <main> is focus target of the skip link; no ring needed around the whole page. */
@@ -55,11 +74,21 @@
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+  em {
+    font-style: normal;
+  }
+  h1,
+  h2,
+  h3 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
 }
 
-/* Small uppercase label above headings and sections. */
+/* Small label above sections. */
 @utility eyebrow {
-  @apply text-[11px] font-medium tracking-[0.22em] text-muted uppercase;
+  @apply text-xs font-semibold tracking-[0.08em] text-burgundy uppercase;
 }
 
 /* Content container used by every page. */
@@ -68,19 +97,27 @@
 }
 
 @utility card {
-  @apply rounded-2xl border border-line bg-white;
+  @apply rounded-2xl border border-line bg-paper;
+}
+
+/* Raised card for the main surface of a page. */
+@utility card-ink {
+  @apply rounded-2xl border border-line bg-paper shadow-[0_1px_2px_rgb(17_24_39/0.05),0_12px_32px_-16px_rgb(17_24_39/0.2)];
 }
 
 @utility btn {
-  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-6 text-sm font-medium transition-all duration-200 ease-out select-none active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-all duration-200 ease-out select-none disabled:pointer-events-none disabled:opacity-40;
+  &:active {
+    transform: scale(0.97);
+  }
 }
 
 @utility btn-primary {
-  @apply btn bg-burgundy text-white hover:-translate-y-0.5 hover:bg-burgundy-dark;
+  @apply btn bg-burgundy text-white shadow-[0_6px_16px_-6px_rgb(198_45_36/0.6)] hover:-translate-y-px hover:bg-burgundy-dark hover:shadow-[0_10px_20px_-8px_rgb(198_45_36/0.7)];
 }
 
 @utility btn-secondary {
-  @apply btn border border-line bg-white text-charcoal hover:-translate-y-0.5 hover:border-charcoal;
+  @apply btn border border-line bg-paper text-charcoal shadow-[0_1px_2px_rgb(17_24_39/0.06)] hover:-translate-y-px hover:border-charcoal/40 hover:shadow-[0_6px_14px_-8px_rgb(17_24_39/0.3)];
 }
 
 @utility btn-ghost {
@@ -89,15 +126,15 @@
 
 /* Compact action buttons (admin rows, filters). */
 @utility btn-sm {
-  @apply min-h-9 px-4 text-xs;
+  @apply min-h-9 rounded-lg px-3.5 text-xs;
 }
 
 @utility field {
-  @apply mt-1.5 block w-full rounded-xl border border-line bg-white px-4 py-3 text-base text-charcoal transition-colors outline-none placeholder:text-muted focus:border-burgundy focus:ring-4 focus:ring-burgundy/10;
+  @apply mt-1.5 block w-full rounded-xl border border-line bg-paper px-4 py-3 text-base text-charcoal transition-all outline-none placeholder:text-muted/70 hover:border-charcoal/30 focus:border-burgundy focus:ring-4 focus:ring-burgundy/10;
 }
 
 @utility field-label {
-  @apply text-sm font-medium text-charcoal;
+  @apply text-sm font-semibold text-charcoal;
 }
 
 @utility field-hint {
@@ -106,63 +143,137 @@
 
 /* Selectable pill (services, days, times). Use aria-pressed for the selected state. */
 @utility chip {
-  @apply inline-flex min-h-11 items-center justify-center rounded-full border border-line bg-white px-4 text-sm transition-all duration-200 ease-out hover:border-charcoal disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-line aria-pressed:border-burgundy aria-pressed:bg-burgundy aria-pressed:text-white;
+  @apply inline-flex min-h-11 items-center justify-center rounded-full border border-line bg-paper px-4 text-sm font-medium transition-all duration-200 ease-out hover:border-charcoal/50 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-line aria-pressed:border-charcoal aria-pressed:bg-charcoal aria-pressed:text-white;
 }
 
 @utility badge {
-  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
 }
 
 @utility alert-error {
-  @apply rounded-xl border border-burgundy/20 bg-burgundy-soft px-4 py-3 text-sm text-burgundy;
+  @apply rounded-xl border border-burgundy/25 bg-burgundy-soft px-4 py-3 text-sm text-burgundy-dark;
 }
 
 @utility link {
-  @apply underline decoration-line decoration-1 underline-offset-4 transition-colors hover:text-burgundy hover:decoration-burgundy;
+  @apply underline decoration-charcoal/25 decoration-1 underline-offset-4 transition-colors hover:text-burgundy hover:decoration-burgundy;
 }
 
-/* ---------- Motion ---------- */
+/* ---------- Shop elements ---------- */
 
-@layer base {
-  /* Display font has no italic: emphasis is color, not slant. */
-  em {
-    font-style: normal;
-  }
-  h1,
-  h2,
-  h3 {
-    letter-spacing: -0.02em;
-    text-wrap: balance;
-  }
-}
-
-@theme {
-  --animate-float: float 14s ease-in-out infinite;
-  --animate-float-slow: float 22s ease-in-out infinite reverse;
-  --animate-marquee: marquee 38s linear infinite;
-  --animate-letter: letter 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  --animate-fade-up: fade-up 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-
-  @keyframes float {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-    50% { transform: translate3d(4%, -6%, 0) scale(1.12); }
-  }
-  @keyframes marquee {
-    to { transform: translateX(-50%); }
-  }
-  @keyframes letter {
-    from { opacity: 0; transform: translateY(70%) rotate(6deg); filter: blur(10px); }
-    to { opacity: 1; transform: none; filter: blur(0); }
-  }
-  @keyframes fade-up {
-    from { opacity: 0; transform: translateY(24px); }
-    to { opacity: 1; transform: none; }
+/* Barber pole: stripes sliding along a rounded capsule. Size it with width/height classes. */
+@utility pole {
+  position: relative;
+  border-radius: 999px;
+  overflow: hidden;
+  background-color: white;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-burgundy) 0 14px,
+    white 14px 28px,
+    var(--color-navy) 28px 42px,
+    white 42px 56px
+  );
+  background-size: 79.2px 79.2px;
+  box-shadow: inset 0 0 0 1px rgb(17 24 39 / 0.18), 0 8px 18px -10px rgb(17 24 39 / 0.5);
+  animation: pole-turn 2.4s linear infinite;
+  &::after {
+    /* Glass reflection. */
+    content: "";
+    position: absolute;
+    inset: 6% auto 6% 18%;
+    width: 14%;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.4);
   }
 }
 
-/* Giant wordmark: letters swell in width and weight near the pointer. The outer box keeps the
-   resting size (a hidden copy sets it) so the effect never moves the hit area; HeroSpotlight sets
-   --k (0 to 1) on each letter from its distance to the pointer, so influence fades out smoothly. */
+/* Slim striped band under the header, like the edge of a shop awning; the stripes drift slowly. */
+@utility awning {
+  height: 8px;
+  background-image: repeating-linear-gradient(-45deg, var(--color-burgundy) 0 10px, var(--color-paper) 10px 20px);
+  background-size: 28.28px 28.28px;
+  animation: stripes-x 1.6s linear infinite;
+}
+
+/* Ticket: a booking slip with a dashed tear line (use <div class="ticket"> with a .ticket-stub child). */
+@utility ticket {
+  position: relative;
+  display: flex;
+  border-radius: 1rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-paper);
+  box-shadow: 0 1px 2px rgb(17 24 39 / 0.05), 0 12px 28px -18px rgb(17 24 39 / 0.25);
+  transition: transform 0.25s ease-out, box-shadow 0.25s ease-out, border-color 0.25s ease-out;
+  &:hover {
+    transform: translateY(-3px);
+    border-color: rgb(17 24 39 / 0.3);
+    box-shadow: 0 20px 36px -20px rgb(17 24 39 / 0.4);
+  }
+}
+
+@utility ticket-stub {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-right: 1.5px dashed var(--color-line);
+  padding: 0 1.25rem;
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    right: -9px;
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    border: 1px solid var(--color-line);
+    background: var(--color-cream);
+  }
+  &::before {
+    top: -9px;
+    clip-path: inset(50% 0 0 0);
+  }
+  &::after {
+    bottom: -9px;
+    clip-path: inset(0 0 50% 0);
+  }
+}
+
+/* Dark price list. Rows: <li class="board-row"><span>name</span><span class="board-dots"/><span>price</span></li> */
+@utility board {
+  border-radius: 1.5rem;
+  background-color: var(--color-charcoal);
+  color: #f6f2ea;
+  box-shadow: 0 24px 48px -28px rgb(17 24 39 / 0.6);
+}
+
+@utility board-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+@utility board-dots {
+  flex: 1;
+  min-width: 1rem;
+  border-bottom: 1.5px dotted rgb(246 242 234 / 0.3);
+  transform: translateY(-0.25rem);
+}
+
+/* Dashed cut line; ScissorsLine puts scissors on it. */
+@utility cut-line {
+  position: relative;
+  border-top: 1.5px dashed rgb(17 24 39 / 0.35);
+}
+
+/* Big wordmark on the dark panel. */
+@utility sign-text {
+  font-family: var(--font-serif);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--color-paper);
+}
+
+/* Giant wordmark letters: each one lifts toward the pointer (HeroSpotlight sets --k from 0 to 1). */
 @utility wordmark-letter {
   position: relative;
   display: inline-block;
@@ -171,35 +282,22 @@
     position: absolute;
     inset: 0;
     text-align: center;
-    font-variation-settings: "wdth" calc(100 - 25 * var(--k)), "wght" calc(800 - 500 * var(--k));
-    transform: translateY(calc(-2% * var(--k))) rotate(calc(-3deg * var(--k)));
-    color: color-mix(in srgb, currentColor calc(100% - 100% * var(--k)), var(--color-burgundy));
-    transition: font-variation-settings 0.18s ease-out, transform 0.18s ease-out, color 0.18s ease-out;
+    transform: translateY(calc(-8% * var(--k))) scale(calc(1 + 0.05 * var(--k)));
+    color: color-mix(in srgb, currentColor calc(100% - 100% * var(--k)), #ff7a6e);
+    transition: transform 0.18s ease-out, color 0.18s ease-out;
     pointer-events: none;
     will-change: transform;
   }
 }
 
-/* Sweep of light across primary buttons. */
-@utility btn-shine {
-  position: relative;
-  overflow: hidden;
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 0.28) 50%, transparent 70%);
-    transform: translateX(-120%);
-    transition: transform 0.7s ease;
-  }
-  &:hover::after {
-    transform: translateX(120%);
-  }
+/* ---------- Motion ---------- */
+
+@keyframes pole-turn {
+  to { background-position: 0 79.2px; }
 }
 
-/* Spotlight that follows the pointer (set --mx / --my from script). */
-@utility spotlight {
-  background: radial-gradient(520px circle at var(--mx, 50%) var(--my, 30%), rgb(107 29 47 / 0.14), transparent 60%);
+@keyframes stripes-x {
+  to { background-position: 28.28px 0; }
 }
 
 /* Scroll-driven reveal. Pure CSS: browsers without support just show the content. */
@@ -219,8 +317,14 @@
     animation-timeline: scroll(root);
     animation-range: 0 90vh;
   }
+  /* Scissors travel along the dashed line as it enters the viewport. */
+  .scissors-run {
+    animation: scissors-run linear both;
+    animation-timeline: view();
+    animation-range: entry 10% cover 55%;
+  }
   @keyframes reveal-in {
-    from { opacity: 0; transform: translateY(48px); }
+    from { opacity: 0; transform: translateY(36px); }
     to { opacity: 1; transform: none; }
   }
   @keyframes reveal-scale {
@@ -228,7 +332,11 @@
     to { opacity: 1; transform: none; }
   }
   @keyframes parallax {
-    to { transform: translateY(-12vh) scale(0.96); opacity: 0.2; }
+    to { transform: translateY(-8vh) scale(0.97); opacity: 0.3; }
+  }
+  @keyframes scissors-run {
+    from { left: 0; }
+    to { left: calc(100% - 2rem); }
   }
 }
 

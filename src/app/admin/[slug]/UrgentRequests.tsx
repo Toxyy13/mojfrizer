@@ -33,7 +33,7 @@ const field = "field py-2 text-sm";
 
 export function UrgentRequests({ requests, swap, close }: UrgentRequestsProps) {
   return (
-    <section className="mt-6 rounded-2xl border border-burgundy/30 bg-burgundy-soft p-5 sm:p-6" aria-labelledby="hitni-zahtevi">
+    <section className="mt-6 rounded-xl border border-burgundy/30 bg-burgundy-soft p-5 sm:p-6" aria-labelledby="hitni-zahtevi">
       <h2 id="hitni-zahtevi" className="flex items-center gap-2 font-serif text-2xl text-burgundy">
         <span aria-hidden className="size-2.5 animate-pulse rounded-full bg-burgundy" />
         Hitni zahtevi ({requests.length})

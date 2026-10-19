@@ -17,28 +17,28 @@ export function DeveloperShell({ user, active, children }: DeveloperShellProps) 
   ] as const;
   return (
     <div className="min-h-dvh">
-      <header className="sticky top-0 z-40 border-b border-line bg-white/90 backdrop-blur-md">
+      <header className="sticky top-0 z-40 bg-charcoal text-cream">
         <div className="page flex h-16 items-center gap-4">
-          <Logo href="/razvoj" className="text-[22px]" />
-          <span aria-hidden className="h-6 w-px bg-line" />
+          <Logo dark href="/razvoj" className="text-[22px]" />
+          <span aria-hidden className="h-6 w-px bg-cream/30" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium leading-tight">Platforma</p>
-            <p className="truncate text-xs text-muted">{user.name}</p>
+            <p className="truncate text-xs text-cream/65">{user.name}</p>
           </div>
-          <Link href="/nalog/lozinka" className="btn-ghost btn-sm hidden sm:inline-flex">
+          <Link href="/nalog/lozinka" className="btn-ghost btn-sm !text-cream/80 hover:!bg-cream/10 hover:!text-cream hidden sm:inline-flex">
             Lozinka
           </Link>
           <form action={logout}>
-            <button className="btn-secondary btn-sm">Odjava</button>
+            <button className="btn-secondary btn-sm !border-0 !bg-white/10 !text-cream hover:!bg-white/20">Odjava</button>
           </form>
         </div>
-        <nav className="page -mb-px flex gap-1 overflow-x-auto" aria-label="Razvoj">
+        <nav className="page -mb-1 flex gap-1 overflow-x-auto pt-1" aria-label="Razvoj">
           {tabs.map((tab) => (
             <Link
               key={tab.id}
               href={tab.href}
               aria-current={tab.id === active ? "page" : undefined}
-              className="flex shrink-0 items-center border-b-2 border-transparent px-3 py-3 text-sm text-muted transition-colors hover:text-charcoal aria-[current=page]:border-burgundy aria-[current=page]:font-medium aria-[current=page]:text-charcoal"
+              className="flex shrink-0 items-center rounded-t-xl px-4 py-2.5 text-sm font-medium text-cream/70 transition-colors hover:text-cream aria-[current=page]:bg-cream aria-[current=page]:text-charcoal"
             >
               {tab.label}
             </Link>
