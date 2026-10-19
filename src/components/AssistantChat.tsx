@@ -126,7 +126,7 @@ export function AssistantChat({ slug, salonName }: AssistantChatProps) {
                       key={s}
                       type="button"
                       onClick={() => void ask(s)}
-                      className="rounded-full border border-line px-3 py-1.5 text-left text-xs transition-all duration-200 ease-out hover:border-burgundy hover:text-burgundy"
+                      className="rounded-lg border border-line px-3 py-1.5 text-left text-xs transition-all duration-200 ease-out hover:border-burgundy hover:text-burgundy"
                     >
                       {s}
                     </button>
@@ -139,8 +139,8 @@ export function AssistantChat({ slug, salonName }: AssistantChatProps) {
                 key={i}
                 className={
                   m.role === "user"
-                    ? "ml-8 whitespace-pre-wrap rounded-2xl rounded-br-md bg-burgundy px-3.5 py-2 text-white"
-                    : "mr-8 whitespace-pre-wrap rounded-2xl rounded-bl-md bg-sand px-3.5 py-2"
+                    ? "ml-8 whitespace-pre-wrap rounded-xl rounded-br-md bg-burgundy px-3.5 py-2 text-white"
+                    : "mr-8 whitespace-pre-wrap rounded-xl rounded-bl-md bg-sand px-3.5 py-2"
                 }
               >
                 {m.role === "assistant" ? linkify(m.content) : m.content}

@@ -65,7 +65,7 @@ export function AvatarUploader({ name, src }: AvatarUploaderProps) {
   };
 
   return (
-    <div className="flex items-center gap-5 rounded-2xl bg-cream p-4">
+    <div className="flex items-center gap-5 rounded-xl bg-cream p-4">
       <Avatar name={name} src={src} size={96} />
       <div className="grid gap-2 text-sm">
         <input

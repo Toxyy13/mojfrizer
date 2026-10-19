@@ -21,7 +21,7 @@ export function CookieBanner() {
     <section
       role="region"
       aria-label="Kolačići"
-      className="fixed inset-x-3 bottom-3 z-[60] mx-auto max-w-2xl rounded-2xl border border-line bg-white p-5 shadow-[0_24px_60px_-20px_rgb(0_0_0/0.35)]"
+      className="fixed inset-x-3 bottom-3 z-[60] mx-auto max-w-2xl rounded-2xl border border-line bg-paper p-5 shadow-[0_24px_60px_-20px_rgb(17_24_39/0.35)]"
     >
       <p className="font-medium">Kolačići i mapa</p>
       <p className="mt-1 text-sm text-muted">

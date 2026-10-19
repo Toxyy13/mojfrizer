@@ -45,8 +45,9 @@ Vizuelni identitet i pravila za izradu stranica. Cilj su jedinstveni, moderni ek
 
 Chosen direction: **A. Editorial**, made warm and touch-friendly. All tokens and shared classes live in `src/app/globals.css`.
 
-* **Colors:** `cream` page background, `white` cards, `line` borders, `charcoal` text, `muted` secondary text, `burgundy` accent (`burgundy-soft` for tinted backgrounds), `forest` for success.
-* **Fonts:** `font-serif` (Bricolage Grotesque, variable width and weight) for headings and the giant wordmark, `font-sans` (Plus Jakarta Sans) for text. Both ship latin-ext (š ž č ć đ). Motion helpers in `globals.css`: `reveal`, `reveal-scale`, `animate-letter`, `wordmark-letter`, `btn-shine`, `spotlight`. Do not fade large form blocks.
-* **Classes to reuse on new pages:** `page` (container), `eyebrow` (small uppercase label), `card`, `btn-primary`, `btn-secondary`, `btn-ghost`, `btn-sm`, `field` + `field-label` + `field-hint`, `chip` (selected via `aria-pressed`), `badge`, `alert-error`, `link`.
+* **Look:** modern barbershop. Clean white surfaces with soft shadows and 12px-rounded buttons, the shop shows up only in a few real objects: barber pole (`pole`), striped band under the header (`awning`), booking tickets with a tear line (`ticket`, `ticket-stub`), dark price board (`board`, `board-row`, `board-dots`), scissors on a cut line (`ScissorsLine`). Do not add more themed decoration, no heavy outlines or hard offset shadows, no gradient washes.
+* **Colors:** `cream` page background (`#f6f2ea`), `paper` (white) surfaces, `line` borders, `charcoal` ink-blue text and dark panels, `muted` secondary text, `burgundy` barber-red accent (`burgundy-soft` for tinted backgrounds), `navy` for the pole, `forest` for success.
+* **Classes to reuse on new pages:** `page` (container), `eyebrow` (small label), `card` and `card-ink` (raised), `ticket`, `board`, `btn-primary`, `btn-secondary`, `btn-ghost`, `btn-sm`, `field` + `field-label` + `field-hint`, `chip` (pill, selected via `aria-pressed`), `badge`, `alert-error`, `link`.
+* **Shells:** `AdminShell` and `DeveloperShell` use a dark header with folder-style tabs; `AuthShell` pairs the form card with a pole.
 * **Shared layout:** `SiteHeader` (sticky) and `SiteFooter` on customer pages.
 * **Mobile first:** tap targets at least 44px (`min-h-11`), 16px side gutter (`page`), primary action reachable with the thumb.

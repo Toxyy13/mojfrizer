@@ -69,7 +69,7 @@ function BookingList({ title, bookings, empty, upcoming }: { title: string; book
   return (
     <section>
       <h2 className="font-serif text-2xl sm:text-3xl">{title}</h2>
-      {bookings.length === 0 && <div className="mt-4 rounded-2xl border border-dashed border-line p-6 text-muted">{empty}</div>}
+      {bookings.length === 0 && <div className="mt-4 rounded-xl border border-dashed border-line p-6 text-muted">{empty}</div>}
       <ul className={`grid grid-cols-1 ${bookings.length === 0 ? "" : upcoming ? "mt-4 gap-3" : "mt-4 divide-y divide-line border-y border-line"}`}>
         {bookings.map((b) => (
           <li key={b.id} className={upcoming ? "card flex items-center gap-4 p-4 sm:p-5" : "flex items-center gap-4 py-4"}>
@@ -203,7 +203,7 @@ export default async function AccountPage() {
         {user.email && !user.emailVerifiedAt && (
           <form
             action={resendVerification}
-            className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-burgundy-soft px-5 py-4 text-sm text-burgundy"
+            className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-burgundy-soft px-5 py-4 text-sm text-burgundy"
             role="note"
           >
             <span>Potvrdite email adresu ({user.email}) linkom koji smo vam poslali, da biste dobijali podsetnike za termine.</span>
@@ -214,7 +214,7 @@ export default async function AccountPage() {
         {(await shouldShowAvatarPrompt(session.role, !!user.avatar)) && <AvatarPrompt className="mt-6" />}
 
         {!user.phone && (
-          <p className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-burgundy-soft px-5 py-4 text-sm text-burgundy" role="note">
+          <p className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-burgundy-soft px-5 py-4 text-sm text-burgundy" role="note">
             Dodajte broj telefona i sliku, da vas salon može pozvati ako je potrebno.
             <Link href="/nalog/profil" className="btn-primary btn-sm">
               Dopunite profil

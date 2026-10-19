@@ -23,14 +23,14 @@ export function ChatThread({ messages, viewerIsSalon, send, emptyHint }: ChatThr
   return (
     <div>
       <ChatRefresh />
-      <ol className="grid min-h-64 content-end gap-3 rounded-2xl border border-line bg-white p-4 sm:p-6" aria-live="polite">
+      <ol className="grid min-h-64 content-end gap-3 rounded-xl border border-line bg-white p-4 sm:p-6" aria-live="polite">
         {messages.length === 0 && <li className="self-center py-10 text-center text-sm text-muted">{emptyHint}</li>}
         {messages.map((m) => {
           const mine = m.fromSalon === viewerIsSalon;
           return (
             <li key={m.id} className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
               <p
-                className={`max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed ${
+                className={`max-w-[85%] whitespace-pre-wrap break-words rounded-xl px-4 py-2.5 text-[15px] leading-relaxed ${
                   mine ? "rounded-br-md bg-burgundy text-white" : "rounded-bl-md bg-sand"
                 }`}
               >
@@ -41,7 +41,7 @@ export function ChatThread({ messages, viewerIsSalon, send, emptyHint }: ChatThr
           );
         })}
       </ol>
-      <form action={send} className="sticky bottom-3 mt-4 flex items-end gap-2 rounded-2xl border border-line bg-white p-2 shadow-[0_8px_30px_-12px_rgb(0_0_0/0.15)]">
+      <form action={send} className="sticky bottom-3 mt-4 flex items-end gap-2 rounded-xl border border-line bg-white p-2 shadow-[0_8px_30px_-12px_rgb(0_0_0/0.15)]">
         <label className="flex-1">
           <span className="sr-only">Poruka</span>
           <textarea

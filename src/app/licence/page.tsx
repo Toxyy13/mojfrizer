@@ -22,13 +22,13 @@ export default function LicensesPage() {
         </thead>
         <tbody>
           <tr>
-            <td>Bricolage Grotesque</td>
-            <td>Mathieu Triay, Bricolage Grotesque Project Authors</td>
+            <td>Sora</td>
+            <td>Jonathan Barnbrook, Julián Moncada, Sora Project Authors</td>
             <td>SIL Open Font License 1.1 (dozvoljena komercijalna upotreba)</td>
           </tr>
           <tr>
-            <td>Plus Jakarta Sans</td>
-            <td>Tokotype, Plus Jakarta Sans Project Authors</td>
+            <td>Manrope</td>
+            <td>Mikhail Sharanda</td>
             <td>SIL Open Font License 1.1 (dozvoljena komercijalna upotreba)</td>
           </tr>
         </tbody>

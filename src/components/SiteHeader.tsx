@@ -12,7 +12,7 @@ export async function SiteHeader({ generic = false }: { generic?: boolean }) {
   const user = generic ? null : await getSessionUser();
   const firstName = user?.name.split(" ")[0] ?? "";
   return (
-    <header className="sticky top-0 z-40 border-b border-line/70 bg-cream/85 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-line bg-cream/90 backdrop-blur-md">
       <nav className="page flex h-16 items-center justify-between gap-4" aria-label="Glavna navigacija">
         <Logo />
         <div className="flex items-center gap-1 sm:gap-2">
