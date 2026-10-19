@@ -10,7 +10,6 @@ Kratak pregled zaštita i pravila za novi kod. Tenant izolacija (RLS) je opisana
 - Zakazivanje i hitni zahtevi: limit po IP i telefonu; najviše 5 aktivnih online termina i 3 otvorena hitna zahteva po osobi u salonu (`src/lib/bookingGuard.ts`).
 - Chat, lista čekanja, upravljanje terminom, upload slike, slobodni termini, Google prijava imaju svoje limite.
 - AI asistent: 20 pitanja/10 min i 100/dan po IP, dnevni limit za celu platformu (`ASSISTANT_DAILY_LIMIT`, podrazumevano 3000), provera `Origin`.
-- Radnje asistenta (zakazivanje, izmene salona): model samo PREDLAŽE, predlog je potpisan (`assistantActions.ts`, poseban ključ, 5 min, jednokratan, vezan za korisnika i salon) i izvršava se tek posle klika na „Potvrdi” (`/api/assistant/confirm`) istim proverama kao forme. Vlasnički alati rade samo za `ownerId` salona; mušterija samo nad svojim terminima.
 - Novi javni endpoint ili akcija koja šalje mejl, piše u bazu ili zove plaćeni servis MORA da ima `consume(...)`.
 
 ## Sesije i lozinke
