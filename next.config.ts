@@ -38,6 +38,8 @@ const privatePaths = ["admin", "razvoj", "nalog", "poruke", "api", "nova-lozinka
 const nextConfig: NextConfig = {
   // Don't advertise the framework.
   poweredByHeader: false,
+  // PDF downloads read the embedded fonts from disk at runtime; make sure the serverless bundle ships them.
+  outputFileTracingIncludes: { "/api/account/export": ["./src/assets/fonts/**"], "/admin/[slug]/qr/slika": ["./src/assets/fonts/**"] },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

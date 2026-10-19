@@ -27,7 +27,7 @@ export default async function DataPage() {
       {user ? (
         <>
           <h2>Preuzmite svoje podatke</h2>
-          <p>Dobijate datoteku (JSON) sa podacima o nalogu, terminima, ocenama, listi čekanja i porukama.</p>
+          <p>Dobijate PDF sa podacima o nalogu, terminima, ocenama, listi čekanja i porukama.</p>
           <p>
             <a href="/api/account/export" className="btn-secondary">
               Preuzmi moje podatke
