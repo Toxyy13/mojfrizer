@@ -11,6 +11,9 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { AssistantWidget } from "@/components/AssistantWidget";
 import { PUBLIC_SALONS, canViewSalon, isSalonRole } from "@/lib/salonVisibility";
 import { getSessionUser } from "@/lib/auth";
+import { AudienceBadges } from "@/components/AudienceBadges";
+import { AudiencePicker } from "@/components/AudiencePicker";
+import { parseAudiences } from "@/lib/audience";
 import { matchesQuery } from "@/lib/searchText";
 import { db } from "@/lib/db";
 import { fullAddress } from "@/lib/salonAddress";
@@ -19,7 +22,7 @@ import { formatRating, getSalonRatings } from "@/lib/reviews";
 export const dynamic = "force-dynamic";
 
 interface HomeProps {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; v?: string | string[] }>;
 }
 
 const STEPS: Array<{ title: string; text: string }> = [
@@ -58,7 +61,10 @@ function initials(name: string): string {
 }
 
 export default async function HomePage({ searchParams }: HomeProps) {
-  const q = ((await searchParams).q ?? "").trim().slice(0, 60);
+  const params = await searchParams;
+  const q = (params.q ?? "").trim().slice(0, 60);
+  // Ticked types narrow the list: a salon must work with every ticked one. Nothing ticked shows all salons.
+  const wanted = parseAudiences([params.v ?? []].flat());
   const user = await getSessionUser();
   if (isSalonRole(user?.role)) redirect("/admin");
 
@@ -66,13 +72,14 @@ export default async function HomePage({ searchParams }: HomeProps) {
     db.salon.findMany({
       where: {
         isActive: true,
+        audiences: { hasEvery: wanted },
         // Private salons never show up in search or lists.
         ...PUBLIC_SALONS,
         // A newly opened salon shows up in search once it has a price list.
         services: { some: { isActive: true } },
       },
       orderBy: { name: "asc" },
-      select: { id: true, name: true, slug: true, city: true, address: true },
+      select: { id: true, name: true, slug: true, city: true, address: true, audiences: true },
       // Diacritics and script don't matter in the search, so it is matched in code (see searchText.ts).
       ...(q ? {} : { take: 50 }),
     }),
@@ -89,7 +96,8 @@ export default async function HomePage({ searchParams }: HomeProps) {
   const ratings = await getSalonRatings(salons.map((s) => s.id));
 
   const showAvatarPrompt = user ? await shouldShowAvatarPrompt(user.role, !!me?.avatar) : false;
-  const returnTo = q ? `/?q=${encodeURIComponent(q)}` : "/";
+  const filtered = q || wanted.length > 0;
+  const returnTo = "/" + (filtered ? `?${new URLSearchParams([["q", q], ...wanted.map((v) => ["v", v])])}` : "");
   return (
     <>
       <SiteHeader />
@@ -121,11 +129,8 @@ export default async function HomePage({ searchParams }: HomeProps) {
                 Pronađite salon, izaberite slobodan termin i zakažite u par klikova.{" "}
                 <span className="font-semibold text-charcoal">Bez poziva, u bilo koje doba dana.</span>
               </p>
-              <form
-                role="search"
-                action="/#saloni"
-                className="animate-fade-up flex items-center gap-2 rounded-2xl border border-line bg-paper p-1.5 pl-4 shadow-[0_12px_32px_-16px_rgb(17_24_39/0.35)] transition-shadow [animation-delay:1.1s] focus-within:border-burgundy focus-within:ring-4 focus-within:ring-burgundy/12"
-              >
+              <form role="search" action="/#saloni" className="animate-fade-up [animation-delay:1.1s]">
+              <div className="flex items-center gap-2 rounded-2xl border border-line bg-paper p-1.5 pl-4 shadow-[0_12px_32px_-16px_rgb(17_24_39/0.35)] transition-shadow focus-within:border-burgundy focus-within:ring-4 focus-within:ring-burgundy/12">
                 <svg aria-hidden viewBox="0 0 24 24" className="size-5 shrink-0 text-muted" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="11" cy="11" r="7" />
                   <path d="m20 20-3.5-3.5" strokeLinecap="round" />
@@ -142,6 +147,10 @@ export default async function HomePage({ searchParams }: HomeProps) {
                   className="min-w-0 flex-1 bg-transparent py-2 text-base outline-none placeholder:text-muted"
                 />
                 <button className="btn-primary shrink-0">Traži</button>
+              </div>
+              <div className="mt-4">
+                <AudiencePicker name="v" selected={wanted} legend="Vrsta frizera" />
+              </div>
               </form>
             </div>
           </div>
@@ -152,11 +161,11 @@ export default async function HomePage({ searchParams }: HomeProps) {
         <section id="saloni" className="page scroll-mt-20 pt-20" aria-labelledby="saloni-naslov">
           <div className="flex items-end justify-between gap-4 border-b border-line pb-4">
             <h2 id="saloni-naslov" className="font-serif text-4xl font-bold sm:text-6xl">
-              {q ? `Rezultati za „${q}”` : "Saloni"}
+              {q ? `Rezultati za „${q}”` : wanted.length > 0 ? "Rezultati" : "Saloni"}
             </h2>
             <span className="pb-1 text-sm text-muted">
               {salons.length} {salons.length === 1 ? "salon" : "salona"}
-              {q && (
+              {filtered && (
                 <>
                   {" · "}
                   <Link href="/#saloni" className="link">
@@ -167,7 +176,7 @@ export default async function HomePage({ searchParams }: HomeProps) {
             </span>
           </div>
 
-          {favorite && !q && (
+          {favorite && !filtered && (
             <div className="ticket mt-8 bg-burgundy-soft">
               <div className="ticket-stub">
                 <span aria-hidden className="grid size-12 place-items-center rounded-full border border-line bg-burgundy font-serif text-lg text-white">
@@ -191,8 +200,8 @@ export default async function HomePage({ searchParams }: HomeProps) {
 
           {salons.length === 0 && (
             <div className="card-ink mt-8 p-8 text-center">
-              <p className="font-serif text-3xl">Nema salona za „{q}”.</p>
-              <p className="mt-2 text-sm text-muted">Probajte samo naziv grada, na primer „Niš”.</p>
+              <p className="font-serif text-3xl">Nema salona{q ? <> za „{q}”</> : " za izabranu vrstu frizera"}.</p>
+              <p className="mt-2 text-sm text-muted">Probajte samo naziv grada ili uklonite neku od izabranih vrsta.</p>
             </div>
           )}
 
@@ -216,6 +225,7 @@ export default async function HomePage({ searchParams }: HomeProps) {
                         )}
                         {fullAddress(s)}
                       </p>
+                      <AudienceBadges audiences={s.audiences} className="mt-2" />
                     </div>
                     <div className="relative z-10 flex shrink-0 items-center gap-2">
                       {me && (

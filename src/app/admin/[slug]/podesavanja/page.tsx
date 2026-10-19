@@ -3,6 +3,7 @@ import type { Service, WorkerProfile, WorkingHours } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireSalonOwner } from "@/lib/access";
 import { SOCIAL_LABELS, SOCIAL_NETWORKS } from "@/lib/socialLinks";
+import { AudiencePicker } from "@/components/AudiencePicker";
 import { formatServicePrice } from "@/lib/money";
 import { TIME_ZONE, WEEKDAYS_SR, formatLocalDateIso, formatLocalTime, minutesToHHMM, todayIso } from "@/lib/time";
 import {
@@ -382,6 +383,9 @@ export default async function SalonSettingsPage({ params, searchParams }: PagePr
               />
             </label>
           ))}
+          <div className="md:col-span-2">
+            <AudiencePicker name="audience" selected={salon.audiences} legend="Čime se salon bavi (izaberite bar jedno)" />
+          </div>
           <label className="md:col-span-2">
             <span className={LABEL}>Opis (opciono)</span>
             <textarea name="description" defaultValue={salon.description ?? ""} rows={3} maxLength={1000} className={INPUT} />

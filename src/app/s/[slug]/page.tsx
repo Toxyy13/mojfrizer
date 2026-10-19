@@ -1,3 +1,4 @@
+import { AudienceBadges } from "@/components/AudienceBadges";
 import { cache } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -136,6 +137,7 @@ export default async function SalonPage({ params, searchParams }: PageProps) {
             </span>
             <span className="max-w-2xl">{salon.description ?? fullAddress}</span>
           </p>
+          <AudienceBadges audiences={salon.audiences} className="mt-3" />
 
           <div className="mt-8 flex flex-wrap items-center gap-2">
             <a href="#zakazivanje" className="btn-primary px-8">
