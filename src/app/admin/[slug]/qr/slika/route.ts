@@ -3,26 +3,33 @@ import QRCode from "qrcode";
 import { getSessionUser } from "@/lib/auth";
 import { appUrl } from "@/lib/appUrl";
 import { db } from "@/lib/db";
+import { pdfResponse, qrPosterPdf } from "@/lib/pdf";
 import { qrVersion } from "@/lib/qrVersion";
+import { fullAddress } from "@/lib/salonAddress";
 
 export const dynamic = "force-dynamic";
 
 /**
- * QR poster image (PNG or SVG) of one salon, generated on request instead of being embedded in the page as a data URL.
+ * QR image (inline SVG/PNG) and downloadable PDF poster (?format=pdf) of one salon, generated on request instead of being embedded in the page as a data URL.
  * Only the salon owner gets it. The URL carries a fingerprint of the token (?v=), so a browser may keep the image
  * for a year and a renewed token automatically gets a new URL.
  */
-export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }): Promise<NextResponse> {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }): Promise<Response> {
   const { slug } = await params;
   const user = await getSessionUser();
   const salon = user
-    ? await db.salon.findFirst({ where: { slug, isActive: true, ownerId: user.id }, select: { slug: true, qrToken: true } })
+    ? await db.salon.findFirst({ where: { slug, isActive: true, ownerId: user.id }, select: { slug: true, name: true, city: true, address: true, qrToken: true } })
     : null;
   if (!salon) return new NextResponse(null, { status: 404, headers: { "Cache-Control": "no-store" } });
 
   const search = request.nextUrl.searchParams;
   const png = search.get("format") === "png";
   const url = `${appUrl()}/q/${salon.qrToken}`;
+  if (search.get("format") === "pdf") {
+    const qrPng = await QRCode.toBuffer(url, { type: "png", width: 1200, margin: 2, errorCorrectionLevel: "M" });
+    const bytes = await qrPosterPdf({ salonName: salon.name, qrPng, host: appUrl().replace(/^https?:\/\//, ""), address: fullAddress(salon) });
+    return pdfResponse(bytes, `qr-${salon.slug}.pdf`, { "Cache-Control": "private, no-store" });
+  }
   const body = png
     ? await QRCode.toBuffer(url, { type: "png", width: 1200, margin: 2, errorCorrectionLevel: "M" })
     : Buffer.from(await QRCode.toString(url, { type: "svg", margin: 0, errorCorrectionLevel: "M", color: { dark: "#1f1d1b", light: "#ffffff" } }));
@@ -36,6 +43,5 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
   };
-  if (search.get("preuzmi") === "1") headers["Content-Disposition"] = `attachment; filename="qr-${salon.slug}.${png ? "png" : "svg"}"`;
   return new NextResponse(new Uint8Array(body), { headers });
 }

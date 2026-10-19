@@ -27,11 +27,8 @@ export default async function SalonQrPage({ params, searchParams }: { params: Pr
 
       <div className="mt-8 flex flex-wrap gap-3 print:hidden">
         <PrintButton />
-        <a href={`${imageBase}&format=png&preuzmi=1`} download className="btn-secondary">
-          Preuzmi sliku (PNG)
-        </a>
-        <a href={`${imageBase}&format=svg&preuzmi=1`} download className="btn-secondary">
-          Preuzmi za štampariju (SVG)
+        <a href={`${imageBase}&format=pdf&preuzmi=1`} download className="btn-secondary">
+          Preuzmi plakat (PDF)
         </a>
       </div>
       <p className="mt-3 text-sm text-muted print:hidden">
