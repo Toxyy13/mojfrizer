@@ -31,6 +31,8 @@ export interface FormState {
   lockedUntil?: number;
   /** The form must show the captcha before the next try. */
   captcha?: boolean;
+  /** The password was right but the email is not confirmed yet: the form offers to send the mail again. */
+  unverified?: boolean;
 }
 
 function lockedState(retryAfterSec: number, values: Record<string, string>): FormState {
@@ -90,6 +92,11 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
       return { error: `Pogrešna email adresa ili lozinka.${warning}`, values };
     }
     await clearLimit(...failRules.map((rule) => rule.key));
+    // Only the right password gets this far, so saying "not confirmed" reveals nothing to a stranger.
+    const owner = await systemDb.user.findUnique({ where: { id: user.id }, select: { email: true, emailVerifiedAt: true } });
+    if (owner?.email && !owner.emailVerifiedAt) {
+      return { error: "Email adresa još nije potvrđena. Kliknite na link u mejlu koji smo vam poslali.", values, unverified: true };
+    }
     await startSession(user, formData.get("remember") === "on");
     await rememberDevice(account);
     target = safeNextPath(formData.get("next")) ?? (await landingPathFor(user));

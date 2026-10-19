@@ -231,7 +231,7 @@ export async function createWorkerLogin(slug: string, formData: FormData): Promi
     back(slug, "radnici", { error: "Ta email adresa se već koristi. Izaberite drugu." });
   }
   const user = await systemDb.user.create({
-    data: { email, name: worker.displayName, passwordHash: await hashPassword(password), role: "WORKER" },
+    data: { email, name: worker.displayName, passwordHash: await hashPassword(password), role: "WORKER", emailVerifiedAt: new Date() },
   });
   await db.workerProfile.update({ where: { id: worker.id }, data: { userId: user.id } });
   done(slug, "radnici", `Nalog za ${worker.displayName} je napravljen (${email}).`);

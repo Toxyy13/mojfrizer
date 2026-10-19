@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
 import { z } from "zod";
-import { sendResetMail, sendVerificationMail } from "@/lib/accountMail";
+import { sendResetMail } from "@/lib/accountMail";
 import { hashPassword } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { requireDeveloper } from "@/lib/developer";
@@ -59,12 +59,11 @@ export async function createSalonAccount(_prev: CreateSalonState, formData: Form
     } else {
       tempPassword = parsed.data.password || randomBytes(9).toString("base64url");
       const owner = await db.user.create({
-        data: { name: parsed.data.ownerName, email: parsed.data.ownerEmail, passwordHash: await hashPassword(tempPassword), role: Role.ADMIN },
+        data: { name: parsed.data.ownerName, email: parsed.data.ownerEmail, passwordHash: await hashPassword(tempPassword), role: Role.ADMIN, emailVerifiedAt: new Date() },
         select: { id: true, name: true },
       });
       ownerId = owner.id;
       ownerName = owner.name;
-      await sendVerificationMail(owner.id).catch((mailError: unknown) => console.error(mailError));
     }
     const slug = await createSalon({
       ownerId,
