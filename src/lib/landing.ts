@@ -4,7 +4,8 @@ import { db } from "./db";
 /** Only same-site relative paths, so ?next= can't send people to another domain. */
 export function safeNextPath(value: FormDataEntryValue | string | null | undefined): string | null {
   if (typeof value !== "string") return null;
-  if (!value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) return null;
+  // Browsers drop tabs and line breaks inside a URL, so "/\t/evil.com" would become "//evil.com"; backslashes count as slashes.
+  if (!value.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u001f\u007f]/.test(value)) return null;
   return value;
 }
 

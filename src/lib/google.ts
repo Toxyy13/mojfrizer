@@ -102,6 +102,8 @@ export async function userForProfile(profile: GoogleProfile): Promise<SessionUse
 
   const byEmail = await db.user.findUnique({ where: { email: profile.email }, select: { ...select, emailVerifiedAt: true } });
   if (byEmail) {
+    // The platform developer signs in with a password and the login checks only; an email match must never open that account.
+    if (byEmail.role === Role.DEVELOPER) throw new Error("Google sign-in is not allowed for the developer account");
     await db.user.update({
       where: { id: byEmail.id },
       data: {
