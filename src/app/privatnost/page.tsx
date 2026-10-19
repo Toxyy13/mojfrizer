@@ -111,7 +111,13 @@ export default function PrivacyPage() {
         Kada postavite pitanje AI asistentu, tekst pitanja i javni podaci salona (cenovnik, radno vreme, slobodni termini) šalju
         se kompaniji Anthropic radi sastavljanja odgovora. Razgovore ne čuvamo, a Anthropic ih prema svojim uslovima ne koristi
         za treniranje modela. Asistent ne traži lične podatke; molimo vas da u pitanja ne upisujete ime, telefon ni zdravstvene
-        podatke. Asistent ne donosi odluke o vama i ne zakazuje termine umesto vas.
+        podatke. Asistent ne donosi odluke o vama; termin zakazuje, otkazuje ili pomera tek kada vi to potvrdite dugmetom na ekranu.
+      </p>
+      <p>
+        Ako govorite asistentu („Todor”), prepoznavanje govora radi vaš pregledač (npr. Chrome šalje zvuk svom servisu za
+        prepoznavanje govora, Safari Apple-u); mi dobijamo samo prepisani tekst. Slušanje reči „Todore” je podrazumevano
+        isključeno i uključujete ga sami; dok je uključeno, mikrofon je otvoren dok je stranica otvorena, a ništa što
+        izgovorite pre te reči ne šaljemo asistentu.
       </p>
 
       <h2>5. Kome dajemo podatke</h2>

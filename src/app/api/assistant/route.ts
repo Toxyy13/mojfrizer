@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { apiError, readJson, type ApiErrorBody } from "@/lib/apiError";
-import { answerQuestion, assistantRequestSchema, recordAssistantUse } from "@/lib/assistant";
+import { answerQuestion, assistantRequestSchema, recordAssistantUse, type PendingAction } from "@/lib/assistant";
 import { consume, requestIp } from "@/lib/rateLimit";
 import { isSameSite } from "@/lib/sameOrigin";
 
@@ -10,6 +10,7 @@ const globalDailyLimit = (): number => Number(process.env.ASSISTANT_DAILY_LIMIT)
 
 export interface AssistantResponse {
   reply: string;
+  pending?: PendingAction;
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse<AssistantResponse | ApiErrorBody>> {
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Assistant
     const result = await answerQuestion(parsed.data);
     if (!result.ok) return apiError(result.status, result.error);
     await recordAssistantUse(parsed.data.slug);
-    return NextResponse.json({ reply: result.reply });
+    return NextResponse.json({ reply: result.reply, pending: result.pending });
   } catch (error) {
     console.error(error);
     return apiError(500, "Greška asistenta.");
