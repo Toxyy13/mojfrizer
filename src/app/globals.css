@@ -21,6 +21,12 @@
   --color-forest-soft: #def2e8;
   --color-navy: #234a8f;
   --color-paper: #ffffff;
+  --color-men: #1d4b8f;
+  --color-men-soft: #e4edfb;
+  --color-women: #8a2468;
+  --color-women-soft: #f9e5f1;
+  --color-kids: #8a4a00;
+  --color-kids-soft: #fdebc4;
   --font-serif: var(--font-display), "Sora", ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-body), "Manrope", ui-sans-serif, system-ui, sans-serif;
   --animate-rise: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;

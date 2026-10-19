@@ -39,6 +39,13 @@ enum UrgentRequestStatus {
   DECLINED
 }
 
+// Who a salon cuts hair for. A salon picks at least one; clients can filter by any combination.
+enum Audience {
+  MEN
+  WOMEN
+  KIDS
+}
+
 enum BookingSource {
   ONLINE
   SALON
@@ -107,6 +114,7 @@ model Salon {
   urgentSurcharge Int @default(0)
   isActive    Boolean  @default(true)
   visibility  SalonVisibility @default(PUBLIC)
+  audiences   Audience[] @default([MEN])
   // Secret in the QR poster link (/q/{token}); the owner can replace it, which invalidates printed posters.
   qrToken     String   @unique @default(dbgenerated("replace(((gen_random_uuid())::text || (gen_random_uuid())::text), '-'::text, ''::text)"))
   ownerId     String
