@@ -1,12 +1,12 @@
-# DESIGN.md - Custom Web Design Guidelines for Claude
+# DESIGN.md - Smernice za dizajn
 
-This document serves as a strict system prompt and visual identity guide for Claude. Use these rules to generate unique, modern web interfaces that avoid generic "AI-generated" design traps.
+Vizuelni identitet i pravila za izradu stranica. Cilj su jedinstveni, moderni ekrani bez generičkih šablona.
 
 ---
 
 ## 1. Visual & Architectural Principles
 
-### Avoid the "AI Template"
+### Avoid generic templates
 * **No Generic Grid Sections:** Do not output standard three-card feature blocks with generic icons. Use asymmetrical layouts, varying card widths, or clean list structures.
 * **No Default Purple Gradients:** Avoid standard neon gradients (purple/blue/pink) unless explicitly requested. Use editorial, organic, or raw high-contrast color palettes instead.
 * **Typography First:** Treat text as the primary design element. Use extreme contrast in font scales (e.g., massive headers with small, high-density metadata).
@@ -41,15 +41,7 @@ This document serves as a strict system prompt and visual identity guide for Cla
 
 ---
 
-## 4. Master Prompts for Claude
-
-Copy and paste this snippet at the start of your Claude prompt session:
-
-> *"Claude, look at the active rules in my `DESIGN.md` file. I need you to build a webpage for [INSERT PROJECT NAME]. Do not use generic 3-card blocks or neon gradients. Follow the [Editorial / Dark Neo-Brutalism] direction exactly. Focus on asymmetric layouts, thin dividers, strong typographic hierarchy, and elegant micro-interactions."*
-
----
-
-## 5. mojfrizer design system (in code)
+## 4. mojfrizer design system (in code)
 
 Chosen direction: **A. Editorial**, made warm and touch-friendly. All tokens and shared classes live in `src/app/globals.css`.
 

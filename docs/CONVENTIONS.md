@@ -9,9 +9,9 @@
 - **TypeScript:** Strogo kucanje. Upotreba `any` je strogo zabranjena. Svaka funkcija i komponenta mora imati jasno definisane tipove (`interface` ili `type`).
 - **Asinhroni kod:** Koristi isključivo `async/await` sa `try/catch` blokovima.
 
-## 2. FAZNI RAD (Kako da odgovaraš korisniku)
-Nemoj generisati celu aplikaciju odjednom jer će kod biti polovičan. Radi uvek korak po korak:
-1. **Prvi korak:** Generiši kompletan kod za `schema.prisma` na osnovu `ARCHITECTURE.md`.
+## 2. REDOSLED RADA
+Ne praviti celu aplikaciju odjednom, već korak po korak:
+1. **Prvi korak:** Kompletan `schema.prisma` na osnovu `ARCHITECTURE.md`.
 2. **Drugi korak:** Kreiraj Server Actions/API rute za logiku zakazivanja i proveru preklapanja termina.
 3. **Treći korak:** Napravi čist backend servis za računanje pazara i analitiku.
 4. **Četvrti korak:** Kreiraj frontend komponente prateći striktno `DESIGN.md`.

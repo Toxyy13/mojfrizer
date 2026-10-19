@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { logout } from "@/app/prijava/actions";
 import { unreadForSalon } from "@/lib/chat";
-import { AssistantWidget } from "./AssistantWidget";
 import { Logo } from "./Logo";
 
 type AdminTab = "raspored" | "poruke" | "musterije" | "izvestaji" | "podesavanja" | "qr";
@@ -69,7 +68,6 @@ export async function AdminShell({ salon, user, active, children }: AdminShellPr
         </nav>
       </header>
       <main id="sadrzaj" tabIndex={-1} className="page py-8 sm:py-10">{children}</main>
-      {isOwner && <AssistantWidget slug={salon.slug} salonName={salon.name} admin />}
     </div>
   );
 }
