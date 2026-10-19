@@ -239,7 +239,7 @@ export async function sendBookingConfirmation(appointmentId: string): Promise<vo
 /** iCalendar file so the customer can add the visit to their phone's calendar. */
 export function toIcs(a: ManagedAppointment): string {
   const stamp = (d: Date): string => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-  const escape = (s: string): string => s.replace(/[\\;,]/g, (c) => `\\${c}`).replace(/\n/g, "\\n");
+  const escape = (s: string): string => s.replace(/\r/g, "").replace(/[\\;,]/g, (c) => `\\${c}`).replace(/\n/g, "\\n");
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
