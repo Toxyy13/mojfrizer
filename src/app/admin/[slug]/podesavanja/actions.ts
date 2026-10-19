@@ -1,5 +1,6 @@
 "use server";
 
+import { parseAudiences } from "@/lib/audience";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, systemDb } from "@/lib/db";
@@ -39,6 +40,8 @@ function done(slug: string, section: string, ok: string): never {
 
 export async function saveSalonInfo(slug: string, formData: FormData): Promise<void> {
   const { salon } = await requireSalonOwner(slug);
+  const audiences = parseAudiences(formData.getAll("audience"));
+  if (audiences.length === 0) back(slug, "salon", { error: "Izaberite bar jednu vrstu frizera: muški, ženski ili dečiji." });
   const parsed = salonInfoSchema.safeParse({
     name: formData.get("name") ?? "",
     description: formData.get("description") ?? "",
@@ -66,7 +69,7 @@ export async function saveSalonInfo(slug: string, formData: FormData): Promise<v
   try {
     await db.salon.update({
       where: { id: salon.id },
-      data: { ...rest, urgentSurcharge: rsdToPara(urgentSurchargeRsd), description: description || null, instagramUrl: links.instagram || null, facebookUrl: links.facebook || null, tiktokUrl: links.tiktok || null, phone: phone ? formatPhone(phone) : null },
+      data: { ...rest, audiences, urgentSurcharge: rsdToPara(urgentSurchargeRsd), description: description || null, instagramUrl: links.instagram || null, facebookUrl: links.facebook || null, tiktokUrl: links.tiktok || null, phone: phone ? formatPhone(phone) : null },
     });
   } catch (error) {
     console.error(error);

@@ -1,3 +1,4 @@
+import { audienceWords } from "./audience";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { matchesQuery } from "./searchText";
@@ -91,6 +92,7 @@ function describeSalon(salon: SalonWithData): string {
 Naziv: ${salon.name}
 Stranica: /s/${salon.slug}
 Adresa: ${fullAddress(salon)}
+Vrsta frizera: ${audienceWords(salon.audiences).toLowerCase()}
 Telefon: ${salon.phone ?? "nije upisan (mušterija može da pošalje poruku salonu preko stranice)"}
 ${salon.description ? `Opis: ${salon.description}\n` : ""}Frizeri: ${salon.workers.map((w) => w.displayName).join(", ") || "nije upisano"}
 
@@ -133,7 +135,7 @@ const SALON_TOOLS: Anthropic.Beta.BetaTool[] = [
 const PLATFORM_TOOLS: Anthropic.Beta.BetaTool[] = [
   {
     name: "search_salons",
-    description: "Traži salone na platformi po nazivu, gradu ili ulici. Vraća naziv, adresu i link.",
+    description: "Traži salone na platformi po nazivu, gradu ili ulici. Vraća naziv, adresu, vrstu frizera (muški, ženski, dečiji) i link.",
     input_schema: {
       type: "object",
       properties: { query: { type: "string", description: "Grad, naziv salona ili ulica, npr. Niš" } },
@@ -174,12 +176,12 @@ async function searchSalons(input: Record<string, unknown>): Promise<string> {
   const found = await db.salon.findMany({
     where: { isActive: true, ...PUBLIC_SALONS },
     orderBy: { name: "asc" },
-    select: { name: true, slug: true, city: true, address: true },
+    select: { name: true, slug: true, city: true, address: true, audiences: true },
     ...(query ? {} : { take: 10 }),
   });
-  const salons = (query ? found.filter((s) => matchesQuery(query, s.name, s.city, s.address)) : found).slice(0, 10);
+  const salons = (query ? found.filter((s) => matchesQuery(query, s.name, s.city, s.address, audienceWords(s.audiences))) : found).slice(0, 10);
   if (salons.length === 0) return `Nema salona za „${query}”.`;
-  return salons.map((s) => `- ${s.name}, ${fullAddress(s)}, /s/${s.slug}`).join("\n");
+  return salons.map((s) => `- ${s.name}, ${fullAddress(s)}, ${audienceWords(s.audiences).toLowerCase()} frizer, /s/${s.slug}`).join("\n");
 }
 
 function textOf(content: Anthropic.Beta.BetaContentBlock[]): string {
