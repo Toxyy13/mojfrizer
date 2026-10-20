@@ -51,6 +51,9 @@ Detalji i pravila za novi kod: `docs/ARCHITECTURE.md`, odeljak „Row Level Secu
 ## 8. Domen
 Kad se kupi mojfrizer.com: Vercel → Domains → dodaj `mojfrizer.com` i `*.mojfrizer.com` (poddomeni salona), pa postavi `APP_URL` i `ROOT_DOMAIN`.
 
+## Rezervne kopije
+Vraćanje baze na raniji trenutak i ručni izvoz: `docs/BACKUP.md`.
+
 ## Lokalna provera produkcijskog builda
 `VERCEL=1 VERCEL_ENV=production SEED_OWNER_PASSWORD=... bash scripts/vercel-build.sh`
 

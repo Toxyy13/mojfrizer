@@ -3,3 +3,6 @@ node_modules
 .env
 next-env.d.ts
 *.tsbuildinfo
+
+# manual database exports (personal data)
+/backups/
